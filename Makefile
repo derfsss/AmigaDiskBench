@@ -23,7 +23,7 @@ $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
 install: all
 	mkdir -p $(DIST_DIR)
 	cp $(TARGET) $(DIST_DIR)/AmigaDiskBench
-	cp tool.info $(DIST_DIR)/AmigaDiskBench.info
+	cp AmigaDiskBench.info $(DIST_DIR)/AmigaDiskBench.info
 	@echo "Installation complete to $(DIST_DIR)/"
 
 clean:
