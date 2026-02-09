@@ -1,0 +1,17 @@
+# Build artifacts
+build/
+dist/
+*.o
+
+# Local data
+*.csv
+*.log
+build_errors.txt
+build_log.txt
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# Amiga specific (optional if you want to keep logs)
+stats/
