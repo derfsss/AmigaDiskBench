@@ -591,21 +591,16 @@ BOOL GenerateGlobalReport(const char *filename, GlobalReport *report)
             continue;
         } /* Skip header */
 
-        char timestamp[32], type[64], disk[32], fs[64], mbs_str[32], iops_str[32], dur_str[32], bytes_str[32];
+        char timestamp[32], type[64], disk[32], fs[64], mbs_str[32], iops_str[32];
         /* CSV layout v1.8.4: DateTime,Type,Volume,FS,MB/s,IOPS,Hardware,Unit,AppVersion,Passes,BlockSize */
+        /* CSV layout v1.8.4: DateTime,Type,Volume,FS,MB/s,IOPS,Hardware,Unit,AppVersion,Passes,BlockSize
+           [v1.9.14] Use %[^,\r\n] for the last field to handle trailing commas/whitespace robustly. */
         char device[64], unit[32], app_ver[32], passes_str[16], bs_str[32];
-        int fields = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%s", timestamp, type,
-                            disk, fs, mbs_str, iops_str, device, unit, app_ver, passes_str, bs_str);
+        int fields = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,\r\n]", timestamp,
+                            type, disk, fs, mbs_str, iops_str, device, unit, app_ver, passes_str, bs_str);
 
-        if (fields == 11) {
-            /* v1.8.4 format */
-        } else if (fields == 8) {
-            /* v1.7+ format (DateTime,Type,Disk,FS,MB/s,IOPS,Dur,Bytes) */
-        } else if (fields == 7) {
-            /* v1.6 format (no timestamp), shift variables */
-            sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%s", type, disk, fs, mbs_str, iops_str, dur_str,
-                   bytes_str);
-        } else {
+        if (fields < 7) {
+            LOG_DEBUG("GenerateGlobalReport: Skipping malformed line (fields=%d): %s", fields, line);
             continue;
         }
 
