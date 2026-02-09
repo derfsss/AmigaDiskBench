@@ -591,29 +591,45 @@ BOOL GenerateGlobalReport(const char *filename, GlobalReport *report)
             continue;
         } /* Skip header */
 
-        char timestamp[32], type[64], disk[32], fs[64], mbs_str[32], iops_str[32];
-        /* CSV layout v1.8.4: DateTime,Type,Volume,FS,MB/s,IOPS,Hardware,Unit,AppVersion,Passes,BlockSize */
-        /* CSV layout v1.8.4: DateTime,Type,Volume,FS,MB/s,IOPS,Hardware,Unit,AppVersion,Passes,BlockSize
-           [v1.9.14] Use %[^,\r\n] for the last field to handle trailing commas/whitespace robustly. */
+        char id[64], timestamp[32], type[64], disk[32], fs[64], mbs_str[32], iops_str[32];
+        /* CSV layout v1.8.4: ID,DateTime,Type,Volume,FS,MB/s,IOPS,Hardware,Unit,AppVersion,Passes,BlockSize,...
+           [v1.9.14] Match the SaveResultToCSV layout exactly. */
         char device[64], unit[32], app_ver[32], passes_str[16], bs_str[32];
-        int fields = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,\r\n]", timestamp,
-                            type, disk, fs, mbs_str, iops_str, device, unit, app_ver, passes_str, bs_str);
+        int fields = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,\r\n]", id,
+                            timestamp, type, disk, fs, mbs_str, iops_str, device, unit, app_ver, passes_str, bs_str);
 
         if (fields < 7) {
             LOG_DEBUG("GenerateGlobalReport: Skipping malformed line (fields=%d): %s", fields, line);
             continue;
         }
 
-        float mbs = (float)atof(mbs_str);
+        /* If fields == 12 or more, we have the ID column at the start.
+           If fields < 12, it might be an older format where DateTime is field 0.
+           We detect this by checking if the first field 'id' looks like a timestamp or an ID.
+           Actually, let's just use the 'fields' count to be safe. */
+        float mbs = 0.0f;
+        char *final_type = type;
+
+        if (fields >= 12) {
+            /* v1.8.4+ Format (ID is field 0, Type is field 2) */
+            mbs = (float)atof(mbs_str);
+            final_type = type;
+        } else {
+            /* Legacy Format (DateTime is field 0, Type is field 1)
+               Shift: id->timestamp, timestamp->type, type->disk, disk->fs, fs->mbs_str */
+            mbs = (float)atof(fs);
+            final_type = timestamp;
+        }
+
         int t_idx = -1;
 
-        if (strcmp(type, "Sprinter") == 0)
+        if (strcmp(final_type, "Sprinter") == 0)
             t_idx = TEST_SPRINTER;
-        else if (strcmp(type, "HeavyLifter") == 0)
+        else if (strcmp(final_type, "HeavyLifter") == 0)
             t_idx = TEST_HEAVY_LIFTER;
-        else if (strcmp(type, "Legacy") == 0)
+        else if (strcmp(final_type, "Legacy") == 0)
             t_idx = TEST_LEGACY;
-        else if (strcmp(type, "DailyGrind") == 0)
+        else if (strcmp(final_type, "DailyGrind") == 0)
             t_idx = TEST_DAILY_GRIND;
 
         if (t_idx != -1) {
@@ -623,6 +639,8 @@ BOOL GenerateGlobalReport(const char *filename, GlobalReport *report)
                 ts->max_mbps = mbs;
             ts->total_runs++;
             report->total_benchmarks++;
+        } else {
+            LOG_DEBUG("GenerateGlobalReport: Unknown test type '%s' (mbs_str='%s')", final_type, mbs_str);
         }
     }
 
