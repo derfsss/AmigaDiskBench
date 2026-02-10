@@ -19,6 +19,29 @@ extern struct ExecIFace *IExec;
 
 static char report_buffer[4096];
 
+void ShowBenchmarkDetails(Object *list_obj)
+{
+    struct Node *sel = NULL;
+    IIntuition->GetAttr(LISTBROWSER_SelectedNode, list_obj, (uint32 *)&sel);
+    if (!sel)
+        return;
+
+    BenchResult *res = NULL;
+    IListBrowser->GetListBrowserNodeAttrs(sel, LBNA_UserData, &res, TAG_DONE);
+
+    if (!res) {
+        /* Fallback for nodes that might still have the old string UserData or are NULL */
+        char *extra_info = NULL;
+        IListBrowser->GetListBrowserNodeAttrs(sel, LBNA_UserData, &extra_info, TAG_DONE);
+        struct EasyStruct es = {sizeof(struct EasyStruct), 0, "Benchmark Details",
+                                extra_info ? extra_info : "No record data available.", "Close"};
+        IIntuition->EasyRequest(ui.window, &es, NULL);
+        return;
+    }
+
+    OpenDetailsWindow(res);
+}
+
 void OpenDetailsWindow(BenchResult *res)
 {
     if (!res)
