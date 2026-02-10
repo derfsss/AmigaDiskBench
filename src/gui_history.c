@@ -1,8 +1,25 @@
+/*
+ * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
+ * Copyright (C) 2026 Team Derfs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "gui_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 void RefreshHistory(void)
 {
@@ -24,7 +41,7 @@ void RefreshHistory(void)
         node = next;
     }
     IExec->NewList(&ui.history_labels);
-    /* [v1.8.1 Polish] Open CSV and parse */
+    /* Open CSV and parse */
     LOG_DEBUG("RefreshHistory: Attempting to open '%s'", ui.csv_path);
     BPTR file = IDOS->FOpen(ui.csv_path, MODE_OLDFILE, 0);
     int count = 0;
@@ -138,7 +155,7 @@ void RefreshHistory(void)
         IDOS->FClose(file);
         LOG_DEBUG("RefreshHistory: Loaded %d records", count);
     } else {
-        /* [v1.8.3] Create empty history file with full header if it doesn't exist */
+        /* Create empty history file with full header if it doesn't exist */
         file = IDOS->FOpen(ui.csv_path, MODE_NEWFILE, 0);
         if (file) {
             IDOS->FPuts(file, "ID,DateTime,Type,Volume,FS,MB/"

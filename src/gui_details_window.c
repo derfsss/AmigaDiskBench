@@ -1,3 +1,21 @@
+/*
+ * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
+ * Copyright (C) 2026 Team Derfs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "gui_details_window.h"
 #include "debug.h"
 #include <classes/window.h>
@@ -91,7 +109,7 @@ void OpenDetailsWindow(BenchResult *res)
              (double)res->cumulative_bytes / 1048576.0, res->max_mbps - res->min_mbps, res->device_name,
              (unsigned int)res->device_unit, res->vendor, res->product, res->app_version);
 
-    /* [v1.9.14] Fixed labels and shortcut display:
+    /* Fixed labels and shortcut display:
        - Titlebar (Window Menu): Use clean "Copy" + MA_Key. Icon is auto-added.
        - Context Menu: Use "C|Copy" to attempt to force hint rendering.
        Manually building the tree avoids TagItem/NewMenu mismatch issues. */
@@ -139,7 +157,7 @@ void OpenDetailsWindow(BenchResult *res)
     if (ui.details_win_obj) {
         ui.details_window = (struct Window *)IIntuition->IDoMethod(ui.details_win_obj, WM_OPEN);
         if (ui.details_window) {
-            /* [v1.9.14] Force pointer type after open to ensure feedback */
+            /* Force pointer type after open to ensure feedback */
             IIntuition->SetWindowPointer(ui.details_window, WA_PointerType, POINTERTYPE_TEXT, TAG_DONE);
         } else {
             LOG_DEBUG("FAILED to open details window");
@@ -148,7 +166,7 @@ void OpenDetailsWindow(BenchResult *res)
         }
     } else {
         LOG_DEBUG("FAILED to create details window object");
-        /* [v1.9.13] Cleanup individual objects if layout failed */
+        /* Cleanup individual objects if layout failed */
         if (ui.details_menu)
             IIntuition->DisposeObject(ui.details_menu);
         if (ui.details_context_menu)
@@ -202,7 +220,7 @@ void HandleDetailsWindowEvent(uint16 code, uint32 result)
 
             LOG_DEBUG("Details Window selection: result=0x%08X", (unsigned int)result);
 
-            /* [v1.9.14] Use WINDOW_MenuAddress to find which menu tree generated the event (V54) */
+            /* Use WINDOW_MenuAddress to find which menu tree generated the event (V54) */
             IIntuition->GetAttr(WINDOW_MenuAddress, ui.details_win_obj, (uint32 *)&menu_obj);
 
             if (menu_obj) {

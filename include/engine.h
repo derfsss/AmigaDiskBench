@@ -1,3 +1,21 @@
+/*
+ * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
+ * Copyright (C) 2026 Team Derfs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #ifndef ENGINE_H
 #define ENGINE_H
 
@@ -28,20 +46,20 @@ typedef struct
     char fs_type[64];   /* NGFS, FFS, Hex, etc. */
     char timestamp[32]; /* Date/Time of test e.g. "2023-10-27 10:30" */
 
-    /* Hardware Info (v1.8) */
+    /* Hardware Info */
     char device_name[64]; /* e.g. ahci.device */
     uint32 device_unit;
     char vendor[32];
     char product[64];
 
-    /* v1.8.1: App version tracking */
+    /* App version tracking */
     char app_version[16];
 
-    /* v1.8.3: Additional metadata for CSV and details view */
+    /* Additional metadata for CSV and details view */
     uint32 passes;
     uint32 block_size;
 
-    /* v1.9.11: Persistence and Detailed Metrics */
+    /* Persistence and Detailed Metrics */
     BOOL use_trimmed_mean;
     float min_mbps; /* Min/Max among non-trimmed passes if trimming active */
     float max_mbps;

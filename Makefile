@@ -6,7 +6,7 @@ LDFLAGS = -lauto
 BUILD_DIR = build
 DIST_DIR = dist
 TARGET = $(BUILD_DIR)/AmigaDiskBench
-SRC = src/main.c src/engine.c src/gui.c src/gui_details_window.c src/gui_utils.c src/gui_prefs.c src/gui_history.c src/gui_system.c src/gui_worker.c src/gui_report.c src/gui_layout.c src/gui_events.c
+SRC = src/main.c src/engine.c src/engine_info.c src/engine_tests.c src/engine_persistence.c src/gui.c src/gui_details_window.c src/gui_utils.c src/gui_prefs.c src/gui_history.c src/gui_system.c src/gui_worker.c src/gui_report.c src/gui_layout.c src/gui_events.c
 OBJ = $(patsubst src/%.c, $(BUILD_DIR)/%.o, $(SRC))
 
 all: $(BUILD_DIR) $(TARGET)

@@ -1,3 +1,21 @@
+/*
+ * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
+ * Copyright (C) 2026 Team Derfs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "gui_internal.h"
 #include <string.h>
 
@@ -133,7 +151,7 @@ void OpenPrefsWindow(void)
     IIntuition->GetAttr(INTEGER_Number, ui.pass_gad, &num_passes);
     BOOL trimmed = ui.use_trimmed_mean;
     char *csv_path = ui.csv_path;
-    /* [v1.9.9] Refactored Preferences window using standard ReAction macros */
+    /* Preferences window using standard ReAction macros */
     ui.prefs_win_obj = WindowObject, WA_Title, "Preferences", WA_SizeGadget, TRUE, WA_CloseGadget, TRUE, WA_DragBar,
     TRUE, WA_Activate, TRUE, WA_InnerWidth, 400, WA_InnerHeight, 180, WINDOW_SharedPort, (uint32)ui.prefs_port,
     WINDOW_ParentGroup, VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_BevelStyle,

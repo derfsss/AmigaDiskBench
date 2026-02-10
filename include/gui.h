@@ -1,3 +1,21 @@
+/*
+ * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
+ * Copyright (C) 2026 Team Derfs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #ifndef GUI_H
 #define GUI_H
 
@@ -6,7 +24,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
-/* [v1.9.9] Standard ReAction consolidated headers and macros */
+/* Standard ReAction consolidated headers and macros */
 #define ALL_REACTION_CLASSES
 #define ALL_REACTION_MACROS
 #include <reaction/reaction.h>
@@ -81,13 +99,13 @@ typedef struct
 
     struct Library *IconBase, *LocaleBase, *ApplicationBase, *AslBase;
 
-    /* [v1.9.9] Class library bases. Many are now handled by reaction.h but
+    /* Class library bases. Many are now handled by reaction.h but
        we keep those we explicitly manage via OpenClass for safety. */
     struct ClassLibrary *WindowBase, *LayoutBase, *ButtonBase, *ListBrowserBase, *ChooserBase;
     struct ClassLibrary *CheckBoxBase, *ClickTabBase, *PageBase, *LabelBase, *StringBase, *IntegerBase;
     struct ClassLibrary *TextEditorBase, *ScrollerBase;
 
-    /* [v1.9.9] BOOPSI class pointers. reaction.h macros often use class strings (e.g. "button.gadget"),
+    /* BOOPSI class pointers. reaction.h macros often use class strings (e.g. "button.gadget"),
        but we retain these for cases where explicit class pointers are preferred.
        Note: MenuClass/MenuBase removed as they are built-in to Intuition. */
     Class *WindowClass, *LayoutClass, *ButtonClass, *ListBrowserClass, *ChooserClass;
