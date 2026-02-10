@@ -9,7 +9,7 @@
 #define APP_TITLE "AmigaDiskBench"
 #define APP_VER_TITLE APP_TITLE " v" APP_VERSION_STR
 #define APP_DESCRIPTION "Amiga Disk Benchmark Utility v" APP_VERSION_STR
-#define APP_COPYRIGHT "(C) 2026 Antigravity Team"
+#define APP_COPYRIGHT "(C) 2026 Antigravity Team (Open Source)"
 #define APP_ABOUT_MSG APP_TITLE " v" APP_VERSION_STR "\n" APP_COPYRIGHT "\nA modern benchmark for AmigaOS 4.x"
 
 /* Amiga style $VER string */
