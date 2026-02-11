@@ -1,19 +1,24 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (C) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "gui_internal.h"
@@ -68,11 +73,81 @@ void FormatSize(uint64 bytes, char *out)
         sprintf(out, "%.1f GB", (double)bytes / (1024.0 * 1024 * 1024));
     else if (bytes >= (1024ULL * 1024))
         sprintf(out, "%.1f MB", (double)bytes / (1024.0 * 1024));
-    else
+    else if (bytes >= 1024)
         sprintf(out, "%llu KB", bytes / 1024);
+    else
+        sprintf(out, "%llu B", bytes);
 }
 
 CONST_STRPTR GetString(uint32 id, CONST_STRPTR default_str)
 {
     return (ui.catalog && ui.ILoc) ? ui.ILoc->GetCatalogStr(ui.catalog, id, default_str) : default_str;
+}
+
+/**
+ * ShowMessage
+ *
+ * Displays a standard ReAction EasyRequest message box.
+ */
+void ShowMessage(const char *title, const char *body, const char *gadgets)
+{
+    if (ui.window) {
+        struct EasyStruct es = {sizeof(struct EasyStruct), 0, (STRPTR)title, (STRPTR)body, (STRPTR)gadgets};
+        IIntuition->EasyRequest(ui.window, &es, NULL, TAG_DONE);
+    }
+}
+
+/**
+ * SetGadgetState
+ *
+ * Enables or disables a gadget by its GID.
+ */
+void SetGadgetState(uint16 gid, BOOL disabled)
+{
+    if (ui.window) {
+        /* This helper assumes the pointer to the gadget is stored in ui under its standard name.
+         * For more complex mapping, we might search the window's gadget list.
+         * For now, we handle the most common ones.
+         */
+        Object *obj = NULL;
+        switch (gid) {
+        case GID_RUN_ALL:
+            obj = ui.run_button;
+            break;
+        case GID_VOL_CHOOSER:
+            obj = ui.target_chooser;
+            break;
+        case GID_TEST_CHOOSER:
+            obj = ui.test_chooser;
+            break;
+        case GID_NUM_PASSES:
+            obj = ui.pass_gad;
+            break;
+        case GID_BLOCK_SIZE:
+            obj = ui.block_chooser;
+            break;
+        case GID_BULK_RUN:
+            obj = ui.run_button; /* Reused for bulk */
+            break;
+        }
+
+        if (obj) {
+            IIntuition->SetGadgetAttrs((struct Gadget *)obj, ui.window, NULL, GA_Disabled, (uint32)disabled, TAG_DONE);
+        }
+    }
+}
+
+/**
+ * ShowConfirm
+ *
+ * Displays a standard ReAction EasyRequest message box and returns TRUE
+ * if the primary (first) gadget was pressed.
+ */
+BOOL ShowConfirm(const char *title, const char *body, const char *gadgets)
+{
+    if (ui.window) {
+        struct EasyStruct es = {sizeof(struct EasyStruct), 0, (STRPTR)title, (STRPTR)body, (STRPTR)gadgets};
+        return (IIntuition->EasyRequest(ui.window, &es, NULL, TAG_DONE) == 1);
+    }
+    return FALSE;
 }

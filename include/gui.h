@@ -1,19 +1,24 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (C) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef GUI_H
@@ -46,6 +51,7 @@ typedef struct
     uint32 num_passes;
     uint32 block_size;
     BOOL use_trimmed_mean;
+    BOOL flush_cache;
     struct MsgPort *reply_port;
 } BenchJob;
 
@@ -58,6 +64,7 @@ typedef struct
     Object *page_obj;
     Object *bench_list;
     Object *history_list;
+    Object *bulk_list;
     Object *status_light_obj;
     Object *run_button;
     Object *test_chooser;
@@ -85,6 +92,7 @@ typedef struct
     struct List drive_list;
     struct List test_labels;
     struct List block_list;
+    struct List bulk_labels;
 
     uint32 app_id;
     struct MsgPort *gui_port;
@@ -96,6 +104,8 @@ typedef struct
     struct Catalog *catalog;
 
     Object *history_popup;
+    Object *vis_bars[5];
+    Object *vis_labels[5];
 
     struct Library *IconBase, *LocaleBase, *ApplicationBase, *AslBase;
 
@@ -103,14 +113,14 @@ typedef struct
        we keep those we explicitly manage via OpenClass for safety. */
     struct ClassLibrary *WindowBase, *LayoutBase, *ButtonBase, *ListBrowserBase, *ChooserBase;
     struct ClassLibrary *CheckBoxBase, *ClickTabBase, *PageBase, *LabelBase, *StringBase, *IntegerBase;
-    struct ClassLibrary *TextEditorBase, *ScrollerBase;
+    struct ClassLibrary *TextEditorBase, *ScrollerBase, *FuelGaugeBase;
 
     /* BOOPSI class pointers. reaction.h macros often use class strings (e.g. "button.gadget"),
        but we retain these for cases where explicit class pointers are preferred.
        Note: MenuClass/MenuBase removed as they are built-in to Intuition. */
     Class *WindowClass, *LayoutClass, *ButtonClass, *ListBrowserClass, *ChooserClass;
     Class *CheckBoxClass, *ClickTabClass, *PageClass, *LabelClass, *StringClass, *IntegerClass;
-    Class *TextEditorClass, *ScrollerClass;
+    Class *TextEditorClass, *ScrollerClass, *FuelGaugeClass;
 
     struct ApplicationIFace *IApp;
     struct LocaleIFace *ILoc;
@@ -127,6 +137,8 @@ typedef struct
     char default_drive[256];
     char csv_path[256];
     BOOL delete_prefs_needed;
+    BOOL flush_cache;
+    uint32 jobs_pending;
 } GUIState;
 
 /* Message sent from Benchmark Process to GUI for progress/results */
@@ -175,13 +187,27 @@ enum
     GID_DETAILS_EDITOR,
     GID_DETAILS_VSCROLL,
     GID_DETAILS_HSCROLL,
-    GID_DETAILS_CLOSE
+    GID_DETAILS_CLOSE,
+    GID_FLUSH_CACHE,
+    GID_VIS_BAR_1,
+    GID_VIS_BAR_2,
+    GID_VIS_BAR_3,
+    GID_VIS_BAR_4,
+    GID_VIS_BAR_5,
+    GID_VIS_LABEL_1,
+    GID_VIS_LABEL_2,
+    GID_VIS_LABEL_3,
+    GID_VIS_LABEL_4,
+    GID_VIS_LABEL_5,
+    GID_BULK_LIST,
+    GID_BULK_RUN
 };
 
 #define MID_ABOUT 1
 #define MID_PREFS 2
 #define MID_QUIT 3
 #define MID_DELETE_PREFS 4
+#define MID_EXPORT_TEXT 7
 #define MID_SHOW_DETAILS 5
 #define MID_DETAILS_COPY 6
 
@@ -195,11 +221,13 @@ enum
 #define COL_DEVICE 7
 #define COL_UNIT 8
 #define COL_VER 9
-#define COL_DUMMY 10
+#define COL_DIFF 10
+#define COL_DUMMY 11
 
 /* GUI Functions */
 int StartGUI(void);
 const char *FormatPresetBlockSize(uint32 bytes);
 const char *FormatByteSize(uint64 bytes);
+void ExportToAnsiText(const char *filename);
 
 #endif /* GUI_H */

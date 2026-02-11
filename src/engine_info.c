@@ -1,24 +1,131 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (C) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "engine_internal.h"
+#include <devices/scsidisk.h>
 #include <stdio.h>
 #include <string.h>
+
+/* Helper to strip trailing spaces from SCSI strings */
+static void StripTrailingSpaces(char *str, uint32 len)
+{
+    if (len == 0)
+        return;
+    int32 i = len - 1;
+    while (i >= 0 && (str[i] == ' ' || str[i] == '\0')) {
+        str[i] = '\0';
+        i--;
+    }
+}
+
+static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResult *result)
+{
+    struct MsgPort *port = IExec->AllocSysObjectTags(ASOT_PORT, TAG_DONE);
+    if (!port)
+        return;
+
+    struct IOStdReq *ior = (struct IOStdReq *)IExec->AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_ReplyPort, port,
+                                                                        ASOIOR_Size, sizeof(struct IOStdReq), TAG_DONE);
+    if (!ior) {
+        IExec->FreeSysObject(ASOT_PORT, port);
+        return;
+    }
+
+    if (IExec->OpenDevice(device_name, unit, (struct IORequest *)ior, 0) == 0) {
+        /* buffer for inquiry data */
+        uint8 *inq = IExec->AllocVecTags(256, AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
+        if (inq) {
+            struct SCSICmd cmd;
+            uint8 cdb[6];
+
+            /* Standard Inquiry */
+            memset(&cmd, 0, sizeof(struct SCSICmd));
+            memset(cdb, 0, sizeof(cdb));
+            cdb[0] = SCSI_CMD_INQUIRY;
+            cdb[4] = SCSI_INQ_STD_LEN;
+
+            cmd.scsi_Data = (APTR)inq;
+            cmd.scsi_Length = SCSI_INQ_STD_LEN;
+            cmd.scsi_Flags = SCSIF_READ | SCSIF_AUTOSENSE;
+            cmd.scsi_Command = (APTR)cdb;
+            cmd.scsi_CmdLength = 6;
+
+            ior->io_Command = HD_SCSICMD;
+            ior->io_Data = &cmd;
+            ior->io_Length = sizeof(struct SCSICmd);
+
+            if (IExec->DoIO((struct IORequest *)ior) == 0 && cmd.scsi_Status == 0) {
+                /* Vendor: bytes 8-15 */
+                memcpy(result->vendor, &inq[8], 8);
+                result->vendor[8] = '\0';
+                StripTrailingSpaces(result->vendor, 8);
+
+                /* Product: bytes 16-31 */
+                memcpy(result->product, &inq[16], 16);
+                result->product[16] = '\0';
+                StripTrailingSpaces(result->product, 16);
+
+                /* Firmware: bytes 32-35 */
+                memcpy(result->firmware_rev, &inq[32], 4);
+                result->firmware_rev[4] = '\0';
+                StripTrailingSpaces(result->firmware_rev, 4);
+            }
+
+            /* Inquiry VPD 0x80 (Serial Number) */
+            memset(inq, 0, 256);
+            memset(cdb, 0, sizeof(cdb));
+            cdb[0] = SCSI_CMD_INQUIRY;
+            cdb[1] = 0x01; /* EVPD */
+            cdb[2] = 0x80; /* Unit Serial Number */
+            cdb[4] = SCSI_INQ_VPD_LEN;
+
+            cmd.scsi_Data = (APTR)inq;
+            cmd.scsi_Length = SCSI_INQ_VPD_LEN;
+            cmd.scsi_Flags = SCSIF_READ | SCSIF_AUTOSENSE;
+            cmd.scsi_Command = (APTR)cdb;
+            cmd.scsi_CmdLength = 6;
+
+            if (IExec->DoIO((struct IORequest *)ior) == 0 && cmd.scsi_Status == 0) {
+                uint8 len = inq[3];
+                if (len > 0) {
+                    if (len > sizeof(result->serial_number) - 1)
+                        len = sizeof(result->serial_number) - 1;
+                    memcpy(result->serial_number, &inq[4], len);
+                    result->serial_number[len] = '\0';
+                    StripTrailingSpaces(result->serial_number, len);
+                }
+            } else {
+                strncpy(result->serial_number, "N/A", sizeof(result->serial_number));
+            }
+
+            IExec->FreeVec(inq);
+        }
+        IExec->CloseDevice((struct IORequest *)ior);
+    }
+
+    IExec->FreeSysObject(ASOT_IOREQUEST, ior);
+    IExec->FreeSysObject(ASOT_PORT, port);
+}
 
 void GetFileSystemInfo(const char *path, char *out_name, uint32 name_size)
 {
@@ -222,5 +329,14 @@ void GetHardwareInfo(const char *path, BenchResult *result)
         } else {
             strncpy(result->device_name, "Generic Disk", sizeof(result->device_name));
         }
+    }
+
+    strncpy(result->serial_number, "N/A", sizeof(result->serial_number));
+    strncpy(result->firmware_rev, "N/A", sizeof(result->firmware_rev));
+
+    /* If we have a real device name, attempt low-level inquiry */
+    if (result->device_name[0] && strcmp(result->device_name, "Generic Disk") != 0 &&
+        strcmp(result->device_name, "ramdrive.device") != 0) {
+        GetScsiHardwareInfo(result->device_name, result->device_unit, result);
     }
 }

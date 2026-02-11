@@ -1,19 +1,24 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (C) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef GUI_INTERNAL_H
@@ -100,6 +105,9 @@ const char *FormatPresetBlockSize(uint32 bytes);
 const char *FormatByteSize(uint64 bytes);
 void FormatSize(uint64 bytes, char *out);
 CONST_STRPTR GetString(uint32 id, CONST_STRPTR default_str);
+void ShowMessage(const char *title, const char *body, const char *gadgets);
+void SetGadgetState(uint16 gid, BOOL disabled);
+BOOL ShowConfirm(const char *title, const char *body, const char *gadgets);
 
 /* [gui_system.c] - OS and System Info */
 void RefreshDriveList(void);
@@ -108,6 +116,7 @@ void CleanupSystemResources(void);
 
 /* [gui_history.c] - CSV History Management */
 void RefreshHistory(void);
+BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev);
 
 /* [gui_prefs.c] - Preferences Management */
 void LoadPrefs(void);
@@ -130,6 +139,13 @@ void LaunchBenchmarkJob(void);
 
 /* [gui_report.c] - Global Reports */
 void ShowGlobalReport(void);
+
+/* [gui_viz.c] - Visualizations */
+void UpdateVisualization(void);
+
+/* [gui_bulk.c] - Bulk Testing */
+void RefreshBulkList(void);
+void LaunchBulkJobs(void);
 
 /* [gui_details_window.c] - Details Window management */
 void ShowBenchmarkDetails(Object *list_obj);

@@ -1,19 +1,24 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (C) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "gui_internal.h"
@@ -56,6 +61,7 @@ int StartGUI(void)
     IExec->NewList(&ui.drive_list);
     IExec->NewList(&ui.test_labels);
     IExec->NewList(&ui.block_list);
+    IExec->NewList(&ui.bulk_labels);
 
     /* Initialize nodes for choosers */
     const char *blocks[] = {"4K", "16K", "32K", "64K", "128K", "256K", "1M"};
@@ -70,8 +76,11 @@ int StartGUI(void)
         IChooser->AllocChooserNode(CNA_Text, GetString(11, "Sprinter (10MB)"), TAG_DONE),
         IChooser->AllocChooserNode(CNA_Text, GetString(12, "HeavyLifter (100MB)"), TAG_DONE),
         IChooser->AllocChooserNode(CNA_Text, GetString(13, "Legacy (4MB)"), TAG_DONE),
-        IChooser->AllocChooserNode(CNA_Text, GetString(14, "DailyGrind (Random 4K-64K)"), TAG_DONE)};
-    for (int i = 0; i < 4; i++) {
+        IChooser->AllocChooserNode(CNA_Text, GetString(14, "DailyGrind (Random 4K-64K)"), TAG_DONE),
+        IChooser->AllocChooserNode(CNA_Text, GetString(17, "Sequential (Professional)"), TAG_DONE),
+        IChooser->AllocChooserNode(CNA_Text, GetString(18, "Random 4K (Professional)"), TAG_DONE),
+        IChooser->AllocChooserNode(CNA_Text, GetString(19, "Profiler (Professional)"), TAG_DONE)};
+    for (int i = 0; i < sizeof(tnNodes) / sizeof(tnNodes[0]); i++) {
         if (tnNodes[i])
             IExec->AddTail(&ui.test_labels, tnNodes[i]);
     }
@@ -97,10 +106,17 @@ int StartGUI(void)
     IExec->NewList(&tab_list);
     struct Node *tab_bench = IClickTab->AllocClickTabNode(TNA_Text, GetString(1, "Benchmark"), TNA_Number, 0, TAG_DONE);
     struct Node *tab_history = IClickTab->AllocClickTabNode(TNA_Text, GetString(2, "History"), TNA_Number, 1, TAG_DONE);
+    struct Node *tab_viz =
+        IClickTab->AllocClickTabNode(TNA_Text, GetString(15, "Visualization"), TNA_Number, 2, TAG_DONE);
+    struct Node *tab_bulk = IClickTab->AllocClickTabNode(TNA_Text, GetString(16, "Bulk"), TNA_Number, 3, TAG_DONE);
     if (tab_bench)
         IExec->AddTail(&tab_list, tab_bench);
     if (tab_history)
         IExec->AddTail(&tab_list, tab_history);
+    if (tab_viz)
+        IExec->AddTail(&tab_list, tab_viz);
+    if (tab_bulk)
+        IExec->AddTail(&tab_list, tab_bulk);
 
     /* Register application */
     ui.app_id = ui.IApp->RegisterApplication(APP_TITLE, REGAPP_URLIdentifier, "diskbench.derfs.co.uk",

@@ -1,22 +1,29 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (C) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "engine_internal.h"
+#include "engine_workloads.h"
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +47,7 @@ BOOL InitEngine(void)
                 IBenchTimer =
                     (struct TimerIFace *)IExec->GetInterface((struct Library *)BenchTimerBase, "main", 1, NULL);
                 if (IBenchTimer) {
+                    InitWorkloadRegistry();
                     LOG_DEBUG("Engine initialized successfully");
                     return TRUE;
                 }
@@ -60,6 +68,7 @@ BOOL InitEngine(void)
 void CleanupEngine(void)
 {
     LOG_DEBUG("Cleaning up engine...");
+    CleanupWorkloadRegistry();
     if (IBenchTimer) {
         IExec->DropInterface((struct Interface *)IBenchTimer);
         IBenchTimer = NULL;
@@ -78,16 +87,43 @@ void CleanupEngine(void)
     }
 }
 
+void GetMicroTime(struct TimeVal *tv)
+{
+    if (IBenchTimer) {
+        IBenchTimer->GetSysTime(tv);
+    }
+}
+
+float GetDuration(struct TimeVal *start, struct TimeVal *end)
+{
+    double s = (double)start->Seconds + (double)start->Microseconds / 1000000.0;
+    double e = (double)end->Seconds + (double)end->Microseconds / 1000000.0;
+    return (float)(e - s);
+}
+
+static void AddSample(BenchResult *res, float time, float value)
+{
+    if (res->sample_count < MAX_SAMPLES) {
+        res->samples[res->sample_count].time_offset = time;
+        res->samples[res->sample_count].value = value;
+        res->sample_count++;
+    }
+}
+
 BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, uint32 block_size, BOOL use_trimmed_mean,
-                  BenchResult *out_result)
+                  BOOL flush_cache, BenchResult *out_result)
 {
     if (passes == 0)
         passes = 1;
-    if (passes > 20)
-        passes = 20;
+    if (passes > MAX_PASSES)
+        passes = MAX_PASSES;
 
-    LOG_DEBUG("RunBenchmark: Type=%d, Passes=%u, BS=%u, Trimmed=%d", type, (unsigned int)passes,
-              (unsigned int)block_size, (int)use_trimmed_mean);
+    LOG_DEBUG("RunBenchmark: Type=%d, Passes=%u, BS=%u, Trimmed=%d, Flush=%d", type, (unsigned int)passes,
+              (unsigned int)block_size, (int)use_trimmed_mean, (int)flush_cache);
+
+    if (flush_cache) {
+        FlushDiskCache(target_path);
+    }
 
     float *results = IExec->AllocVecTags(sizeof(float) * passes, AVT_Type, MEMF_SHARED, TAG_DONE);
     if (!results)
@@ -125,18 +161,47 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     float total_duration = 0;
     uint64 total_bytes = 0;
 
+    const BenchWorkload *workload = GetWorkloadByType(type);
+    if (!workload) {
+        LOG_DEBUG("FAILED to find workload for type %d", type);
+        IExec->FreeVec(results);
+        return FALSE;
+    }
+
+    void *workload_data = NULL;
+    if (!workload->Setup(target_path, block_size, &workload_data)) {
+        LOG_DEBUG("FAILED to setup workload %s", workload->name);
+        IExec->FreeVec(results);
+        return FALSE;
+    }
+
     for (uint32 i = 0; i < passes; i++) {
-        BenchResult single_res;
-        memset(&single_res, 0, sizeof(BenchResult));
-        if (RunSingleBenchmark(type, target_path, block_size, &single_res)) {
-            results[valid_passes] = single_res.mb_per_sec;
-            LOG_DEBUG("[Debug] Pass %u: %.2f MB/s", (unsigned int)valid_passes + 1, results[valid_passes]);
-            valid_passes++;
-            sum_iops += single_res.iops;
-            total_duration += single_res.duration_secs;
-            total_bytes += single_res.total_bytes;
+        uint32 pass_bytes = 0, pass_ops = 0;
+        struct TimeVal start_tv, end_tv;
+
+        GetMicroTime(&start_tv);
+        BOOL success = workload->Run(workload_data, &pass_bytes, &pass_ops);
+        GetMicroTime(&end_tv);
+
+        if (success) {
+            float duration = GetDuration(&start_tv, &end_tv);
+            if (duration > 0) {
+                results[valid_passes] = ((float)pass_bytes / (1024.0f * 1024.0f)) / duration;
+                LOG_DEBUG("[Debug] Pass %u: %.2f MB/s", (unsigned int)valid_passes + 1, results[valid_passes]);
+                sum_iops += pass_ops;
+                valid_passes++;
+                total_duration += duration;
+                total_bytes += pass_bytes;
+
+                /* Add a sample point for this pass */
+                float val = (out_result->type == TEST_PROFILER) ? (float)pass_ops / duration
+                                                                : ((float)pass_bytes / (1024.0f * 1024.0f)) / duration;
+                AddSample(out_result, total_duration, val);
+            }
         }
     }
+
+    workload->Cleanup(workload_data);
 
     if (valid_passes == 0) {
         IExec->FreeVec(results);
@@ -166,7 +231,7 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
 
         float filtered_sum = 0;
         uint32 filtered_count = 0;
-        out_result->min_mbps = 999999.0f;
+        out_result->min_mbps = FLT_MAX;
         out_result->max_mbps = 0.0f;
 
         for (uint32 i = 0; i < valid_passes; i++) {

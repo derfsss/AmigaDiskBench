@@ -1,23 +1,29 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (C) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "gui_details_window.h"
 #include "debug.h"
+#include "gui_internal.h"
 #include <classes/window.h>
 #include <gadgets/scroller.h>
 #include <gadgets/texteditor.h>
@@ -51,9 +57,7 @@ void ShowBenchmarkDetails(Object *list_obj)
         /* Fallback for nodes that might still have the old string UserData or are NULL */
         char *extra_info = NULL;
         IListBrowser->GetListBrowserNodeAttrs(sel, LBNA_UserData, &extra_info, TAG_DONE);
-        struct EasyStruct es = {sizeof(struct EasyStruct), 0, "Benchmark Details",
-                                extra_info ? extra_info : "No record data available.", "Close"};
-        IIntuition->EasyRequest(ui.window, &es, NULL);
+        ShowMessage("Benchmark Details", extra_info ? extra_info : "No record data available.", "Close");
         return;
     }
 
@@ -94,7 +98,13 @@ void OpenDetailsWindow(BenchResult *res)
              " Hardware:\n"
              "  Device:     %s (Unit %u)\n"
              "  Vendor:     %s\n"
-             "  Product:    %s\n\n"
+             "  Product:    %s\n"
+             "  Firmware:   %s\n"
+             "  Serial:     %s\n\n"
+             " Historical Trend:\n"
+             "  Previous:   %s\n"
+             "  Prev Speed: %.2f MB/s\n"
+             "  Difference: %+.1f%% %s\n\n"
              " Application:\n"
              "  Version:    %s\n",
              res->timestamp,
@@ -102,12 +112,20 @@ void OpenDetailsWindow(BenchResult *res)
              : (res->type == TEST_HEAVY_LIFTER) ? "HeavyLifter"
              : (res->type == TEST_LEGACY)       ? "Legacy"
              : (res->type == TEST_DAILY_GRIND)  ? "DailyGrind"
+             : (res->type == TEST_SEQUENTIAL)   ? "Sequential"
+             : (res->type == TEST_RANDOM_4K)    ? "Random4K"
+             : (res->type == TEST_PROFILER)     ? "FullProfiler"
                                                 : "Unknown",
              res->volume_name, res->result_id, res->fs_type, (unsigned int)res->passes,
              res->use_trimmed_mean ? "Yes" : "No", FormatPresetBlockSize(res->block_size), res->mb_per_sec,
              res->min_mbps, res->max_mbps, (unsigned int)res->iops, res->total_duration,
              (double)res->cumulative_bytes / 1048576.0, res->max_mbps - res->min_mbps, res->device_name,
-             (unsigned int)res->device_unit, res->vendor, res->product, res->app_version);
+             (unsigned int)res->device_unit, res->vendor, res->product, res->firmware_rev, res->serial_number,
+             (res->prev_mbps > 0) ? res->prev_timestamp : "None found", res->prev_mbps, res->diff_per,
+             (res->diff_per > 0)   ? "(FASTER)"
+             : (res->diff_per < 0) ? "(SLOWER)"
+                                   : "(SAME)",
+             res->app_version);
 
     /* Fixed labels and shortcut display:
        - Titlebar (Window Menu): Use clean "Copy" + MA_Key. Icon is auto-added.

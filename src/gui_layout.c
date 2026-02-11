@@ -1,19 +1,24 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (C) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "gui_internal.h"
@@ -30,8 +35,15 @@ static struct ColumnInfo bench_cols[] = {{100, "Date", CIF_FIXED | CIF_DRAGGABLE
                                          {80, "Device", CIF_FIXED | CIF_DRAGGABLE},
                                          {40, "Unit", CIF_FIXED | CIF_DRAGGABLE},
                                          {120, "App Version", CIF_FIXED | CIF_DRAGGABLE},
+                                         {80, "vs Prev (%)", CIF_FIXED | CIF_DRAGGABLE},
                                          {1, "", CIF_FIXED},
                                          {-1, NULL, 0}};
+
+static struct ColumnInfo bulk_cols[] = {{20, "", CIF_FIXED}, /* Checkbox */
+                                        {150, "Volume", CIF_FIXED | CIF_DRAGGABLE},
+                                        {100, "FileSystem", CIF_FIXED | CIF_DRAGGABLE},
+                                        {1, "", CIF_FIXED},
+                                        {-1, NULL, 0}};
 
 Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
 {
@@ -82,25 +94,55 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
            GID_REFRESH_HISTORY, GA_Text, GetString(9, "Refresh History"), End, LAYOUT_AddChild, ButtonObject, GA_ID,
            GID_VIEW_REPORT, GA_Text, GetString(10, "Global Report"), End, End, CHILD_WeightedHeight, 0, End;
 
+    /* Page 2 (Visualization) */
+    Object *page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_Label,
+           "Top Results (MB/s)", LAYOUT_BevelStyle, BVS_GROUP, LAYOUT_AddChild,
+           (ui.vis_labels[0] = LabelObject, LABEL_Text, " 1. N/A", End), LAYOUT_AddChild,
+           (ui.vis_bars[0] = FuelGaugeObject, GA_ID, GID_VIS_BAR_1, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
+            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
+           LAYOUT_AddChild, (ui.vis_labels[1] = LabelObject, LABEL_Text, " 2. N/A", End), LAYOUT_AddChild,
+           (ui.vis_bars[1] = FuelGaugeObject, GA_ID, GID_VIS_BAR_2, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
+            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
+           LAYOUT_AddChild, (ui.vis_labels[2] = LabelObject, LABEL_Text, " 3. N/A", End), LAYOUT_AddChild,
+           (ui.vis_bars[2] = FuelGaugeObject, GA_ID, GID_VIS_BAR_3, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
+            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
+           LAYOUT_AddChild, (ui.vis_labels[3] = LabelObject, LABEL_Text, " 4. N/A", End), LAYOUT_AddChild,
+           (ui.vis_bars[3] = FuelGaugeObject, GA_ID, GID_VIS_BAR_4, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
+            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
+           LAYOUT_AddChild, (ui.vis_labels[4] = LabelObject, LABEL_Text, " 5. N/A", End), LAYOUT_AddChild,
+           (ui.vis_bars[4] = FuelGaugeObject, GA_ID, GID_VIS_BAR_5, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
+            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
+           End, LAYOUT_AddChild, VLayoutObject, End, End;
+
+    /* Page 3 (Bulk Testing) */
+    Object *page3 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild,
+           (ui.bulk_list = ListBrowserObject, GA_ID, GID_BULK_LIST, GA_RelVerify, TRUE, LISTBROWSER_ColumnInfo,
+            (uint32)bulk_cols, LISTBROWSER_ColumnTitles, TRUE, LISTBROWSER_Labels, (uint32)&ui.bulk_labels,
+            LISTBROWSER_AutoFit, TRUE, LISTBROWSER_HorizontalProp, TRUE, End),
+           CHILD_WeightedHeight, 100, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, ButtonObject, GA_ID,
+           GID_BULK_RUN, GA_Text, "Run Bulk Benchmark on Selected", End, End, CHILD_WeightedHeight, 0, End;
+
     static struct NewMenu menu_data[] = {
         {NM_TITLE, (STRPTR) "Project", NULL, 0, 0, NULL},
         {NM_ITEM, (STRPTR) "About...", (STRPTR) "A", 0, 0, (APTR)MID_ABOUT},
         {NM_ITEM, (STRPTR) "Preferences...", (STRPTR) "P", 0, 0, (APTR)MID_PREFS},
         {NM_ITEM, (STRPTR) "Delete Preferences...", NULL, 0, 0, (APTR)MID_DELETE_PREFS},
+        {NM_ITEM, (STRPTR) "Export to Text...", (STRPTR) "E", 0, 0, (APTR)MID_EXPORT_TEXT},
         {NM_ITEM, (STRPTR)NM_BARLABEL, NULL, 0, 0, NULL},
         {NM_ITEM, (STRPTR) "Quit", (STRPTR) "Q", 0, 0, (APTR)MID_QUIT},
         {NM_END, NULL, NULL, 0, 0, NULL}};
 
     Object *main_content = NULL;
-    if (ui.PageAvailable && page0 && page1 && tab_list) {
-        ui.page_obj =
-            IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page0, PAGE_Add, (uint32)page1, TAG_DONE);
+    if (ui.PageAvailable && page0 && page1 && page2 && page3 && tab_list) {
+        ui.page_obj = IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page0, PAGE_Add, (uint32)page1,
+                                            PAGE_Add, (uint32)page2, PAGE_Add, (uint32)page3, TAG_DONE);
         ui.tabs = ClickTabObject, GA_ID, GID_TABS, GA_RelVerify, TRUE, CLICKTAB_Labels, (uint32)tab_list,
         CLICKTAB_PageGroup, (uint32)ui.page_obj, End;
         main_content = ui.tabs;
     } else {
         LOG_DEBUG("CreateMainLayout: Using vertical fallback layout (components missing)");
-        main_content = VLayoutObject, LAYOUT_AddChild, page0, LAYOUT_AddChild, page1, End;
+        main_content = VLayoutObject, LAYOUT_AddChild, page0, LAYOUT_AddChild, page1, LAYOUT_AddChild, page2,
+        LAYOUT_AddChild, page3, End;
         ui.tabs = NULL;
         ui.page_obj = NULL;
     }

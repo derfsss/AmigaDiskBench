@@ -21,48 +21,33 @@
  * SOFTWARE.
  */
 
-#include "engine_internal.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef WORKLOAD_INTERFACE_H
+#define WORKLOAD_INTERFACE_H
+
+#include "engine.h"
+#include <exec/types.h>
 
 /*
- * Seed for "The Daily Grind" to ensure deterministic random behavior
+ * Workload Lifecycle Hooks
+ *
+ * Setup: Called before measurement starts. 'data' is a pointer to private workload data.
+ * Run: The timed portion of the benchmark.
+ * Cleanup: Called after measurement ends (even on failure).
  */
-#define FIXED_SEED 1985
 
-uint32 WriteDummyFile(const char *path, uint32 size, uint32 chunk_size)
+typedef struct
 {
-    BPTR file = IDOS->Open(path, MODE_NEWFILE);
-    if (!file)
-        return 0;
+    BenchTestType type;
+    const char *name;
+    const char *description;
 
-    uint8 *buffer = IExec->AllocVecTags(chunk_size, AVT_Type, MEMF_SHARED, TAG_DONE);
-    if (!buffer) {
-        IDOS->Close(file);
-        return 0;
-    }
+    /* Lifecycle hooks */
+    BOOL (*Setup)(const char *path, uint32 block_size, void **data);
+    BOOL (*Run)(void *data, uint32 *bytes_processed, uint32 *op_count);
+    void (*Cleanup)(void *data);
 
-    /* Fill with non-zero data to avoid sparse file optimizations if any */
-    memset(buffer, 0xAA, chunk_size);
+    /* Metadata hooks */
+    void (*GetDefaultSettings)(uint32 *block_size, uint32 *passes);
+} BenchWorkload;
 
-    uint32 written = 0;
-    while (written < size) {
-        uint32 to_write = size - written;
-        if (to_write > chunk_size)
-            to_write = chunk_size;
-
-        if (IDOS->Write(file, buffer, to_write) != (int32)to_write)
-            break;
-        written += to_write;
-    }
-
-    IExec->FreeVec(buffer);
-    IDOS->Close(file);
-    return written;
-}
-
-void CleanUpWorkloadArtifacts(const char *target_path)
-{
-    /* Helper to clean up any left-over tmp files if needed */
-}
+#endif /* WORKLOAD_INTERFACE_H */

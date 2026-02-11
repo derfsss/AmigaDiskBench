@@ -21,48 +21,26 @@
  * SOFTWARE.
  */
 
-#include "engine_internal.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef ENGINE_WORKLOADS_H
+#define ENGINE_WORKLOADS_H
+
+#include "workload_interface.h"
 
 /*
- * Seed for "The Daily Grind" to ensure deterministic random behavior
+ * Initialize the workload registry.
+ * Registers all supported benchmarks.
  */
-#define FIXED_SEED 1985
+void InitWorkloadRegistry(void);
 
-uint32 WriteDummyFile(const char *path, uint32 size, uint32 chunk_size)
-{
-    BPTR file = IDOS->Open(path, MODE_NEWFILE);
-    if (!file)
-        return 0;
+/*
+ * Cleanup the workload registry.
+ */
+void CleanupWorkloadRegistry(void);
 
-    uint8 *buffer = IExec->AllocVecTags(chunk_size, AVT_Type, MEMF_SHARED, TAG_DONE);
-    if (!buffer) {
-        IDOS->Close(file);
-        return 0;
-    }
+/*
+ * Find a workload by its test type.
+ * Returns NULL if not found.
+ */
+const BenchWorkload *GetWorkloadByType(BenchTestType type);
 
-    /* Fill with non-zero data to avoid sparse file optimizations if any */
-    memset(buffer, 0xAA, chunk_size);
-
-    uint32 written = 0;
-    while (written < size) {
-        uint32 to_write = size - written;
-        if (to_write > chunk_size)
-            to_write = chunk_size;
-
-        if (IDOS->Write(file, buffer, to_write) != (int32)to_write)
-            break;
-        written += to_write;
-    }
-
-    IExec->FreeVec(buffer);
-    IDOS->Close(file);
-    return written;
-}
-
-void CleanUpWorkloadArtifacts(const char *target_path)
-{
-    /* Helper to clean up any left-over tmp files if needed */
-}
+#endif /* ENGINE_WORKLOADS_H */

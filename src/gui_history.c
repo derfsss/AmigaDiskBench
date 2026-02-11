@@ -1,19 +1,24 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (C) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "gui_internal.h"
@@ -131,19 +136,25 @@ void RefreshHistory(void)
                     res->type = TEST_LEGACY;
                 else if (strstr(type, "Daily"))
                     res->type = TEST_DAILY_GRIND;
+                else if (strstr(type, "Sequential"))
+                    res->type = TEST_SEQUENTIAL;
+                else if (strstr(type, "Random4K"))
+                    res->type = TEST_RANDOM_4K;
+                else if (strstr(type, "Profiler"))
+                    res->type = TEST_PROFILER;
             }
 
             struct Node *hnode = IListBrowser->AllocListBrowserNode(
-                11, LBNA_Column, COL_DATE, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)timestamp, LBNA_Column, COL_VOL,
+                12, LBNA_Column, COL_DATE, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)timestamp, LBNA_Column, COL_VOL,
                 LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)disk, LBNA_Column, COL_TEST, LBNCA_CopyText, TRUE, LBNCA_Text,
                 (uint32)type, LBNA_Column, COL_BS, LBNCA_CopyText, TRUE, LBNCA_Text,
                 (uint32)FormatPresetBlockSize(strtoul(bs_str, NULL, 10)), LBNA_Column, COL_PASSES, LBNCA_CopyText, TRUE,
                 LBNCA_Text, (uint32)passes, LBNA_Column, COL_MBPS, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)mbs_str,
                 LBNA_Column, COL_IOPS, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)iops_str, LBNA_Column, COL_DEVICE,
                 LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)device, LBNA_Column, COL_UNIT, LBNCA_CopyText, TRUE,
-                LBNCA_Text, (uint32)unit_str, LBNA_Column, COL_VER, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)ver,
-                LBNA_Column, COL_DUMMY, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32) "", LBNA_UserData, (uint32)res,
-                TAG_DONE);
+                LBNA_Column, COL_VER, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)ver, LBNA_Column, COL_DIFF,
+                LBNCA_CopyText, TRUE, LBNCA_Text, (uint32) "", LBNA_Column, COL_DUMMY, LBNCA_CopyText, TRUE, LBNCA_Text,
+                (uint32) "", LBNA_UserData, (uint32)res, TAG_DONE);
             if (hnode) {
                 /* Add HEAD to make newest appear at the top */
                 IExec->AddHead(&ui.history_labels, hnode);
@@ -187,7 +198,30 @@ void RefreshHistory(void)
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels,
                                    &ui.history_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
         IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
+        UpdateVisualization();
     } else {
         LOG_DEBUG("RefreshHistory: Skiping UI update, win=%p, list=%p", ui.window, ui.history_list);
     }
+}
+
+BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev)
+{
+    struct Node *node = IExec->GetHead(&ui.history_labels);
+    while (node) {
+        BenchResult *res = NULL;
+        IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &res, TAG_DONE);
+
+        if (res && res != current) {
+            /* Match criteria: volume name, test type, and block size */
+            if (strcmp(res->volume_name, current->volume_name) == 0 && res->type == current->type &&
+                res->block_size == current->block_size) {
+                if (out_prev) {
+                    memcpy(out_prev, res, sizeof(BenchResult));
+                }
+                return TRUE;
+            }
+        }
+        node = IExec->GetSucc(node);
+    }
+    return FALSE;
 }
