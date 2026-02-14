@@ -32,9 +32,12 @@
 #include <proto/exec.h>
 #include <proto/timer.h>
 
+/* Standard C library headers used by all engine modules */
+#include <stdio.h>
+#include <string.h>
+
 #include "debug.h"
 #include "engine.h"
-#include "version.h"
 
 /* Global library bases and interfaces shared within engine */
 extern struct TimerIFace *IBenchTimer;

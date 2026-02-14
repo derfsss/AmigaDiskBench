@@ -21,10 +21,8 @@
  * SOFTWARE.
  */
 
-#include "engine.h"
 #include "gui_internal.h"
 #include <stdint.h>
-#include <string.h>
 
 void BenchmarkWorker(void)
 {
@@ -58,7 +56,8 @@ void BenchmarkWorker(void)
                         LOG_DEBUG("Worker: Type=%d, Passes=%u, BS=%u", job->type, (unsigned int)job->num_passes,
                                   (unsigned int)job->block_size);
                         status->success = RunBenchmark(job->type, job->target_path, job->num_passes, job->block_size,
-                                                       job->use_trimmed_mean, job->flush_cache, &status->result);
+                                                       job->use_trimmed_mean, job->flush_cache, &status->result,
+                                                       &status->sample_data);
                         status->finished = TRUE;
                         if (status->success) {
                             SaveResultToCSV(ui.csv_path, &status->result);
@@ -97,7 +96,7 @@ void LaunchBenchmarkJob(void)
         struct DriveNodeData *ddata = NULL;
         IChooser->GetChooserNodeAttrs(node, CNA_UserData, &ddata, TAG_DONE);
         if (ddata && ddata->bare_name) {
-            strncpy(path, ddata->bare_name, sizeof(path) - 1);
+            snprintf(path, sizeof(path), "%s", ddata->bare_name);
             path[sizeof(path) - 1] = '\0';
         } else {
             strcpy(path, "RAM:");
@@ -129,7 +128,7 @@ void LaunchBenchmarkJob(void)
     if (job) {
         job->msg_type = MSG_TYPE_JOB;
         job->type = (BenchTestType)test_type_idx;
-        strncpy(job->target_path, path, sizeof(job->target_path) - 1);
+        snprintf(job->target_path, sizeof(job->target_path), "%s", path);
         job->target_path[sizeof(job->target_path) - 1] = '\0';
         job->num_passes = passes;
         job->block_size = block_val;

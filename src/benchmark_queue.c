@@ -5,8 +5,6 @@
 
 #include "benchmark_queue.h"
 #include "gui_internal.h"
-#include <proto/exec.h>
-#include <string.h>
 
 /**
  * Node structure for the queue

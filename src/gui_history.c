@@ -22,9 +22,7 @@
  */
 
 #include "gui_internal.h"
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 void RefreshHistory(void)
 {
@@ -132,20 +130,7 @@ void RefreshHistory(void)
                 snprintf(res->firmware_rev, sizeof(res->firmware_rev), "%s", (fields >= 20) ? firmware : "N/A");
                 snprintf(res->serial_number, sizeof(res->serial_number), "%s", (fields >= 21) ? serial : "N/A");
 
-                if (strstr(type, "Sprinter"))
-                    res->type = TEST_SPRINTER;
-                else if (strstr(type, "Heavy"))
-                    res->type = TEST_HEAVY_LIFTER;
-                else if (strstr(type, "Legacy"))
-                    res->type = TEST_LEGACY;
-                else if (strstr(type, "Daily"))
-                    res->type = TEST_DAILY_GRIND;
-                else if (strstr(type, "Sequential"))
-                    res->type = TEST_SEQUENTIAL;
-                else if (strstr(type, "Random"))
-                    res->type = TEST_RANDOM_4K;
-                else if (strstr(type, "Profiler"))
-                    res->type = TEST_PROFILER;
+                res->type = StringToTestType(type);
 
                 /* Calculate Comparison with previous results in the history list */
                 BenchResult prev;
@@ -198,20 +183,6 @@ void RefreshHistory(void)
             LOG_DEBUG("RefreshHistory: Created new CSV at '%s'", ui.csv_path);
         } else {
             LOG_DEBUG("RefreshHistory: Could not open/create CSV at '%s'", ui.csv_path);
-        }
-    }
-    if (count == 0) {
-        LOG_DEBUG("RefreshHistory: No records found, creating/checking '%s'", ui.csv_path);
-        BPTR file = IDOS->FOpen(ui.csv_path, MODE_OLDFILE, 0);
-        if (!file) {
-            LOG_DEBUG("RefreshHistory: Creating new CSV file at '%s'", ui.csv_path);
-            file = IDOS->FOpen(ui.csv_path, MODE_NEWFILE, 0);
-            if (file) {
-                IDOS->FPuts(file, "DateTime,Type,Volume,FS,MB/s,IOPS,Hardware,Unit,AppVersion,Passes,BlockSize\n");
-                IDOS->FClose(file);
-            }
-        } else {
-            IDOS->FClose(file);
         }
     }
     /* Reattach list and refresh UI */

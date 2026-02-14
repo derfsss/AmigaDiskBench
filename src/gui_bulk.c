@@ -22,13 +22,6 @@
  */
 
 #include "gui_internal.h"
-#include <gadgets/checkbox.h>
-#include <interfaces/intuition.h>
-#include <interfaces/listbrowser.h>
-#include <proto/checkbox.h>
-#include <stdint.h>
-#include <string.h>
-
 
 /**
  * RefreshBulkList
@@ -164,7 +157,7 @@ void LaunchBulkJobs(void)
                         if (job) {
                             job->msg_type = MSG_TYPE_JOB;
                             job->type = (BenchTestType)tests[t];
-                            strncpy(job->target_path, ddata->bare_name, sizeof(job->target_path) - 1);
+                            snprintf(job->target_path, sizeof(job->target_path), "%s", ddata->bare_name);
                             job->target_path[sizeof(job->target_path) - 1] = '\0';
                             job->num_passes = ui.current_passes;
                             job->block_size = blocks[b];

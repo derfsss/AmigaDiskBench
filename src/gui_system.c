@@ -22,8 +22,6 @@
  */
 
 #include "gui_internal.h"
-#include <stdio.h>
-#include <string.h>
 
 void RefreshDriveList(void)
 {
@@ -76,8 +74,8 @@ void RefreshDriveList(void)
                         uint64 total = (uint64)info->id_NumBlocks * info->id_BytesPerBlock;
                         uint64 free = (uint64)(info->id_NumBlocks - info->id_NumBlocksUsed) * info->id_BytesPerBlock;
                         char sz_total[32], sz_free[32];
-                        FormatSize(total, sz_total);
-                        FormatSize(free, sz_free);
+                        FormatSize(total, sz_total, sizeof(sz_total));
+                        FormatSize(free, sz_free, sizeof(sz_free));
                         snprintf(detailed_name, sizeof(detailed_name), "%s [%s]", bare_name, fs_info);
                         /* Store names in DriveNodeData for the chooser node */
                         DriveNodeData *ddata = IExec->AllocVecTags(sizeof(DriveNodeData), AVT_Type, MEMF_SHARED,

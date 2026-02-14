@@ -24,17 +24,21 @@
 #ifndef GUI_H
 #define GUI_H
 
-#include <intuition/menuclass.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <proto/intuition.h>
-
-/* Standard ReAction consolidated headers and macros */
-#define ALL_REACTION_CLASSES
-#define ALL_REACTION_MACROS
-#include <reaction/reaction.h>
+/*
+ * Lightweight public API header for the GUI module.
+ * Only types, struct definitions, and function prototypes.
+ * Heavy OS/ReAction includes live in gui_internal.h.
+ */
 
 #include "engine.h"
+#include <dos/dos.h>
+#include <exec/ports.h>
+#include <exec/types.h>
+#include <intuition/classes.h>   /* Class typedef */
+#include <intuition/classusr.h>  /* Object typedef */
+#include <intuition/intuition.h> /* struct Window */
+#include <intuition/menuclass.h>
+#include <libraries/application.h>
 
 #define MINVERSION 53
 
@@ -188,6 +192,7 @@ typedef struct
     BOOL finished;
     BOOL success;
     BenchResult result;
+    BenchSampleData sample_data; /**< Time-series data for graphing */
     char status_text[128];
 } BenchStatus;
 

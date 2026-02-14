@@ -23,10 +23,6 @@
 
 #include "engine_internal.h"
 #include "workload_interface.h"
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <stdio.h>
-#include <string.h>
 
 struct HeavyData
 {
@@ -40,7 +36,7 @@ static BOOL Setup_Heavy(const char *path, uint32 block_size, void **data)
     if (!hd)
         return FALSE;
 
-    strncpy(hd->path, path, sizeof(hd->path) - 1);
+    snprintf(hd->path, sizeof(hd->path), "%s", path);
     hd->block_size = block_size ? block_size : (128 * 1024);
     *data = hd;
     return TRUE;

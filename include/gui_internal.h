@@ -26,11 +26,6 @@
 
 /* Standardized ReAction and AmigaOS 4 header inclusion for modularized GUI */
 
-#include <dos/dos.h>
-#include <exec/ports.h>
-#include <exec/types.h>
-#include <libraries/application.h>
-
 /* ReAction configuration flags MUST come before reaction.h */
 #ifndef ALL_REACTION_CLASSES
 #define ALL_REACTION_CLASSES
@@ -76,9 +71,12 @@
 #include <gadgets/texteditor.h>
 #include <images/label.h>
 
+/* Standard C library headers used by all GUI modules */
+#include <stdio.h>
+#include <string.h>
+
 #include "debug.h"
 #include "gui.h"
-#include "version.h"
 
 /* Data structure for drive selection nodes */
 struct DriveNodeData
@@ -116,8 +114,9 @@ const char *FormatByteSize(uint64 bytes);
  * @brief Thread-safe formatted size helper.
  * @param bytes Size in bytes.
  * @param out Output buffer (must be at least 32 bytes).
+ * @param out_size Size of the output buffer in bytes.
  */
-void FormatSize(uint64 bytes, char *out);
+void FormatSize(uint64 bytes, char *out, uint32 out_size);
 /**
  * @brief Retrieve a localized string or fallback default.
  * @param id The string ID.

@@ -27,7 +27,6 @@
 
 #include "debug.h"
 #include "gui.h"
-#include "version.h"
 
 static const char *const __attribute__((used)) ver = VER_STRING;
 

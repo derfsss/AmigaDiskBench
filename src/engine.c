@@ -25,9 +25,7 @@
 #include "engine_warmup.h"
 #include "engine_workloads.h"
 #include <float.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 /* Global library bases and interfaces */
@@ -97,22 +95,22 @@ void GetMicroTime(struct TimeVal *tv)
 
 float GetDuration(struct TimeVal *start, struct TimeVal *end)
 {
-    double s = (double)start->Seconds + (double)start->Microseconds / 1000000.0;
-    double e = (double)end->Seconds + (double)end->Microseconds / 1000000.0;
-    return (float)(e - s);
+    struct TimeVal delta = *end;
+    IBenchTimer->SubTime(&delta, start);
+    return (float)delta.Seconds + (float)delta.Microseconds / 1000000.0f;
 }
 
-static void AddSample(BenchResult *res, float time, float value)
+static void AddSample(BenchSampleData *sd, float time, float value)
 {
-    if (res->sample_count < MAX_SAMPLES) {
-        res->samples[res->sample_count].time_offset = time;
-        res->samples[res->sample_count].value = value;
-        res->sample_count++;
+    if (sd && sd->sample_count < MAX_SAMPLES) {
+        sd->samples[sd->sample_count].time_offset = time;
+        sd->samples[sd->sample_count].value = value;
+        sd->sample_count++;
     }
 }
 
 BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, uint32 block_size, BOOL use_trimmed_mean,
-                  BOOL flush_cache, BenchResult *out_result)
+                  BOOL flush_cache, BenchResult *out_result, BenchSampleData *out_samples)
 {
     if (passes == 0)
         passes = 1;
@@ -142,7 +140,7 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     GetHardwareInfo(target_path, out_result);
 
     /* Populate volume name */
-    strncpy(out_result->volume_name, target_path, sizeof(out_result->volume_name) - 1);
+    snprintf(out_result->volume_name, sizeof(out_result->volume_name), "%s", target_path);
     char *colon = strchr(out_result->volume_name, ':');
     if (colon)
         *colon = '\0';
@@ -200,7 +198,7 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
                 /* Add a sample point for this pass */
                 float val = (out_result->type == TEST_PROFILER) ? (float)pass_ops / duration
                                                                 : ((float)pass_bytes / (1024.0f * 1024.0f)) / duration;
-                AddSample(out_result, total_duration, val);
+                AddSample(out_samples, total_duration, val);
             }
         }
     }

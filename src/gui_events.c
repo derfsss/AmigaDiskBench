@@ -22,10 +22,6 @@
  */
 
 #include "gui_internal.h"
-#include <interfaces/intuition.h>
-#include <interfaces/listbrowser.h>
-#include <stdio.h>
-#include <string.h>
 
 void UpdateBulkTabInfo(void)
 {
@@ -46,31 +42,7 @@ void UpdateBulkTabInfo(void)
     if (run_all_tests) {
         strcpy(test_name, "All Test Types");
     } else {
-        switch (ui.current_test_type) {
-        case TEST_SPRINTER:
-            strcpy(test_name, "Sprinter");
-            break;
-        case TEST_HEAVY_LIFTER:
-            strcpy(test_name, "HeavyLifter");
-            break;
-        case TEST_LEGACY:
-            strcpy(test_name, "Legacy");
-            break;
-        case TEST_DAILY_GRIND:
-            strcpy(test_name, "DailyGrind");
-            break;
-        case TEST_SEQUENTIAL:
-            strcpy(test_name, "Sequential");
-            break;
-        case TEST_RANDOM_4K:
-            strcpy(test_name, "Random 4K");
-            break;
-        case TEST_PROFILER:
-            strcpy(test_name, "Profiler");
-            break;
-        default:
-            strcpy(test_name, "Unknown");
-        }
+        snprintf(test_name, sizeof(test_name), "%s", TestTypeToDisplayName(ui.current_test_type));
     }
 
     const char *block_str;
@@ -119,31 +91,7 @@ void HandleWorkerReply(struct Message *m)
                     snprintf(ms, sizeof(ms), "%.2f", st->result.mb_per_sec);
                     snprintf(is, sizeof(is), "%u", (unsigned int)st->result.iops);
                     snprintf(ut, sizeof(ut), "%u", (unsigned int)st->result.device_unit);
-                    switch (st->result.type) {
-                    case TEST_SPRINTER:
-                        strcpy(tn, "Sprinter");
-                        break;
-                    case TEST_HEAVY_LIFTER:
-                        strcpy(tn, "HeavyLifter");
-                        break;
-                    case TEST_LEGACY:
-                        strcpy(tn, "Legacy");
-                        break;
-                    case TEST_DAILY_GRIND:
-                        strcpy(tn, "DailyGrind");
-                        break;
-                    case TEST_SEQUENTIAL:
-                        strcpy(tn, "Sequential");
-                        break;
-                    case TEST_RANDOM_4K:
-                        strcpy(tn, "Random4K");
-                        break;
-                    case TEST_PROFILER:
-                        strcpy(tn, "Profiler");
-                        break;
-                    default:
-                        strcpy(tn, "Unknown");
-                    }
+                    snprintf(tn, sizeof(tn), "%s", TestTypeToString(st->result.type));
                     /* Prepare BenchResult for UserData */
                     BenchResult *res = IExec->AllocVecTags(sizeof(BenchResult), AVT_Type, MEMF_SHARED,
                                                            AVT_ClearWithValue, 0, TAG_DONE);
@@ -155,7 +103,7 @@ void HandleWorkerReply(struct Message *m)
                         if (FindMatchingResult(res, &prev)) {
                             res->prev_mbps = prev.mb_per_sec;
                             res->prev_iops = prev.iops;
-                            strncpy(res->prev_timestamp, prev.timestamp, sizeof(res->prev_timestamp));
+                            snprintf(res->prev_timestamp, sizeof(res->prev_timestamp), "%s", prev.timestamp);
                             if (prev.mb_per_sec > 0) {
                                 res->diff_per = ((res->mb_per_sec - prev.mb_per_sec) / prev.mb_per_sec) * 100.0f;
                             }
@@ -251,22 +199,15 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             UpdateBulkTabInfo();
             break;
         case GID_BLOCK_SIZE: {
-            uint32 b_idx = 0;
-            IIntuition->GetAttr(CHOOSER_Selected, ui.block_chooser, &b_idx);
-            struct Node *bn = IExec->GetHead(&ui.block_list);
-            uint32 i = 0;
+            struct Node *bn = NULL;
+            IIntuition->GetAttr(CHOOSER_SelectedNode, ui.block_chooser, (uint32 *)&bn);
             ui.current_block_size = 4096; /* Safety fallback */
-            while (bn) {
-                if (i == b_idx) {
-                    uint32 bs_val = 0;
-                    IChooser->GetChooserNodeAttrs(bn, CNA_UserData, &bs_val, TAG_DONE);
-                    ui.current_block_size = bs_val;
-                    break;
-                }
-                bn = IExec->GetSucc(bn);
-                i++;
+            if (bn) {
+                uint32 bs_val = 0;
+                IChooser->GetChooserNodeAttrs(bn, CNA_UserData, &bs_val, TAG_DONE);
+                ui.current_block_size = bs_val;
             }
-            LOG_DEBUG("GUI: Block Size changed to %u (idx=%u)", ui.current_block_size, b_idx);
+            LOG_DEBUG("GUI: Block Size changed to %u", ui.current_block_size);
             UpdateBulkTabInfo();
             break;
         }
@@ -344,7 +285,7 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
                         if (req) {
                             if (ui.IAsl->AslRequestTags(req, ASLFR_Window, (uint32)ui.window, TAG_DONE)) {
                                 char path[512];
-                                strncpy(path, req->fr_Drawer, sizeof(path) - 1);
+                                snprintf(path, sizeof(path), "%s", req->fr_Drawer);
                                 path[sizeof(path) - 1] = '\0';
                                 IDOS->AddPart(path, req->fr_File, sizeof(path));
                                 ExportToAnsiText(path);

@@ -23,11 +23,7 @@
 
 #include "engine_internal.h"
 #include "workload_interface.h"
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define FIXED_SEED 1985
 
@@ -42,7 +38,7 @@ static BOOL Setup_Grind(const char *path, uint32 block_size, void **data)
     if (!gd)
         return FALSE;
 
-    strncpy(gd->path, path, sizeof(gd->path) - 1);
+    snprintf(gd->path, sizeof(gd->path), "%s", path);
     *data = gd;
     return TRUE;
 }

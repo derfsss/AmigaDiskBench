@@ -22,7 +22,6 @@
  */
 
 #include "gui_internal.h"
-#include <stdio.h>
 
 void ShowGlobalReport(void)
 {

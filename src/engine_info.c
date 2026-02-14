@@ -23,8 +23,6 @@
 
 #include "engine_internal.h"
 #include <devices/scsidisk.h>
-#include <stdio.h>
-#include <string.h>
 
 /* Helper to strip trailing spaces from SCSI strings */
 static void StripTrailingSpaces(char *str, uint32 len)
@@ -123,11 +121,11 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
                     LOG_DEBUG("SCSI VPD Serial: '%s'", result->serial_number);
                 } else {
                     LOG_DEBUG("SCSI VPD Serial: Length was 0");
-                    strncpy(result->serial_number, "N/A", sizeof(result->serial_number));
+                    snprintf(result->serial_number, sizeof(result->serial_number), "%s", "N/A");
                 }
             } else {
                 LOG_DEBUG("SCSI Inquiry VPD Failed: Err=%d, Status=%d", io_err, cmd.scsi_Status);
-                strncpy(result->serial_number, "N/A", sizeof(result->serial_number));
+                snprintf(result->serial_number, sizeof(result->serial_number), "%s", "N/A");
             }
 
             IExec->FreeVec(inq);
@@ -251,30 +249,31 @@ void GetFileSystemInfo(const char *path, char *out_name, uint32 name_size)
                 if (c1 >= ' ' && c2 >= ' ' && c3 >= ' ') {
                     snprintf(out_name, name_size, "%c%c%c/%u (%s)", c1, c2, c3, (unsigned int)v, hex);
                 } else {
-                    strncpy(out_name, hex, name_size);
+                    snprintf(out_name, name_size, "%s", hex);
                 }
             }
         } else {
-            strncpy(out_name, "Invalid Path", name_size);
+            snprintf(out_name, name_size, "%s", "Invalid Path");
         }
         IDOS->FreeDosObject(DOS_INFODATA, info);
     } else {
         LOG_DEBUG("FAILED to allocate DOS_INFODATA");
-        strncpy(out_name, "Out of Mem", name_size);
+        snprintf(out_name, name_size, "%s", "Out of Mem");
     }
     out_name[name_size - 1] = '\0';
     LOG_DEBUG("FS info for %s: %s (limit: %u)", path, out_name, (unsigned int)name_size);
 }
 
-/* Cache structure for hardware info to reduce SCSI_INQUIRY overhead */
+/* Cache structure for hardware info to reduce SCSI_INQUIRY overhead.
+ * Field sizes match BenchResult to avoid truncation during copy. */
 struct CachedHWInfo
 {
-    char device_name[32];
+    char device_name[64];
     uint32 device_unit;
     char vendor[32];
-    char product[32];
-    char serial_number[32];
-    char firmware_rev[8];
+    char product[64];
+    char serial_number[64];
+    char firmware_rev[32];
 };
 
 struct DeviceCacheNode
@@ -300,19 +299,19 @@ void ClearHardwareInfoCache(void)
 
 void GetHardwareInfo(const char *path, BenchResult *result)
 {
-    strncpy(result->app_version, APP_VERSION_STR, sizeof(result->app_version));
+    snprintf(result->app_version, sizeof(result->app_version), "%s", APP_VERSION_STR);
 
     /* 1. Check Cache */
     struct DeviceCacheNode *node = hardware_cache;
     while (node) {
         if (strcasecmp(node->path_key, path) == 0) {
             /* Hit! Copy cached data */
-            strncpy(result->device_name, node->info.device_name, sizeof(result->device_name));
+            snprintf(result->device_name, sizeof(result->device_name), "%s", node->info.device_name);
             result->device_unit = node->info.device_unit;
-            strncpy(result->vendor, node->info.vendor, sizeof(result->vendor));
-            strncpy(result->product, node->info.product, sizeof(result->product));
-            strncpy(result->serial_number, node->info.serial_number, sizeof(result->serial_number));
-            strncpy(result->firmware_rev, node->info.firmware_rev, sizeof(result->firmware_rev));
+            snprintf(result->vendor, sizeof(result->vendor), "%s", node->info.vendor);
+            snprintf(result->product, sizeof(result->product), "%s", node->info.product);
+            snprintf(result->serial_number, sizeof(result->serial_number), "%s", node->info.serial_number);
+            snprintf(result->firmware_rev, sizeof(result->firmware_rev), "%s", node->info.firmware_rev);
             /* Logging reduced to avoid spam, or keep for debug validation?
                Let's log a small "hit" message for verification */
             LOG_DEBUG("GetHardwareInfo: Cache Hit for '%s'", path);
@@ -325,15 +324,15 @@ void GetHardwareInfo(const char *path, BenchResult *result)
     LOG_DEBUG("GetHardwareInfo: Cache Miss for '%s' - Querying...", path);
 
     /* Initialize with defaults */
-    strncpy(result->device_name, "Unknown", sizeof(result->device_name));
+    snprintf(result->device_name, sizeof(result->device_name), "%s", "Unknown");
     result->device_unit = 0;
-    strncpy(result->vendor, "Standard", sizeof(result->vendor));
-    strncpy(result->product, "Storage Device", sizeof(result->product));
+    snprintf(result->vendor, sizeof(result->vendor), "%s", "Standard");
+    snprintf(result->product, sizeof(result->product), "%s", "Storage Device");
 
     /* Resolve logical label to canonical device ID */
     BPTR lock = IDOS->Lock(path, SHARED_LOCK);
     char canonical[64];
-    strncpy(canonical, path, sizeof(canonical) - 1);
+    snprintf(canonical, sizeof(canonical), "%s", path);
 
     if (lock) {
         if (IDOS->DevNameFromLock(lock, canonical, sizeof(canonical), DN_DEVICEONLY)) {
@@ -345,10 +344,10 @@ void GetHardwareInfo(const char *path, BenchResult *result)
     struct FileSystemData *fsd = IDOS->GetDiskFileSystemData(canonical);
     if (fsd) {
         if (fsd->fsd_DeviceName) {
-            strncpy(result->device_name, fsd->fsd_DeviceName, sizeof(result->device_name) - 1);
+            snprintf(result->device_name, sizeof(result->device_name), "%s", fsd->fsd_DeviceName);
             result->device_name[sizeof(result->device_name) - 1] = '\0';
         } else {
-            strncpy(result->device_name, "Generic Disk", sizeof(result->device_name));
+            snprintf(result->device_name, sizeof(result->device_name), "%s", "Generic Disk");
         }
         result->device_unit = fsd->fsd_DeviceUnit;
         IDOS->FreeDiskFileSystemData(fsd);
@@ -356,7 +355,7 @@ void GetHardwareInfo(const char *path, BenchResult *result)
         /* Catch-all fallback for special/virtual volumes.
            Try to get the unit number via legacy DosList lookup. */
         char search_name[64];
-        strncpy(search_name, canonical, sizeof(search_name) - 1);
+        snprintf(search_name, sizeof(search_name), "%s", canonical);
         search_name[sizeof(search_name) - 1] = '\0';
         char *c = strchr(search_name, ':');
         if (c)
@@ -393,14 +392,14 @@ void GetHardwareInfo(const char *path, BenchResult *result)
         }
 
         if (strcasecmp(canonical, "RAM:") == 0 || strcasecmp(canonical, "RAM Disk:") == 0) {
-            strncpy(result->device_name, "ramdrive.device", sizeof(result->device_name));
+            snprintf(result->device_name, sizeof(result->device_name), "%s", "ramdrive.device");
         } else {
-            strncpy(result->device_name, "Generic Disk", sizeof(result->device_name));
+            snprintf(result->device_name, sizeof(result->device_name), "%s", "Generic Disk");
         }
     }
 
-    strncpy(result->serial_number, "N/A", sizeof(result->serial_number));
-    strncpy(result->firmware_rev, "N/A", sizeof(result->firmware_rev));
+    snprintf(result->serial_number, sizeof(result->serial_number), "%s", "N/A");
+    snprintf(result->firmware_rev, sizeof(result->firmware_rev), "%s", "N/A");
 
     /* If we have a real device name, attempt low-level inquiry */
     if (result->device_name[0] && strcmp(result->device_name, "Generic Disk") != 0 &&
@@ -412,24 +411,24 @@ void GetHardwareInfo(const char *path, BenchResult *result)
     struct DeviceCacheNode *new_node =
         IExec->AllocVecTags(sizeof(struct DeviceCacheNode), AVT_Type, MEMF_SHARED, TAG_DONE);
     if (new_node) {
-        strncpy(new_node->path_key, path, sizeof(new_node->path_key) - 1);
+        snprintf(new_node->path_key, sizeof(new_node->path_key), "%s", path);
         new_node->path_key[sizeof(new_node->path_key) - 1] = '\0';
 
-        strncpy(new_node->info.device_name, result->device_name, sizeof(new_node->info.device_name) - 1);
+        snprintf(new_node->info.device_name, sizeof(new_node->info.device_name), "%s", result->device_name);
         new_node->info.device_name[sizeof(new_node->info.device_name) - 1] = '\0';
 
         new_node->info.device_unit = result->device_unit;
 
-        strncpy(new_node->info.vendor, result->vendor, sizeof(new_node->info.vendor) - 1);
+        snprintf(new_node->info.vendor, sizeof(new_node->info.vendor), "%s", result->vendor);
         new_node->info.vendor[sizeof(new_node->info.vendor) - 1] = '\0';
 
-        strncpy(new_node->info.product, result->product, sizeof(new_node->info.product) - 1);
+        snprintf(new_node->info.product, sizeof(new_node->info.product), "%s", result->product);
         new_node->info.product[sizeof(new_node->info.product) - 1] = '\0';
 
-        strncpy(new_node->info.serial_number, result->serial_number, sizeof(new_node->info.serial_number) - 1);
+        snprintf(new_node->info.serial_number, sizeof(new_node->info.serial_number), "%s", result->serial_number);
         new_node->info.serial_number[sizeof(new_node->info.serial_number) - 1] = '\0';
 
-        strncpy(new_node->info.firmware_rev, result->firmware_rev, sizeof(new_node->info.firmware_rev) - 1);
+        snprintf(new_node->info.firmware_rev, sizeof(new_node->info.firmware_rev), "%s", result->firmware_rev);
         new_node->info.firmware_rev[sizeof(new_node->info.firmware_rev) - 1] = '\0';
 
         new_node->next = hardware_cache;

@@ -22,8 +22,6 @@
  */
 
 #include "gui_internal.h"
-#include <interfaces/intuition.h>
-#include <reaction/reaction_macros.h>
 
 static struct ColumnInfo bench_cols[] = {{100, "Date", CIF_FIXED | CIF_DRAGGABLE},
                                          {80, "Volume", CIF_FIXED | CIF_DRAGGABLE},

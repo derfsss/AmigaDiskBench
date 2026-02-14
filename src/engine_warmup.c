@@ -6,13 +6,8 @@
  */
 
 #include "engine_warmup.h"
-#include "debug.h"
 #include "engine_internal.h"
-#include <dos/dos.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define WARMUP_FILE_NAME "warmup.tmp"
 #define WARMUP_SIZE (1024 * 1024) /* 1 MB */
@@ -41,7 +36,7 @@ void RunWarmup(const char *target_path)
 
     /* Construct full path to warmup file */
     char full_path[256];
-    strncpy(full_path, target_path, sizeof(full_path) - 1);
+    snprintf(full_path, sizeof(full_path), "%s", target_path);
 
     /* Ensure path ends with a separator if needed (simple check) */
     size_t len = strlen(full_path);
@@ -64,7 +59,7 @@ void RunWarmup(const char *target_path)
     }
 
     /* 1. WRITE Phase */
-    BPTR file = IDOS->Open(full_path, MODE_NEWFILE);
+    BPTR file = IDOS->FOpen(full_path, MODE_NEWFILE, BUFFER_SIZE);
     if (file) {
         uint32 bytes_written = 0;
         while (bytes_written < WARMUP_SIZE) {
@@ -73,7 +68,7 @@ void RunWarmup(const char *target_path)
                 break;
             bytes_written += res;
         }
-        IDOS->Close(file);
+        IDOS->FClose(file);
     } else {
         LOG_DEBUG("Warmup: Failed to open file for writing: %s", full_path);
         IExec->FreeVec(buffer);
@@ -81,7 +76,7 @@ void RunWarmup(const char *target_path)
     }
 
     /* 2. READ Phase */
-    file = IDOS->Open(full_path, MODE_OLDFILE);
+    file = IDOS->FOpen(full_path, MODE_OLDFILE, BUFFER_SIZE);
     if (file) {
         uint32 bytes_read = 0;
         while (bytes_read < WARMUP_SIZE) {
@@ -90,7 +85,7 @@ void RunWarmup(const char *target_path)
                 break;
             bytes_read += res;
         }
-        IDOS->Close(file);
+        IDOS->FClose(file);
     } else {
         LOG_DEBUG("Warmup: Failed to open file for reading: %s", full_path);
     }
@@ -104,7 +99,7 @@ void RunWarmup(const char *target_path)
     IExec->FreeVec(buffer);
 
     /* Update Session Cache */
-    strncpy(last_warmup_path, target_path, sizeof(last_warmup_path) - 1);
+    snprintf(last_warmup_path, sizeof(last_warmup_path), "%s", target_path);
     last_warmup_path[sizeof(last_warmup_path) - 1] = '\0';
     GetMicroTime(&last_warmup_time);
 

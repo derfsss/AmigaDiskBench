@@ -23,10 +23,6 @@
 
 #include "engine_internal.h"
 #include "workload_interface.h"
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <stdio.h>
-#include <string.h>
 
 struct SprinterData
 {
@@ -40,7 +36,7 @@ static BOOL Setup_Sprinter(const char *path, uint32 block_size, void **data)
     if (!sd)
         return FALSE;
 
-    strncpy(sd->path, path, sizeof(sd->path) - 1);
+    snprintf(sd->path, sizeof(sd->path), "%s", path);
     sd->block_size = block_size ? block_size : 4096;
     *data = sd;
     return TRUE;

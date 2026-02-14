@@ -22,7 +22,6 @@
  */
 
 #include "gui_internal.h"
-#include <stdio.h>
 
 const char *FormatPresetBlockSize(uint32 bytes)
 {
@@ -65,18 +64,18 @@ const char *FormatByteSize(uint64 bytes)
     return buffer;
 }
 
-void FormatSize(uint64 bytes, char *out)
+void FormatSize(uint64 bytes, char *out, uint32 out_size)
 {
     if (bytes >= (1024ULL * 1024 * 1024 * 1024))
-        sprintf(out, "%.1f TB", (double)bytes / (1024.0 * 1024 * 1024 * 1024));
+        snprintf(out, out_size, "%.1f TB", (double)bytes / (1024.0 * 1024 * 1024 * 1024));
     else if (bytes >= (1024ULL * 1024 * 1024))
-        sprintf(out, "%.1f GB", (double)bytes / (1024.0 * 1024 * 1024));
+        snprintf(out, out_size, "%.1f GB", (double)bytes / (1024.0 * 1024 * 1024));
     else if (bytes >= (1024ULL * 1024))
-        sprintf(out, "%.1f MB", (double)bytes / (1024.0 * 1024));
+        snprintf(out, out_size, "%.1f MB", (double)bytes / (1024.0 * 1024));
     else if (bytes >= 1024)
-        sprintf(out, "%llu KB", bytes / 1024);
+        snprintf(out, out_size, "%llu KB", bytes / 1024);
     else
-        sprintf(out, "%llu B", bytes);
+        snprintf(out, out_size, "%llu B", bytes);
 }
 
 CONST_STRPTR GetString(uint32 id, CONST_STRPTR default_str)

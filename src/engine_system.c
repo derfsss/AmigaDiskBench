@@ -22,8 +22,6 @@
  */
 
 #include "engine_internal.h"
-#include <proto/dos.h>
-#include <proto/exec.h>
 
 BOOL FlushDiskCache(const char *path)
 {

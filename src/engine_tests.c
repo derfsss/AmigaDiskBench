@@ -22,9 +22,7 @@
  */
 
 #include "engine_internal.h"
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 /*
  * Seed for "The Daily Grind" to ensure deterministic random behavior

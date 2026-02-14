@@ -22,9 +22,6 @@
  */
 
 #include "gui_internal.h"
-#include <proto/dos.h>
-#include <stdio.h>
-#include <string.h>
 
 /**
  * ExportToAnsiText
@@ -38,7 +35,7 @@ void ExportToAnsiText(const char *filename)
     if (!filename || filename[0] == '\0')
         return;
 
-    BPTR file = IDOS->Open(filename, MODE_NEWFILE);
+    BPTR file = IDOS->FOpen(filename, MODE_NEWFILE, 4096);
     if (!file) {
         LOG_DEBUG("Export: Failed to open %s for writing", filename);
         ShowMessage("AmigaDiskBench Error", "Failed to open destination file\nfor writing.", "OK");
@@ -63,7 +60,7 @@ void ExportToAnsiText(const char *filename)
     if (ui.csv_path[0] == '\0') {
         IDOS->FPuts(file, "No history CSV path configured.\n");
     } else {
-        BPTR csvFile = IDOS->Open(ui.csv_path, MODE_OLDFILE);
+        BPTR csvFile = IDOS->FOpen(ui.csv_path, MODE_OLDFILE, 4096);
         if (csvFile) {
             char line[1024];
             /* Skip header if present */
@@ -83,22 +80,25 @@ void ExportToAnsiText(const char *filename)
                 }
 
                 /* Format each row: Date(1), Volume(3), Test(2), BSize(11), P(10), MB/s(5), IOPS(6), FS(4) */
-                IDOS->FPrintf(file, "%-10s | %-10s | %-10s | %-5s | %s | %7s | %7s | %s\n", fields[1], /* DateTime */
-                              fields[3],                                                               /* Volume */
-                              fields[2],                                                               /* Type */
-                              fields[11],                                                              /* BlockSize */
-                              fields[10],                                                              /* Passes */
-                              fields[5],                                                               /* MB/s */
-                              fields[6],                                                               /* IOPS */
-                              fields[4]                                                                /* FileSystem */
-                );
+                if (i >= 12) {
+                    IDOS->FPrintf(file, "%-10s | %-10s | %-10s | %-5s | %s | %7s | %7s | %s\n",
+                                  fields[1],  /* DateTime */
+                                  fields[3],  /* Volume */
+                                  fields[2],  /* Type */
+                                  fields[11], /* BlockSize */
+                                  fields[10], /* Passes */
+                                  fields[5],  /* MB/s */
+                                  fields[6],  /* IOPS */
+                                  fields[4]   /* FileSystem */
+                    );
+                }
             }
+            IDOS->FClose(csvFile);
         }
-        IDOS->Close(csvFile);
     }
 
     IDOS->FPuts(file, "\n--- End of Report ---\n");
-    IDOS->Close(file);
+    IDOS->FClose(file);
 
     LOG_DEBUG("Export: Successfully saved to %s", filename);
 

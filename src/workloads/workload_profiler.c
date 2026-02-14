@@ -23,10 +23,6 @@
 
 #include "engine_internal.h"
 #include "workload_interface.h"
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <stdio.h>
-#include <string.h>
 
 struct ProfilerData
 {
@@ -48,7 +44,7 @@ static BOOL Setup_Profiler(const char *path, uint32 block_size, void **data)
         return FALSE;
 
     /* Store the target path for metadata ops */
-    strncpy(pd->base_path, path, sizeof(pd->base_path) - 1);
+    snprintf(pd->base_path, sizeof(pd->base_path), "%s", path);
     pd->num_dirs = 50;      /* Default: 50 directories */
     pd->files_per_dir = 10; /* Default: 10 files per directory */
 

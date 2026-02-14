@@ -23,10 +23,6 @@
 
 #include "engine_internal.h"
 #include "workload_interface.h"
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <stdio.h>
-#include <string.h>
 
 struct LegacyData
 {
@@ -40,7 +36,7 @@ static BOOL Setup_Legacy(const char *path, uint32 block_size, void **data)
     if (!ld)
         return FALSE;
 
-    strncpy(ld->path, path, sizeof(ld->path) - 1);
+    snprintf(ld->path, sizeof(ld->path), "%s", path);
     ld->block_size = block_size ? block_size : 512;
     *data = ld;
     return TRUE;

@@ -21,21 +21,8 @@
  * SOFTWARE.
  */
 
-#include "gui_details_window.h"
-#include "debug.h"
 #include "gui_internal.h"
-#include <classes/window.h>
-#include <gadgets/scroller.h>
-#include <gadgets/texteditor.h>
-#include <images/label.h>
-#include <intuition/menuclass.h>
 #include <intuition/pointerclass.h>
-#include <proto/exec.h>
-#include <proto/intuition.h>
-#include <proto/scroller.h>
-#include <proto/texteditor.h>
-#include <reaction/reaction_macros.h>
-#include <stdio.h>
 
 extern GUIState ui;
 extern struct IntuitionIFace *IIntuition;

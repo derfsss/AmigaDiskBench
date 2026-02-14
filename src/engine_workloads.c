@@ -22,10 +22,8 @@
  */
 
 #include "engine_workloads.h"
-#include "debug.h"
-#include "engine.h"
-#include <proto/exec.h>
-#include <string.h>
+#include "engine_internal.h"
+
 
 /* Forward declaration */
 void RegisterWorkload(const BenchWorkload *workload);

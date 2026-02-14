@@ -22,16 +22,7 @@
  */
 
 #include "gui_internal.h"
-#include <interfaces/intuition.h>
-#include <interfaces/listbrowser.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-
-extern GUIState ui;
-extern struct IntuitionIFace *IIntuition;
-extern struct ExecIFace *IExec;
-extern struct ListBrowserIFace *IListBrowser;
 
 /* Helper for sorting BenchResult pointers by speed descending */
 static int compare_results(const void *a, const void *b)

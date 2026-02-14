@@ -23,11 +23,7 @@
 
 #include "engine_internal.h"
 #include "workload_interface.h"
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 struct RandomData
 {
@@ -41,12 +37,12 @@ struct RandomData
 
 static BOOL Setup_Random4K(const char *path, uint32 block_size, void **data)
 {
-    struct RandomData *rd = IExec->AllocVecTags(sizeof(struct RandomData), AVT_Type, MEMF_SHARED, TAG_DONE);
+    struct RandomData *rd =
+        IExec->AllocVecTags(sizeof(struct RandomData), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
     if (!rd)
         return FALSE;
 
-    memset(rd, 0, sizeof(struct RandomData));
-    strncpy(rd->path, path, sizeof(rd->path) - 1);
+    snprintf(rd->path, sizeof(rd->path), "%s", path);
     rd->file_size = 64 * 1024 * 1024; /* 64MB data set */
     rd->num_ios = 4096;               /* Perform 4096 random I/Os per pass */
 

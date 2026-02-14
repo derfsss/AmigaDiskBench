@@ -22,7 +22,6 @@
  */
 
 #include "gui_internal.h"
-#include <string.h>
 
 void LoadPrefs(void)
 {
@@ -102,7 +101,7 @@ void LoadPrefs(void)
         ui.default_block_size_idx = bs_sel; /* Store for prefs window */
         CONST_STRPTR def_drive = IPrefs->DictGetStringForKey(dict, "DefaultDrive", "");
         if (def_drive) {
-            strncpy(ui.default_drive, def_drive, sizeof(ui.default_drive) - 1);
+            snprintf(ui.default_drive, sizeof(ui.default_drive), "%s", def_drive);
             ui.default_drive[sizeof(ui.default_drive) - 1] = '\0';
         } else {
             ui.default_drive[0] = '\0';
@@ -113,7 +112,7 @@ void LoadPrefs(void)
         CONST_STRPTR p = IPrefs->DictGetStringForKey(dict, "CSVPath", DEFAULT_CSV_PATH);
         LOG_DEBUG("LoadPrefs: DictGetStringForKey(CSVPath) returned '%s'", p ? p : "NULL");
         if (p) {
-            strncpy(ui.csv_path, p, sizeof(ui.csv_path) - 1);
+            snprintf(ui.csv_path, sizeof(ui.csv_path), "%s", p);
             ui.csv_path[sizeof(ui.csv_path) - 1] = '\0';
         } else {
             strcpy(ui.csv_path, DEFAULT_CSV_PATH);
@@ -160,7 +159,7 @@ void BrowseCSV(void)
     if (req) {
         if (ui.IAsl->AslRequestTags(req, ASLFR_Window, (uint32)ui.prefs_window, TAG_DONE)) {
             char path[512];
-            strncpy(path, req->fr_Drawer, sizeof(path) - 1);
+            snprintf(path, sizeof(path), "%s", req->fr_Drawer);
             path[sizeof(path) - 1] = '\0';
             IDOS->AddPart(path, req->fr_File, sizeof(path));
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.prefs_csv_path, ui.prefs_window, NULL, STRINGA_TextVal,
@@ -279,14 +278,14 @@ void UpdatePreferences(void)
         DriveNodeData *dd = NULL;
         IChooser->GetChooserNodeAttrs(d_node, CNA_UserData, &dd, TAG_DONE);
         if (dd && dd->bare_name) {
-            strncpy(ui.default_drive, dd->bare_name, sizeof(ui.default_drive) - 1);
+            snprintf(ui.default_drive, sizeof(ui.default_drive), "%s", dd->bare_name);
             ui.default_drive[sizeof(ui.default_drive) - 1] = '\0';
         }
     }
 
     BOOL path_changed = FALSE;
     if (c_path && strcmp(ui.csv_path, c_path) != 0) {
-        strncpy(ui.csv_path, c_path, sizeof(ui.csv_path) - 1);
+        snprintf(ui.csv_path, sizeof(ui.csv_path), "%s", c_path);
         ui.csv_path[sizeof(ui.csv_path) - 1] = '\0';
         path_changed = TRUE;
     }

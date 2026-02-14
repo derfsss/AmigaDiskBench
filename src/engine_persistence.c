@@ -22,9 +22,7 @@
  */
 
 #include "engine_internal.h"
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 BOOL SaveResultToCSV(const char *filename, BenchResult *result)
 {
@@ -45,33 +43,8 @@ BOOL SaveResultToCSV(const char *filename, BenchResult *result)
     }
 
     if (file) {
-        /* ... switch statement for typeName ... */
-        const char *typeName = "Unknown";
-        switch (result->type) {
-        case TEST_SPRINTER:
-            typeName = "Sprinter";
-            break;
-        case TEST_HEAVY_LIFTER:
-            typeName = "HeavyLifter";
-            break;
-        case TEST_LEGACY:
-            typeName = "Legacy";
-            break;
-        case TEST_DAILY_GRIND:
-            typeName = "DailyGrind";
-            break;
-        case TEST_SEQUENTIAL:
-            typeName = "Sequential";
-            break;
-        case TEST_RANDOM_4K:
-            typeName = "Random4K";
-            break;
-        case TEST_PROFILER:
-            typeName = "Profiler";
-            break;
-        default:
-            break;
-        }
+        /* Map test type enum to CSV string via centralised lookup */
+        const char *typeName = TestTypeToString(result->type);
 
         char line[1024];
         snprintf(line, sizeof(line), "%s,%s,%s,%s,%s,%.2f,%u,%s,%u,%s,%u,%u,%d,%.2f,%.2f,%.2f,%llu,%s,%s,%s,%s\n",
@@ -129,24 +102,9 @@ BOOL GenerateGlobalReport(const char *filename, GlobalReport *report)
             final_type = timestamp;
         }
 
-        int t_idx = -1;
+        BenchTestType t_idx = StringToTestType(final_type);
 
-        if (strcmp(final_type, "Sprinter") == 0)
-            t_idx = TEST_SPRINTER;
-        else if (strcmp(final_type, "HeavyLifter") == 0)
-            t_idx = TEST_HEAVY_LIFTER;
-        else if (strcmp(final_type, "Legacy") == 0)
-            t_idx = TEST_LEGACY;
-        else if (strcmp(final_type, "DailyGrind") == 0)
-            t_idx = TEST_DAILY_GRIND;
-        else if (strcmp(final_type, "Sequential") == 0)
-            t_idx = TEST_SEQUENTIAL;
-        else if (strcmp(final_type, "Random4K") == 0)
-            t_idx = TEST_RANDOM_4K;
-        else if (strcmp(final_type, "Profiler") == 0)
-            t_idx = TEST_PROFILER;
-
-        if (t_idx != -1) {
+        if (t_idx != TEST_COUNT) {
             TestStats *ts = &report->stats[t_idx];
             ts->avg_mbps += mbs;
             if (mbs > ts->max_mbps)
@@ -156,7 +114,7 @@ BOOL GenerateGlobalReport(const char *filename, GlobalReport *report)
         }
     }
 
-    IDOS->Close(file);
+    IDOS->FClose(file);
 
     /* Finalize averages */
     for (int i = 0; i < TEST_COUNT; i++) {

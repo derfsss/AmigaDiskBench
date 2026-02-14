@@ -90,10 +90,6 @@ typedef struct
     uint64 cumulative_bytes; /* Cumulative bytes across all passes */
     uint32 effective_passes; /* Passes actually included in average */
 
-    /* Time-series data for graphing */
-    BenchSample samples[MAX_SAMPLES];
-    uint32 sample_count;
-
     /* Comparison data (non-persisted, calculated on load/run) */
     float prev_mbps;
     uint32 prev_iops;
@@ -101,7 +97,29 @@ typedef struct
     char prev_timestamp[32];
 } BenchResult;
 
-/* Engine functions */
+/* Separate time-series data for graphing (kept out of BenchResult to save ~8KB per history entry) */
+typedef struct
+{
+    BenchSample samples[MAX_SAMPLES];
+    uint32 sample_count;
+} BenchSampleData;
+
+/**
+ * @brief Get the canonical CSV name for a test type (e.g. "Random4K").
+ */
+const char *TestTypeToString(BenchTestType type);
+
+/**
+ * @brief Get the display name for a test type (e.g. "Random 4K").
+ */
+const char *TestTypeToDisplayName(BenchTestType type);
+
+/**
+ * @brief Parse a test type from a string (exact or substring match).
+ * @return The matching type, or TEST_COUNT if not found.
+ */
+BenchTestType StringToTestType(const char *name);
+
 /* Engine functions */
 
 /**
@@ -128,10 +146,11 @@ void CleanupEngine(void);
  * @param use_trimmed_mean If TRUE, discard best/worst runs before averaging.
  * @param flush_cache If TRUE, attempt to clear OS buffers before running.
  * @param out_result Pointer to a BenchResult structure to store the results.
+ * @param out_samples Optional pointer to a BenchSampleData structure for time-series data (may be NULL).
  * @return TRUE if the benchmark completed successfully, FALSE on error or abort.
  */
 BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, uint32 block_size, BOOL use_trimmed_mean,
-                  BOOL flush_cache, BenchResult *out_result);
+                  BOOL flush_cache, BenchResult *out_result, BenchSampleData *out_samples);
 
 /**
  * @brief Identify the filesystem of a given path.
