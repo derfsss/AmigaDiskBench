@@ -153,12 +153,35 @@ void BrowseCSV(void)
 {
     if (!ui.IAsl)
         return;
-    struct FileRequester *req =
-        ui.IAsl->AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText, (uint32) "Select CSV History File",
-                                     ASLFR_DoSaveMode, TRUE, ASLFR_InitialFile, (uint32) "bench_history.csv", TAG_DONE);
+
+    /* Read current path from the string gadget */
+    char current[MAX_PATH_LEN * 2];
+    CONST_STRPTR gadget_val = NULL;
+    if (ui.prefs_csv_path) {
+        IIntuition->GetAttr(STRINGA_TextVal, ui.prefs_csv_path, (uint32 *)&gadget_val);
+    }
+    if (gadget_val && gadget_val[0]) {
+        snprintf(current, sizeof(current), "%s", (const char *)gadget_val);
+    } else {
+        snprintf(current, sizeof(current), "%s", ui.csv_path);
+    }
+
+    /* Split into drawer (directory) and file components */
+    char drawer[MAX_PATH_LEN * 2];
+    const char *file_part = (const char *)IDOS->FilePart(current);
+    /* Copy directory portion */
+    size_t dir_len = (size_t)(file_part - current);
+    if (dir_len >= sizeof(drawer))
+        dir_len = sizeof(drawer) - 1;
+    memcpy(drawer, current, dir_len);
+    drawer[dir_len] = '\0';
+
+    struct FileRequester *req = ui.IAsl->AllocAslRequestTags(
+        ASL_FileRequest, ASLFR_TitleText, (uint32) "Select CSV History File", ASLFR_DoSaveMode, TRUE,
+        ASLFR_InitialDrawer, (uint32)drawer, ASLFR_InitialFile, (uint32)file_part, TAG_DONE);
     if (req) {
         if (ui.IAsl->AslRequestTags(req, ASLFR_Window, (uint32)ui.prefs_window, TAG_DONE)) {
-            char path[512];
+            char path[MAX_PATH_LEN * 2];
             snprintf(path, sizeof(path), "%s", req->fr_Drawer);
             path[sizeof(path) - 1] = '\0';
             IDOS->AddPart(path, req->fr_File, sizeof(path));
