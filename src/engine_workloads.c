@@ -24,18 +24,8 @@
 #include "engine_workloads.h"
 #include "engine_internal.h"
 
-
 /* Forward declaration */
 void RegisterWorkload(const BenchWorkload *workload);
-
-/* External workload definitions */
-extern const BenchWorkload Workload_Legacy_Sprinter;
-extern const BenchWorkload Workload_Legacy_Heavy;
-extern const BenchWorkload Workload_Legacy_Legacy;
-extern const BenchWorkload Workload_Legacy_Grind;
-extern const BenchWorkload Workload_Sequential;
-extern const BenchWorkload Workload_Random4K;
-extern const BenchWorkload Workload_Profiler;
 
 /* Maximum number of registered workloads */
 #define MAX_WORKLOADS 16

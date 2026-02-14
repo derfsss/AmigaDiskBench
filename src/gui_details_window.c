@@ -24,10 +24,6 @@
 #include "gui_internal.h"
 #include <intuition/pointerclass.h>
 
-extern GUIState ui;
-extern struct IntuitionIFace *IIntuition;
-extern struct ExecIFace *IExec;
-
 static char report_buffer[4096];
 
 void ShowBenchmarkDetails(Object *list_obj)

@@ -24,9 +24,13 @@
 #include "engine_internal.h"
 #include "workload_interface.h"
 
+#define SEQ_DEFAULT_BLOCK (1024 * 1024)      /* 1MB default block */
+#define SEQ_FILE_SIZE (256 * 1024 * 1024)    /* 256MB standard */
+#define SEQ_RAM_FILE_SIZE (32 * 1024 * 1024) /* 32MB for RAM: */
+
 struct SequentialData
 {
-    char path[256];
+    char path[MAX_PATH_LEN];
     uint32 block_size;
     uint32 file_size;
 };
@@ -38,12 +42,12 @@ static BOOL Setup_Sequential(const char *path, uint32 block_size, void **data)
         return FALSE;
 
     snprintf(sd->path, sizeof(sd->path), "%s", path);
-    sd->block_size = block_size ? block_size : (1024 * 1024);
-    sd->file_size = 256 * 1024 * 1024; /* 256MB standard */
+    sd->block_size = block_size ? block_size : SEQ_DEFAULT_BLOCK;
+    sd->file_size = SEQ_FILE_SIZE;
 
     /* If we are on RAM:, use a smaller size to avoid OOM */
     if (strncasecmp(path, "RAM:", 4) == 0) {
-        sd->file_size = 32 * 1024 * 1024;
+        sd->file_size = SEQ_RAM_FILE_SIZE;
     }
 
     *data = sd;
@@ -74,7 +78,7 @@ static void Cleanup_Sequential(void *data)
 
 static void GetDefaultSettings_Sequential(uint32 *block_size, uint32 *passes)
 {
-    *block_size = 1024 * 1024;
+    *block_size = SEQ_DEFAULT_BLOCK;
     *passes = 3;
 }
 

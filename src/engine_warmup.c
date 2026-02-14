@@ -14,7 +14,7 @@
 #define BUFFER_SIZE 65536         /* 64 KB chunks */
 #define WARMUP_THRESHOLD_SECS 5.0f
 
-static char last_warmup_path[256] = "";
+static char last_warmup_path[MAX_PATH_LEN] = "";
 static struct TimeVal last_warmup_time = {0, 0};
 
 void RunWarmup(const char *target_path)
@@ -35,7 +35,7 @@ void RunWarmup(const char *target_path)
     LOG_DEBUG("Warmup: Starting for target '%s'...", target_path);
 
     /* Construct full path to warmup file */
-    char full_path[256];
+    char full_path[MAX_PATH_LEN];
     snprintf(full_path, sizeof(full_path), "%s", target_path);
 
     /* Ensure path ends with a separator if needed (simple check) */

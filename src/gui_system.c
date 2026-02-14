@@ -58,7 +58,7 @@ void RefreshDriveList(void)
     if (vol_list) {
         struct Node *vol_node;
         for (vol_node = IExec->GetHead(vol_list); vol_node != NULL; vol_node = IExec->GetSucc(vol_node)) {
-            char bare_name[256];
+            char bare_name[MAX_PATH_LEN];
             char detailed_name[512];
             char fs_info[64];
             /* vol_node->ln_Name is already a C-string (STRPTR) from DOS_VOLUMELIST */
@@ -86,8 +86,8 @@ void RefreshDriveList(void)
                             ddata->display_name =
                                 IExec->AllocVecTags(strlen(detailed_name) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
                             if (ddata->bare_name && ddata->display_name) {
-                                strcpy(ddata->bare_name, bare_name);
-                                strcpy(ddata->display_name, detailed_name);
+                                snprintf(ddata->bare_name, strlen(bare_name) + 1, "%s", bare_name);
+                                snprintf(ddata->display_name, strlen(detailed_name) + 1, "%s", detailed_name);
                                 struct Node *cnode = IChooser->AllocChooserNode(
                                     CNA_Text, ddata->display_name, CNA_CopyText, FALSE, CNA_UserData, ddata, TAG_DONE);
                                 if (cnode) {

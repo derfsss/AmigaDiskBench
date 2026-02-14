@@ -24,9 +24,12 @@
 #include "engine_internal.h"
 #include "workload_interface.h"
 
+#define HEAVY_DEFAULT_BLOCK (128 * 1024)   /* 128KB */
+#define HEAVY_FILE_SIZE (50 * 1024 * 1024) /* 50MB */
+
 struct HeavyData
 {
-    char path[256];
+    char path[MAX_PATH_LEN];
     uint32 block_size;
 };
 
@@ -37,7 +40,7 @@ static BOOL Setup_Heavy(const char *path, uint32 block_size, void **data)
         return FALSE;
 
     snprintf(hd->path, sizeof(hd->path), "%s", path);
-    hd->block_size = block_size ? block_size : (128 * 1024);
+    hd->block_size = block_size ? block_size : HEAVY_DEFAULT_BLOCK;
     *data = hd;
     return TRUE;
 }
@@ -49,7 +52,7 @@ static BOOL Run_Heavy(void *data, uint32 *bytes_processed, uint32 *op_count)
     uint32 total_bytes = 0;
 
     snprintf(temp_file, sizeof(temp_file), "%sbench_heavy.tmp", hd->path);
-    total_bytes = WriteDummyFile(temp_file, 50 * 1024 * 1024, hd->block_size);
+    total_bytes = WriteDummyFile(temp_file, HEAVY_FILE_SIZE, hd->block_size);
     IDOS->Delete(temp_file);
 
     *bytes_processed = total_bytes;
@@ -66,7 +69,7 @@ static void Cleanup_Heavy(void *data)
 
 static void GetDefaultSettings_Heavy(uint32 *block_size, uint32 *passes)
 {
-    *block_size = 128 * 1024;
+    *block_size = HEAVY_DEFAULT_BLOCK;
     *passes = 1;
 }
 

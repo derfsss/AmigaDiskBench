@@ -53,6 +53,7 @@ typedef struct
 
 #define MAX_SAMPLES 1024
 #define MAX_PASSES 20
+#define MAX_PATH_LEN 256
 
 /* Result structure for a single test run */
 typedef struct

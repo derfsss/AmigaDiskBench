@@ -54,7 +54,7 @@ typedef struct
     struct Message msg;
     uint32 msg_type; /**< Message Type (e.g., MSG_TYPE_JOB) */
     BenchTestType type;
-    char target_path[256];
+    char target_path[MAX_PATH_LEN];
     uint32 num_passes;
     uint32 block_size;
     BOOL use_trimmed_mean;
@@ -155,8 +155,8 @@ typedef struct
     BOOL use_trimmed_mean;
     uint32 default_test_type;
     uint32 default_block_size_idx;
-    char default_drive[256];
-    char csv_path[256];
+    char default_drive[MAX_PATH_LEN];
+    char csv_path[MAX_PATH_LEN];
     BOOL delete_prefs_needed;
     BOOL flush_cache;
     uint32 jobs_pending;

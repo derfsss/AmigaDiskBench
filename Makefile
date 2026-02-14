@@ -7,7 +7,7 @@ BUILD_DIR = build
 DIST_DIR = dist
 TARGET = $(BUILD_DIR)/AmigaDiskBench
 SRC = src/main.c src/engine.c src/engine_info.c src/engine_tests.c src/engine_persistence.c src/engine_workloads.c \
-      src/engine_system.c src/engine_warmup.c \
+      src/engine_system.c src/engine_warmup.c src/engine_utils.c \
       src/workloads/workload_legacy_sprinter.c src/workloads/workload_legacy_heavy.c \
       src/workloads/workload_legacy_legacy.c src/workloads/workload_legacy_grind.c \
       src/workloads/workload_sequential.c src/workloads/workload_random_4k.c \

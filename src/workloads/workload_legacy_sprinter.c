@@ -24,9 +24,13 @@
 #include "engine_internal.h"
 #include "workload_interface.h"
 
+#define SPRINTER_DEFAULT_BLOCK 4096
+#define SPRINTER_FILE_SIZE 4096
+#define SPRINTER_FILE_COUNT 100
+
 struct SprinterData
 {
-    char path[256];
+    char path[MAX_PATH_LEN];
     uint32 block_size;
 };
 
@@ -37,7 +41,7 @@ static BOOL Setup_Sprinter(const char *path, uint32 block_size, void **data)
         return FALSE;
 
     snprintf(sd->path, sizeof(sd->path), "%s", path);
-    sd->block_size = block_size ? block_size : 4096;
+    sd->block_size = block_size ? block_size : SPRINTER_DEFAULT_BLOCK;
     *data = sd;
     return TRUE;
 }
@@ -48,14 +52,14 @@ static BOOL Run_Sprinter(void *data, uint32 *bytes_processed, uint32 *op_count)
     char temp_file[512];
     uint32 total_bytes = 0;
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < SPRINTER_FILE_COUNT; i++) {
         snprintf(temp_file, sizeof(temp_file), "%sbench_sprinter_%d.tmp", sd->path, i);
-        total_bytes += WriteDummyFile(temp_file, 4096, sd->block_size);
+        total_bytes += WriteDummyFile(temp_file, SPRINTER_FILE_SIZE, sd->block_size);
         IDOS->Delete(temp_file);
     }
 
     *bytes_processed = total_bytes;
-    *op_count = 200; /* 100 Write + 100 Delete */
+    *op_count = SPRINTER_FILE_COUNT * 2; /* Write + Delete per file */
     return (total_bytes > 0);
 }
 
@@ -68,7 +72,7 @@ static void Cleanup_Sprinter(void *data)
 
 static void GetDefaultSettings_Sprinter(uint32 *block_size, uint32 *passes)
 {
-    *block_size = 4096;
+    *block_size = SPRINTER_DEFAULT_BLOCK;
     *passes = 1;
 }
 

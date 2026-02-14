@@ -148,7 +148,7 @@ void RefreshHistory(void)
             if (res && res->prev_mbps > 0) {
                 snprintf(diff_str, sizeof(diff_str), "%+.1f%%", res->diff_per);
             } else {
-                strcpy(diff_str, "N/A");
+                snprintf(diff_str, sizeof(diff_str), "N/A");
             }
 
             struct Node *hnode = IListBrowser->AllocListBrowserNode(

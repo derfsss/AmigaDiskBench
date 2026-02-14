@@ -27,9 +27,11 @@
 
 #define FIXED_SEED 1985
 
+#define GRIND_ITERATIONS 45
+
 struct GrindData
 {
-    char path[256];
+    char path[MAX_PATH_LEN];
 };
 
 static BOOL Setup_Grind(const char *path, uint32 block_size, void **data)
@@ -51,7 +53,7 @@ static BOOL Run_Grind(void *data, uint32 *bytes_processed, uint32 *op_count)
     uint32 total_ops = 0;
 
     srand(FIXED_SEED);
-    for (int i = 0; i < 45; i++) {
+    for (int i = 0; i < GRIND_ITERATIONS; i++) {
         uint32 size, chunk;
         if (i < 5)
             size = (2 + (rand() % 9)) * 1024 * 1024;

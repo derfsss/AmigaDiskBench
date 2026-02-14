@@ -24,9 +24,12 @@
 #include "engine_internal.h"
 #include "workload_interface.h"
 
+#define LEGACY_DEFAULT_BLOCK 512
+#define LEGACY_FILE_SIZE (50 * 1024 * 1024) /* 50MB */
+
 struct LegacyData
 {
-    char path[256];
+    char path[MAX_PATH_LEN];
     uint32 block_size;
 };
 
@@ -37,7 +40,7 @@ static BOOL Setup_Legacy(const char *path, uint32 block_size, void **data)
         return FALSE;
 
     snprintf(ld->path, sizeof(ld->path), "%s", path);
-    ld->block_size = block_size ? block_size : 512;
+    ld->block_size = block_size ? block_size : LEGACY_DEFAULT_BLOCK;
     *data = ld;
     return TRUE;
 }
@@ -49,7 +52,7 @@ static BOOL Run_Legacy(void *data, uint32 *bytes_processed, uint32 *op_count)
     uint32 total_bytes = 0;
 
     snprintf(temp_file, sizeof(temp_file), "%sbench_legacy.tmp", ld->path);
-    total_bytes = WriteDummyFile(temp_file, 50 * 1024 * 1024, ld->block_size);
+    total_bytes = WriteDummyFile(temp_file, LEGACY_FILE_SIZE, ld->block_size);
     IDOS->Delete(temp_file);
 
     *bytes_processed = total_bytes;
@@ -66,7 +69,7 @@ static void Cleanup_Legacy(void *data)
 
 static void GetDefaultSettings_Legacy(uint32 *block_size, uint32 *passes)
 {
-    *block_size = 512;
+    *block_size = LEGACY_DEFAULT_BLOCK;
     *passes = 1;
 }
 

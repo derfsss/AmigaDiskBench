@@ -40,7 +40,7 @@ void UpdateBulkTabInfo(void)
         IIntuition->GetAttr(CHECKBOX_Checked, ui.bulk_all_blocks_check, &run_all_blocks);
 
     if (run_all_tests) {
-        strcpy(test_name, "All Test Types");
+        snprintf(test_name, sizeof(test_name), "All Test Types");
     } else {
         snprintf(test_name, sizeof(test_name), "%s", TestTypeToDisplayName(ui.current_test_type));
     }
@@ -112,11 +112,11 @@ void HandleWorkerReply(struct Message *m)
 
                     char aps[16], abs[32], ds[32];
                     snprintf(aps, sizeof(aps), "%u", (unsigned int)st->result.passes);
-                    strcpy(abs, FormatPresetBlockSize(st->result.block_size));
+                    snprintf(abs, sizeof(abs), "%s", FormatPresetBlockSize(st->result.block_size));
                     if (res && res->prev_mbps > 0) {
                         snprintf(ds, sizeof(ds), "%+.1f%%", res->diff_per);
                     } else {
-                        strcpy(ds, "N/A");
+                        snprintf(ds, sizeof(ds), "N/A");
                     }
 
                     struct Node *n = IListBrowser->AllocListBrowserNode(

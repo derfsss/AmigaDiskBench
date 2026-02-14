@@ -9,9 +9,10 @@ dist/
 build_errors.txt
 build_log.txt
 
-# OS Specific
+# OS / Editor specific
 .DS_Store
 Thumbs.db
+.clangd
 
 # Amiga specific (optional if you want to keep logs)
 stats/

@@ -25,10 +25,18 @@
 #include "workload_interface.h"
 #include <stdlib.h>
 
+#define RAND_BLOCK_SIZE 4096
+#define RAND_FILE_SIZE (64 * 1024 * 1024)    /* 64MB data set */
+#define RAND_RAM_FILE_SIZE (8 * 1024 * 1024) /* 8MB for RAM: */
+#define RAND_NUM_IOS 4096
+#define RAND_RAM_NUM_IOS 1024
+#define RAND_FILL_CHUNK (128 * 1024) /* 128KB fill chunk */
+#define RAND_SECTOR_ALIGN 511        /* 512-byte alignment mask */
+
 struct RandomData
 {
-    char path[256];
-    char file_path[512];
+    char path[MAX_PATH_LEN];
+    char file_path[MAX_PATH_LEN * 2];
     BPTR file;
     uint8 *buffer;
     uint32 file_size;
@@ -43,19 +51,19 @@ static BOOL Setup_Random4K(const char *path, uint32 block_size, void **data)
         return FALSE;
 
     snprintf(rd->path, sizeof(rd->path), "%s", path);
-    rd->file_size = 64 * 1024 * 1024; /* 64MB data set */
-    rd->num_ios = 4096;               /* Perform 4096 random I/Os per pass */
+    rd->file_size = RAND_FILE_SIZE;
+    rd->num_ios = RAND_NUM_IOS;
 
     /* If we are on RAM:, use a smaller size */
     if (strncasecmp(path, "RAM:", 4) == 0) {
-        rd->file_size = 8 * 1024 * 1024;
-        rd->num_ios = 1024;
+        rd->file_size = RAND_RAM_FILE_SIZE;
+        rd->num_ios = RAND_RAM_NUM_IOS;
     }
 
     snprintf(rd->file_path, sizeof(rd->file_path), "%sbench_random.tmp", path);
 
     /* Pre-allocate and fill file */
-    if (WriteDummyFile(rd->file_path, rd->file_size, 128 * 1024) == 0) {
+    if (WriteDummyFile(rd->file_path, rd->file_size, RAND_FILL_CHUNK) == 0) {
         IExec->FreeVec(rd);
         return FALSE;
     }
@@ -67,14 +75,14 @@ static BOOL Setup_Random4K(const char *path, uint32 block_size, void **data)
         return FALSE;
     }
 
-    rd->buffer = IExec->AllocVecTags(4096, AVT_Type, MEMF_SHARED, TAG_DONE);
+    rd->buffer = IExec->AllocVecTags(RAND_BLOCK_SIZE, AVT_Type, MEMF_SHARED, TAG_DONE);
     if (!rd->buffer) {
         IDOS->Close(rd->file);
         IDOS->Delete(rd->file_path);
         IExec->FreeVec(rd);
         return FALSE;
     }
-    memset(rd->buffer, 0x55, 4096);
+    memset(rd->buffer, 0x55, RAND_BLOCK_SIZE);
 
     *data = rd;
     return TRUE;
@@ -84,16 +92,16 @@ static BOOL Run_Random4K(void *data, uint32 *bytes_processed, uint32 *op_count)
 {
     struct RandomData *rd = (struct RandomData *)data;
     uint32 total_bytes = 0;
-    uint32 max_offset = rd->file_size - 4096;
+    uint32 max_offset = rd->file_size - RAND_BLOCK_SIZE;
 
     for (uint32 i = 0; i < rd->num_ios; i++) {
         uint32 offset = (uint32)rand() % max_offset;
         /* Align to 512-byte boundary for realistic disk performance */
-        offset &= ~511;
+        offset &= ~RAND_SECTOR_ALIGN;
 
         if (IDOS->ChangeFilePosition(rd->file, offset, OFFSET_BEGINNING)) {
-            if (IDOS->Write(rd->file, rd->buffer, 4096) == 4096) {
-                total_bytes += 4096;
+            if (IDOS->Write(rd->file, rd->buffer, RAND_BLOCK_SIZE) == RAND_BLOCK_SIZE) {
+                total_bytes += RAND_BLOCK_SIZE;
             }
         }
     }
@@ -118,7 +126,7 @@ static void Cleanup_Random4K(void *data)
 
 static void GetDefaultSettings_Random4K(uint32 *block_size, uint32 *passes)
 {
-    *block_size = 4096;
+    *block_size = RAND_BLOCK_SIZE;
     *passes = 3;
 }
 

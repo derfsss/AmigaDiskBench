@@ -22,19 +22,10 @@
  */
 
 #include "gui_internal.h"
-#include <interfaces/application.h>
 #include <interfaces/arexx.h>
-#include <interfaces/icon.h>
 #include <interfaces/locale.h>
-#include <libraries/application.h>
-#include <proto/application.h>
-#include <proto/asl.h>
-#include <proto/icon.h>
 #include <proto/locale.h>
-#include <reaction/reaction_macros.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 /* Global UI state */
 GUIState ui;
@@ -48,7 +39,7 @@ int StartGUI(void)
     ui.default_test_type = DEFAULT_LAST_TEST;
     ui.default_drive[0] = '\0';
     ui.default_block_size_idx = DEFAULT_BLOCK_SIZE_IDX;
-    strcpy(ui.csv_path, DEFAULT_CSV_PATH);
+    snprintf(ui.csv_path, sizeof(ui.csv_path), "%s", DEFAULT_CSV_PATH);
     ui.delete_prefs_needed = FALSE;
 
     if (!InitSystemResources()) {
@@ -143,13 +134,13 @@ int StartGUI(void)
     }
 
     if ((ui.window = (struct Window *)IIntuition->IDoMethod(ui.win_obj, WM_OPEN))) {
-        char pv[256];
+        char pv[MAX_PATH_LEN];
         if (IDOS->NameFromLock(IDOS->GetProgramDir(), pv, sizeof(pv))) {
             char *c = strchr(pv, ':');
             if (c)
                 *(c + 1) = '\0';
         } else
-            strcpy(pv, "SYS:");
+            snprintf(pv, sizeof(pv), "SYS:");
 
         RefreshDriveList();
         LoadPrefs();
@@ -276,7 +267,7 @@ int StartGUI(void)
         if (ui.app_id && ui.IApp) {
             if (ui.delete_prefs_needed) {
                 ui.IApp->SetApplicationAttrs(ui.app_id, APPATTR_SavePrefs, FALSE, TAG_DONE);
-                char prefs_path[256];
+                char prefs_path[MAX_PATH_LEN];
                 snprintf(prefs_path, sizeof(prefs_path), "ENVARC:%s.diskbench.derfs.co.uk.xml", APP_TITLE);
                 IDOS->Delete(prefs_path);
                 snprintf(prefs_path, sizeof(prefs_path), "ENV:%s.diskbench.derfs.co.uk.xml", APP_TITLE);

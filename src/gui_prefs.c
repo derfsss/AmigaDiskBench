@@ -115,13 +115,13 @@ void LoadPrefs(void)
             snprintf(ui.csv_path, sizeof(ui.csv_path), "%s", p);
             ui.csv_path[sizeof(ui.csv_path) - 1] = '\0';
         } else {
-            strcpy(ui.csv_path, DEFAULT_CSV_PATH);
+            snprintf(ui.csv_path, sizeof(ui.csv_path), "%s", DEFAULT_CSV_PATH);
         }
     } else {
         LOG_DEBUG("LoadPrefs: No preferences dictionary found (using defaults)");
         /* Defaults if no dict */
         ui.use_trimmed_mean = DEFAULT_TRIMMED_MEAN;
-        strcpy(ui.csv_path, DEFAULT_CSV_PATH);
+        snprintf(ui.csv_path, sizeof(ui.csv_path), "%s", DEFAULT_CSV_PATH);
     }
     LOG_DEBUG("LoadPrefs: Finished (Pre-Decouple)");
 

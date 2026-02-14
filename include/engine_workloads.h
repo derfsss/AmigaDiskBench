@@ -43,4 +43,13 @@ void CleanupWorkloadRegistry(void);
  */
 const BenchWorkload *GetWorkloadByType(BenchTestType type);
 
+/* Workload descriptors defined in individual workload source files */
+extern const BenchWorkload Workload_Legacy_Sprinter;
+extern const BenchWorkload Workload_Legacy_Heavy;
+extern const BenchWorkload Workload_Legacy_Legacy;
+extern const BenchWorkload Workload_Legacy_Grind;
+extern const BenchWorkload Workload_Sequential;
+extern const BenchWorkload Workload_Random4K;
+extern const BenchWorkload Workload_Profiler;
+
 #endif /* ENGINE_WORKLOADS_H */

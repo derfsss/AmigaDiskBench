@@ -279,7 +279,7 @@ struct CachedHWInfo
 struct DeviceCacheNode
 {
     struct DeviceCacheNode *next;
-    char path_key[256];
+    char path_key[MAX_PATH_LEN];
     struct CachedHWInfo info;
 };
 

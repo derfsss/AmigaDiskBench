@@ -24,9 +24,15 @@
 #include "engine_internal.h"
 #include "workload_interface.h"
 
+#define PROFILER_NUM_DIRS 50
+#define PROFILER_FILES_PER_DIR 10
+#define PROFILER_RAM_NUM_DIRS 20
+#define PROFILER_PATH_LEN 1024      /* compound dir/file paths */
+#define PROFILER_FILE_PATH_LEN 2048 /* full file paths */
+
 struct ProfilerData
 {
-    char base_path[256];
+    char base_path[MAX_PATH_LEN];
     uint32 num_dirs;
     uint32 files_per_dir;
 };
@@ -45,12 +51,12 @@ static BOOL Setup_Profiler(const char *path, uint32 block_size, void **data)
 
     /* Store the target path for metadata ops */
     snprintf(pd->base_path, sizeof(pd->base_path), "%s", path);
-    pd->num_dirs = 50;      /* Default: 50 directories */
-    pd->files_per_dir = 10; /* Default: 10 files per directory */
+    pd->num_dirs = PROFILER_NUM_DIRS;
+    pd->files_per_dir = PROFILER_FILES_PER_DIR;
 
     /* If we are on RAM:, we scale down slightly to avoid filling memory */
     if (strncasecmp(path, "RAM:", 4) == 0) {
-        pd->num_dirs = 20;
+        pd->num_dirs = PROFILER_RAM_NUM_DIRS;
     }
 
     *data = pd;
@@ -70,9 +76,9 @@ static BOOL Run_Profiler(void *data, uint32 *bytes_processed, uint32 *op_count)
 {
     struct ProfilerData *pd = (struct ProfilerData *)data;
     uint32 total_ops = 0;
-    char dir_path[1024];
-    char file_path[2048];
-    char rename_path[2048];
+    char dir_path[PROFILER_PATH_LEN];
+    char file_path[PROFILER_FILE_PATH_LEN];
+    char rename_path[PROFILER_FILE_PATH_LEN];
 
     /* 1. Directory & File Creation Loop */
     for (uint32 d = 0; d < pd->num_dirs; d++) {

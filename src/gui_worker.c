@@ -80,7 +80,7 @@ void BenchmarkWorker(void)
 
 void LaunchBenchmarkJob(void)
 {
-    char path[256];
+    char path[MAX_PATH_LEN];
     uint32 passes = 3;
     uint32 test_type_idx = TEST_SPRINTER;
     struct Node *node = NULL;
@@ -99,10 +99,10 @@ void LaunchBenchmarkJob(void)
             snprintf(path, sizeof(path), "%s", ddata->bare_name);
             path[sizeof(path) - 1] = '\0';
         } else {
-            strcpy(path, "RAM:");
+            snprintf(path, sizeof(path), "RAM:");
         }
     } else {
-        strcpy(path, "RAM:");
+        snprintf(path, sizeof(path), "RAM:");
     }
 
     if (ui.pass_gad) {
