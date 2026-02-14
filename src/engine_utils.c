@@ -22,6 +22,9 @@ static const struct
     {TEST_SEQUENTIAL, "Sequential", "Sequential", "Sequential"},
     {TEST_RANDOM_4K, "Random4K", "Random 4K", "Random"},
     {TEST_PROFILER, "Profiler", "Profiler", "Profiler"},
+    {TEST_SEQUENTIAL_READ, "SequentialRead", "Sequential Read", "SequentialRead"},
+    {TEST_RANDOM_4K_READ, "Random4KRead", "Random 4K Read", "Random4KRead"},
+    {TEST_MIXED_RW_70_30, "MixedRW70/30", "Mixed R/W 70/30", "Mixed"},
 };
 
 #define TEST_TYPE_TABLE_SIZE (sizeof(test_type_table) / sizeof(test_type_table[0]))

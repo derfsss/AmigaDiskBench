@@ -51,5 +51,8 @@ extern const BenchWorkload Workload_Legacy_Grind;
 extern const BenchWorkload Workload_Sequential;
 extern const BenchWorkload Workload_Random4K;
 extern const BenchWorkload Workload_Profiler;
+extern const BenchWorkload Workload_SequentialRead;
+extern const BenchWorkload Workload_Random4KRead;
+extern const BenchWorkload Workload_MixedRW;
 
 #endif /* ENGINE_WORKLOADS_H */

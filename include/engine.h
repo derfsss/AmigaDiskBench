@@ -34,14 +34,17 @@
  */
 typedef enum
 {
-    TEST_SPRINTER = 0, /**< Small files / Metadata performance */
-    TEST_HEAVY_LIFTER, /**< Large file / Big chunk transfer */
-    TEST_LEGACY,       /**< Large file / Small chunk transfer (Simulates older apps) */
-    TEST_DAILY_GRIND,  /**< Pseudo-random mix of operations */
-    TEST_SEQUENTIAL,   /**< Professional: Pure Sequential I/O */
-    TEST_RANDOM_4K,    /**< Professional: Random 4K I/O */
-    TEST_PROFILER,     /**< Professional: Filesystem Profiler (Metadata) */
-    TEST_COUNT         /**< Total number of test types */
+    TEST_SPRINTER = 0,      /**< Small files / Metadata performance */
+    TEST_HEAVY_LIFTER,      /**< Large file / Big chunk transfer */
+    TEST_LEGACY,            /**< Large file / Small chunk transfer (Simulates older apps) */
+    TEST_DAILY_GRIND,       /**< Pseudo-random mix of operations */
+    TEST_SEQUENTIAL,        /**< Professional: Pure Sequential I/O (Write) */
+    TEST_RANDOM_4K,         /**< Professional: Random 4K I/O (Write) */
+    TEST_PROFILER,          /**< Professional: Filesystem Profiler (Metadata) */
+    TEST_SEQUENTIAL_READ,   /**< Professional: Pure Sequential I/O (Read) */
+    TEST_RANDOM_4K_READ,    /**< Professional: Random 4K I/O (Read) */
+    TEST_MIXED_RW_70_30,    /**< Professional: Mixed Read/Write 70/30 */
+    TEST_COUNT              /**< Total number of test types */
 } BenchTestType;
 
 /* Performance sample for graphing */

@@ -47,6 +47,11 @@ void InitWorkloadRegistry(void)
     RegisterWorkload(&Workload_Sequential);
     RegisterWorkload(&Workload_Random4K);
     RegisterWorkload(&Workload_Profiler);
+
+    /* Register new read and mixed workloads */
+    RegisterWorkload(&Workload_SequentialRead);
+    RegisterWorkload(&Workload_Random4KRead);
+    RegisterWorkload(&Workload_MixedRW);
 }
 
 void CleanupWorkloadRegistry(void)
