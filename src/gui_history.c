@@ -68,21 +68,23 @@ void RefreshHistory(void)
 
             char id[32], timestamp[32], type[64], disk[64], fs[128], mbs_str[32], iops_str[32], device[64],
                 unit_str[32], ver[32], passes[16], bs_str[32], trimmed[16], min_str[32], max_str[32], dur_str[32],
-                bytes_str[32], vendor[32], product[64];
+                bytes_str[32], vendor[32], product[64], firmware[32], serial[32];
 
             /* Clear strings */
             id[0] = timestamp[0] = type[0] = disk[0] = fs[0] = mbs_str[0] = iops_str[0] = device[0] = unit_str[0] = 0;
             ver[0] = passes[0] = bs_str[0] = trimmed[0] = min_str[0] = max_str[0] = dur_str[0] = bytes_str[0] = 0;
-            vendor[0] = product[0] = 0;
+            vendor[0] = product[0] = firmware[0] = serial[0] = 0;
 
             /* Parse CSV based on column count */
             int fields = sscanf(line,
                                 "%31[^,],%31[^,],%63[^,],%63[^,],%127[^,],%31[^,],%31[^,],%63[^,],%31[^,],%31[^,],%15[^"
-                                ",],%31[^,],%15[^,],%31[^,],%31[^,],%31[^,],%31[^,],%31[^,],%63s",
+                                ",],%31[^,],%15[^,],%31[^,],%31[^,],%31[^,],%31[^,],%31[^,],%63[^,],%31[^,],%31s",
                                 id, timestamp, type, disk, fs, mbs_str, iops_str, device, unit_str, ver, passes, bs_str,
-                                trimmed, min_str, max_str, dur_str, bytes_str, vendor, product);
+                                trimmed, min_str, max_str, dur_str, bytes_str, vendor, product, firmware, serial);
 
             /* Shift data if first field is not a unique ID (legacy format) */
+            /* Note: Legacy shifting logic remains but might need adjustment if we see old files.
+               For now, assuming new writes will have ID. */
             if (fields == 11 && strchr(id, '-') && !strchr(id, '_')) {
                 snprintf(product, sizeof(product), "%s", vendor);
                 snprintf(vendor, sizeof(vendor), "%s", bytes_str);
@@ -127,6 +129,8 @@ void RefreshHistory(void)
                 res->cumulative_bytes = (fields >= 17) ? strtoull(bytes_str, NULL, 10) : 0;
                 snprintf(res->vendor, sizeof(res->vendor), "%s", (fields >= 18) ? vendor : "N/A");
                 snprintf(res->product, sizeof(res->product), "%s", (fields >= 19) ? product : "N/A");
+                snprintf(res->firmware_rev, sizeof(res->firmware_rev), "%s", (fields >= 20) ? firmware : "N/A");
+                snprintf(res->serial_number, sizeof(res->serial_number), "%s", (fields >= 21) ? serial : "N/A");
 
                 if (strstr(type, "Sprinter"))
                     res->type = TEST_SPRINTER;
@@ -138,10 +142,28 @@ void RefreshHistory(void)
                     res->type = TEST_DAILY_GRIND;
                 else if (strstr(type, "Sequential"))
                     res->type = TEST_SEQUENTIAL;
-                else if (strstr(type, "Random4K"))
+                else if (strstr(type, "Random"))
                     res->type = TEST_RANDOM_4K;
                 else if (strstr(type, "Profiler"))
                     res->type = TEST_PROFILER;
+
+                /* Calculate Comparison with previous results in the history list */
+                BenchResult prev;
+                if (FindMatchInList(&ui.history_labels, res, &prev, FALSE)) {
+                    res->prev_mbps = prev.mb_per_sec;
+                    res->prev_iops = prev.iops;
+                    snprintf(res->prev_timestamp, sizeof(res->prev_timestamp), "%s", prev.timestamp);
+                    if (prev.mb_per_sec > 0) {
+                        res->diff_per = ((res->mb_per_sec - prev.mb_per_sec) / prev.mb_per_sec) * 100.0f;
+                    }
+                }
+            }
+
+            char diff_str[32];
+            if (res && res->prev_mbps > 0) {
+                snprintf(diff_str, sizeof(diff_str), "%+.1f%%", res->diff_per);
+            } else {
+                strcpy(diff_str, "N/A");
             }
 
             struct Node *hnode = IListBrowser->AllocListBrowserNode(
@@ -152,9 +174,9 @@ void RefreshHistory(void)
                 LBNCA_Text, (uint32)passes, LBNA_Column, COL_MBPS, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)mbs_str,
                 LBNA_Column, COL_IOPS, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)iops_str, LBNA_Column, COL_DEVICE,
                 LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)device, LBNA_Column, COL_UNIT, LBNCA_CopyText, TRUE,
-                LBNA_Column, COL_VER, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)ver, LBNA_Column, COL_DIFF,
-                LBNCA_CopyText, TRUE, LBNCA_Text, (uint32) "", LBNA_Column, COL_DUMMY, LBNCA_CopyText, TRUE, LBNCA_Text,
-                (uint32) "", LBNA_UserData, (uint32)res, TAG_DONE);
+                LBNCA_Text, (uint32)unit_str, LBNA_Column, COL_VER, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)ver,
+                LBNA_Column, COL_DIFF, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)diff_str, LBNA_Column, COL_DUMMY,
+                LBNCA_CopyText, TRUE, LBNCA_Text, (uint32) "", LBNA_UserData, (uint32)res, TAG_DONE);
             if (hnode) {
                 /* Add HEAD to make newest appear at the top */
                 IExec->AddHead(&ui.history_labels, hnode);
@@ -171,7 +193,7 @@ void RefreshHistory(void)
         if (file) {
             IDOS->FPuts(file, "ID,DateTime,Type,Volume,FS,MB/"
                               "s,IOPS,Hardware,Unit,AppVersion,Passes,BlockSize,Trimmed,Min,Max,Duration,TotalBytes,"
-                              "Vendor,Product\n");
+                              "Vendor,Product,Firmware,Serial\n");
             IDOS->FClose(file);
             LOG_DEBUG("RefreshHistory: Created new CSV at '%s'", ui.csv_path);
         } else {
@@ -204,24 +226,46 @@ void RefreshHistory(void)
     }
 }
 
-BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev)
+BOOL FindMatchInList(struct List *list, BenchResult *current, BenchResult *out_prev, BOOL reverse)
 {
-    struct Node *node = IExec->GetHead(&ui.history_labels);
+    struct Node *node;
+    if (reverse) {
+        node = IExec->GetTail(list);
+    } else {
+        node = IExec->GetHead(list);
+    }
+
     while (node) {
         BenchResult *res = NULL;
         IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &res, TAG_DONE);
 
         if (res && res != current) {
-            /* Match criteria: volume name, test type, and block size */
-            if (strcmp(res->volume_name, current->volume_name) == 0 && res->type == current->type &&
-                res->block_size == current->block_size) {
+            /* Match criteria: volume name, test type, block size, device name, and unit */
+            if (res->type == current->type && res->block_size == current->block_size &&
+                res->device_unit == current->device_unit && strcmp(res->volume_name, current->volume_name) == 0 &&
+                strcmp(res->device_name, current->device_name) == 0) {
                 if (out_prev) {
                     memcpy(out_prev, res, sizeof(BenchResult));
                 }
                 return TRUE;
             }
         }
-        node = IExec->GetSucc(node);
+
+        if (reverse) {
+            node = IExec->GetPred(node);
+        } else {
+            node = IExec->GetSucc(node);
+        }
     }
     return FALSE;
+}
+
+BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev)
+{
+    /* Search bench_labels first (reverse: newest at tail via AddTail) */
+    if (FindMatchInList(&ui.bench_labels, current, out_prev, TRUE)) {
+        return TRUE;
+    }
+    /* Fall back to history_labels (forward: newest at head via AddHead) */
+    return FindMatchInList(&ui.history_labels, current, out_prev, FALSE);
 }

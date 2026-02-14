@@ -16,3 +16,4 @@ Thumbs.db
 # Amiga specific (optional if you want to keep logs)
 stats/
 plan/
+tmp/

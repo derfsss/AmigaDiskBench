@@ -22,10 +22,13 @@
  */
 
 #include "gui_internal.h"
+#include <gadgets/checkbox.h>
 #include <interfaces/intuition.h>
 #include <interfaces/listbrowser.h>
+#include <proto/checkbox.h>
 #include <stdint.h>
 #include <string.h>
+
 
 /**
  * RefreshBulkList
@@ -64,14 +67,19 @@ void RefreshBulkList(void)
             IChooser->GetChooserNodeAttrs(node, CNA_UserData, &ddata, TAG_DONE);
 
             if (ddata) {
-                /* Create a new ListBrowser node with a checkbox for bulk selection.
-                 * We show Volume name and Auto FS for now.
+                /* Create a new ListBrowser node with 4 columns to match ColumnInfo
+                 * Col 0: Checkbox
+                 * Col 1: Volume Name
+                 * Col 2: FileSystem (Retrieve fresh info)
+                 * Col 3: Spacer
                  */
+                char fs_info[64] = "Unknown";
+                GetFileSystemInfo(ddata->bare_name, fs_info, sizeof(fs_info));
+
                 struct Node *bn = IListBrowser->AllocListBrowserNode(
-                    2, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                    (uint32)(ddata->bare_name ? ddata->bare_name : "Unknown"), LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                    LBNCA_Text, (uint32) "(Auto)", LBNA_CheckBox, TRUE, LBNA_Checked, FALSE, LBNA_UserData,
-                    (uint32)ddata, TAG_DONE);
+                    4, LBNA_CheckBox, TRUE, LBNA_Column, 0, LBNCA_Text, (uint32) "", LBNA_Column, 1, LBNCA_CopyText,
+                    TRUE, LBNCA_Text, (uint32)(ddata->bare_name ? ddata->bare_name : "Unknown"), LBNA_Column, 2,
+                    LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)fs_info, LBNA_UserData, (uint32)ddata, TAG_DONE);
 
                 if (bn) {
                     IExec->AddTail(&ui.bulk_labels, bn);
@@ -96,82 +104,89 @@ void RefreshBulkList(void)
  */
 void LaunchBulkJobs(void)
 {
-    uint32 test_type_idx = TEST_SPRINTER;
-    uint32 passes = 3;
-    uint32 block_val = 4096;
-    struct Node *node;
-    int job_count = 0;
+    uint32 job_count = 0;
 
-    /* Safety check: ensure worker port is valid before queueing */
-    if (!ui.worker_port) {
-        LOG_DEBUG("Bulk: Worker port not available, cannot run jobs.");
-        return;
-    }
+    /* 1. Gather Settings */
+    /* Check "Run All" flags */
+    uint32 run_all_tests = 0;
+    uint32 run_all_blocks = 0;
+    if (ui.bulk_all_tests_check)
+        IIntuition->GetAttr(CHECKBOX_Checked, ui.bulk_all_tests_check, &run_all_tests);
+    if (ui.bulk_all_blocks_check)
+        IIntuition->GetAttr(CHECKBOX_Checked, ui.bulk_all_blocks_check, &run_all_blocks);
 
-    /* Get common settings from the main tab gadgets */
-    if (ui.test_chooser) {
-        IIntuition->GetAttr(CHOOSER_Selected, ui.test_chooser, &test_type_idx);
-    }
-    if (ui.pass_gad) {
-        IIntuition->GetAttr(INTEGER_Number, ui.pass_gad, &passes);
-    }
-    if (ui.block_chooser) {
-        struct Node *bnode = NULL;
-        IIntuition->GetAttr(CHOOSER_SelectedNode, ui.block_chooser, (uint32 *)&bnode);
-        if (bnode) {
-            void *ud = NULL;
-            IChooser->GetChooserNodeAttrs(bnode, CNA_UserData, &ud, TAG_DONE);
-            if (ud) {
-                /* Block size index is stored as a pointer-to-int in UserData */
-                block_val = (uint32)((uintptr_t)ud);
-            }
-        }
+    /* Define Test Types to run */
+    uint32 tests[8];
+    int num_tests = 0;
+    if (run_all_tests) {
+        tests[num_tests++] = TEST_SPRINTER;
+        tests[num_tests++] = TEST_HEAVY_LIFTER;
+        tests[num_tests++] = TEST_LEGACY;
+        tests[num_tests++] = TEST_DAILY_GRIND;
+        tests[num_tests++] = TEST_SEQUENTIAL;
+        tests[num_tests++] = TEST_RANDOM_4K;
+        tests[num_tests++] = TEST_PROFILER;
+    } else {
+        tests[num_tests++] = ui.current_test_type;
     }
 
-    /* Iterate bulk list and launch jobs for checked items */
-    node = IExec->GetHead(&ui.bulk_labels);
+    /* Define Block Sizes to run */
+    uint32 blocks[8];
+    int num_blocks = 0;
+    if (run_all_blocks) {
+        blocks[num_blocks++] = 4096;
+        blocks[num_blocks++] = 16384;
+        blocks[num_blocks++] = 32768;
+        blocks[num_blocks++] = 65536;
+        blocks[num_blocks++] = 131072;
+        blocks[num_blocks++] = 262144;
+        blocks[num_blocks++] = 1048576;
+    } else {
+        blocks[num_blocks++] = ui.current_block_size;
+    }
+
+    /* 2. Queue Jobs */
+    struct Node *node = IExec->GetHead(&ui.bulk_labels);
     while (node) {
-        uint32 checked = FALSE;
+        uint32 checked = 0;
         IListBrowser->GetListBrowserNodeAttrs(node, LBNA_Checked, &checked, TAG_DONE);
-
         if (checked) {
             DriveNodeData *ddata = NULL;
             IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &ddata, TAG_DONE);
-
             if (ddata && ddata->bare_name) {
-                /* Allocate a BenchJob message for the worker */
-                BenchJob *job =
-                    IExec->AllocVecTags(sizeof(BenchJob), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
-                if (job) {
-                    job->msg_type = MSG_TYPE_JOB;
-                    job->type = (BenchTestType)test_type_idx;
-                    strncpy(job->target_path, ddata->bare_name, sizeof(job->target_path) - 1);
-                    job->num_passes = passes;
-                    job->block_size = block_val;
-                    job->use_trimmed_mean = ui.use_trimmed_mean;
-                    job->flush_cache = ui.flush_cache;
-                    job->msg.mn_ReplyPort = ui.worker_reply_port;
 
-                    LOG_DEBUG("Bulk: Queueing job for %s", ddata->bare_name);
-                    ui.jobs_pending++;
-                    IExec->PutMsg(ui.worker_port, &job->msg);
-                    job_count++;
-                } else {
-                    LOG_DEBUG("Bulk: Memory allocation failed for job %s", ddata->bare_name);
+                /* Nested Loops for Permutations: Tests -> Blocks */
+                for (int t = 0; t < num_tests; t++) {
+                    for (int b = 0; b < num_blocks; b++) {
+
+                        BenchJob *job = IExec->AllocVecTags(sizeof(BenchJob), AVT_Type, MEMF_SHARED, AVT_ClearWithValue,
+                                                            0, TAG_DONE);
+                        if (job) {
+                            job->msg_type = MSG_TYPE_JOB;
+                            job->type = (BenchTestType)tests[t];
+                            strncpy(job->target_path, ddata->bare_name, sizeof(job->target_path) - 1);
+                            job->target_path[sizeof(job->target_path) - 1] = '\0';
+                            job->num_passes = ui.current_passes;
+                            job->block_size = blocks[b];
+                            job->use_trimmed_mean = ui.use_trimmed_mean;
+                            job->flush_cache = ui.flush_cache;
+                            job->msg.mn_ReplyPort = ui.worker_reply_port;
+
+                            LOG_DEBUG("Bulk: Queueing job for %s (Test=%d, BS=%u)", ddata->bare_name, tests[t],
+                                      blocks[b]);
+                            EnqueueBenchmarkJob(job);
+                            job_count++;
+                        } else {
+                            LOG_DEBUG("Bulk: Memory allocation failed for job %s", ddata->bare_name);
+                        }
+                    }
                 }
             }
         }
         node = IExec->GetSucc(node);
     }
 
-    /* If we launched jobs, disable the run button and set status to [ BUSY ] */
-    if (job_count > 0) {
-        if (ui.window) {
-            SetGadgetState(GID_RUN_ALL, TRUE);
-            IIntuition->SetGadgetAttrs((struct Gadget *)ui.status_light_obj, ui.window, NULL, LABEL_Text,
-                                       (uint32) "[ BUSY ]", TAG_DONE);
-        }
-    } else {
+    if (job_count == 0) {
         LOG_DEBUG("Bulk: No volumes selected for benchmarking.");
         ShowMessage("AmigaDiskBench", "Please select at least one volume\nin the bulk list.", "OK");
     }

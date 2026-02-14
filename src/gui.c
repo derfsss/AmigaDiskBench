@@ -63,6 +63,8 @@ int StartGUI(void)
     IExec->NewList(&ui.block_list);
     IExec->NewList(&ui.bulk_labels);
 
+    InitBenchmarkQueue();
+
     /* Initialize nodes for choosers */
     const char *blocks[] = {"4K", "16K", "32K", "64K", "128K", "256K", "1M"};
     uint32 block_vals[] = {4096, 16384, 32768, 65536, 131072, 262144, 1048576};
@@ -151,6 +153,7 @@ int StartGUI(void)
 
         RefreshDriveList();
         LoadPrefs();
+        UpdateBulkTabInfo();
         RefreshHistory();
 
         /* Select Default Drive */
@@ -295,8 +298,10 @@ int StartGUI(void)
             ui.IIcn->FreeDiskObject(icon);
 
         CleanupSystemResources();
+        CleanupBenchmarkQueue();
         return 0;
     }
     CleanupSystemResources();
+    CleanupBenchmarkQueue();
     return 1;
 }

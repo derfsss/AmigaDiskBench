@@ -37,7 +37,7 @@ BOOL SaveResultToCSV(const char *filename, BenchResult *result)
         if (file) {
             IDOS->FPuts(file, "ID,DateTime,Type,Volume,FS,MB/"
                               "s,IOPS,Hardware,Unit,AppVersion,Passes,BlockSize,Trimmed,Min,Max,Duration,TotalBytes,"
-                              "Vendor,Product\n");
+                              "Vendor,Product,Firmware,Serial\n");
         }
     } else {
         LOG_DEBUG("SaveResultToCSV: Appending to existing file");
@@ -45,6 +45,7 @@ BOOL SaveResultToCSV(const char *filename, BenchResult *result)
     }
 
     if (file) {
+        /* ... switch statement for typeName ... */
         const char *typeName = "Unknown";
         switch (result->type) {
         case TEST_SPRINTER:
@@ -73,12 +74,13 @@ BOOL SaveResultToCSV(const char *filename, BenchResult *result)
         }
 
         char line[1024];
-        snprintf(line, sizeof(line), "%s,%s,%s,%s,%s,%.2f,%u,%s,%u,%s,%u,%u,%d,%.2f,%.2f,%.2f,%llu,%s,%s\n",
+        snprintf(line, sizeof(line), "%s,%s,%s,%s,%s,%.2f,%u,%s,%u,%s,%u,%u,%d,%.2f,%.2f,%.2f,%llu,%s,%s,%s,%s\n",
                  result->result_id, result->timestamp, typeName, result->volume_name, result->fs_type,
                  result->mb_per_sec, (unsigned int)result->iops, result->device_name, (unsigned int)result->device_unit,
                  result->app_version, (unsigned int)result->passes, (unsigned int)result->block_size,
                  (int)result->use_trimmed_mean, result->min_mbps, result->max_mbps, result->total_duration,
-                 (unsigned long long)result->cumulative_bytes, result->vendor, result->product);
+                 (unsigned long long)result->cumulative_bytes, result->vendor, result->product, result->firmware_rev,
+                 result->serial_number);
         IDOS->FPuts(file, line);
 
         IDOS->FClose(file);

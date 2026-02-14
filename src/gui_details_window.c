@@ -160,11 +160,6 @@ void OpenDetailsWindow(BenchResult *res)
     ui.details_vscroll = IIntuition->NewObject(ui.ScrollerClass, NULL, GA_ID, GID_DETAILS_VSCROLL, GA_RelVerify, TRUE,
                                                SCROLLER_Orientation, SORIENT_VERT, SCROLLER_Arrows, TRUE, TAG_DONE),
     CHILD_WeightedWidth, 0, LayoutEnd, CHILD_WeightedHeight, 100, /* Give editor full dominance */
-
-        LAYOUT_AddChild, HLayoutObject, LAYOUT_ShrinkWrap, TRUE, LAYOUT_HorizAlignment, LALIGN_CENTER,
-    LAYOUT_TopSpacing, 4, LAYOUT_BottomSpacing, 4, LAYOUT_AddChild, ButtonObject, GA_ID, GID_DETAILS_CLOSE,
-    GA_RelVerify, TRUE, GA_Text, "Close", ButtonEnd, CHILD_WeightedWidth, 0, LayoutEnd, CHILD_WeightedHeight,
-    0, /* Fixed height for button row */
         LayoutEnd, WindowEnd;
 
     /* Link vertical scroller to texteditor */
@@ -217,7 +212,6 @@ void CloseDetailsWindow(void)
 void HandleDetailsWindowEvent(uint16 code, uint32 result)
 {
     uint32 class = result & WMHI_CLASSMASK;
-    uint32 gid = result & WMHI_GADGETMASK;
 
     switch (class) {
     case WMHI_CLOSEWINDOW:
@@ -225,9 +219,7 @@ void HandleDetailsWindowEvent(uint16 code, uint32 result)
         break;
 
     case WMHI_GADGETUP:
-        if (gid == GID_DETAILS_CLOSE) {
-            CloseDetailsWindow();
-        }
+        /* Close button removed, but keeping case structure for future */
         break;
 
     case WMHI_MENUPICK:

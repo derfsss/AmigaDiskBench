@@ -52,6 +52,7 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
     }
 
     if (IExec->OpenDevice(device_name, unit, (struct IORequest *)ior, 0) == 0) {
+        LOG_DEBUG("GetScsiHardwareInfo: Opened %s unit %d", device_name, unit);
         /* buffer for inquiry data */
         uint8 *inq = IExec->AllocVecTags(256, AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
         if (inq) {
@@ -74,7 +75,8 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
             ior->io_Data = &cmd;
             ior->io_Length = sizeof(struct SCSICmd);
 
-            if (IExec->DoIO((struct IORequest *)ior) == 0 && cmd.scsi_Status == 0) {
+            int32 io_err = IExec->DoIO((struct IORequest *)ior);
+            if (io_err == 0 && cmd.scsi_Status == 0) {
                 /* Vendor: bytes 8-15 */
                 memcpy(result->vendor, &inq[8], 8);
                 result->vendor[8] = '\0';
@@ -89,6 +91,10 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
                 memcpy(result->firmware_rev, &inq[32], 4);
                 result->firmware_rev[4] = '\0';
                 StripTrailingSpaces(result->firmware_rev, 4);
+                LOG_DEBUG("SCSI Inquiry: Ven='%s', Prod='%s', Rev='%s'", result->vendor, result->product,
+                          result->firmware_rev);
+            } else {
+                LOG_DEBUG("SCSI Inquiry Std Failed: Err=%d, Status=%d", io_err, cmd.scsi_Status);
             }
 
             /* Inquiry VPD 0x80 (Serial Number) */
@@ -105,7 +111,8 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
             cmd.scsi_Command = (APTR)cdb;
             cmd.scsi_CmdLength = 6;
 
-            if (IExec->DoIO((struct IORequest *)ior) == 0 && cmd.scsi_Status == 0) {
+            io_err = IExec->DoIO((struct IORequest *)ior);
+            if (io_err == 0 && cmd.scsi_Status == 0) {
                 uint8 len = inq[3];
                 if (len > 0) {
                     if (len > sizeof(result->serial_number) - 1)
@@ -113,14 +120,21 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
                     memcpy(result->serial_number, &inq[4], len);
                     result->serial_number[len] = '\0';
                     StripTrailingSpaces(result->serial_number, len);
+                    LOG_DEBUG("SCSI VPD Serial: '%s'", result->serial_number);
+                } else {
+                    LOG_DEBUG("SCSI VPD Serial: Length was 0");
+                    strncpy(result->serial_number, "N/A", sizeof(result->serial_number));
                 }
             } else {
+                LOG_DEBUG("SCSI Inquiry VPD Failed: Err=%d, Status=%d", io_err, cmd.scsi_Status);
                 strncpy(result->serial_number, "N/A", sizeof(result->serial_number));
             }
 
             IExec->FreeVec(inq);
         }
         IExec->CloseDevice((struct IORequest *)ior);
+    } else {
+        LOG_DEBUG("GetScsiHardwareInfo: Failed to open %s unit %d", device_name, unit);
     }
 
     IExec->FreeSysObject(ASOT_IOREQUEST, ior);
@@ -252,9 +266,63 @@ void GetFileSystemInfo(const char *path, char *out_name, uint32 name_size)
     LOG_DEBUG("FS info for %s: %s (limit: %u)", path, out_name, (unsigned int)name_size);
 }
 
+/* Cache structure for hardware info to reduce SCSI_INQUIRY overhead */
+struct CachedHWInfo
+{
+    char device_name[32];
+    uint32 device_unit;
+    char vendor[32];
+    char product[32];
+    char serial_number[32];
+    char firmware_rev[8];
+};
+
+struct DeviceCacheNode
+{
+    struct DeviceCacheNode *next;
+    char path_key[256];
+    struct CachedHWInfo info;
+};
+
+static struct DeviceCacheNode *hardware_cache = NULL;
+
+void ClearHardwareInfoCache(void)
+{
+    struct DeviceCacheNode *node = hardware_cache;
+    while (node) {
+        struct DeviceCacheNode *next = node->next;
+        IExec->FreeVec(node);
+        node = next;
+    }
+    hardware_cache = NULL;
+    LOG_DEBUG("Hardware Info Cache cleared.");
+}
+
 void GetHardwareInfo(const char *path, BenchResult *result)
 {
     strncpy(result->app_version, APP_VERSION_STR, sizeof(result->app_version));
+
+    /* 1. Check Cache */
+    struct DeviceCacheNode *node = hardware_cache;
+    while (node) {
+        if (strcasecmp(node->path_key, path) == 0) {
+            /* Hit! Copy cached data */
+            strncpy(result->device_name, node->info.device_name, sizeof(result->device_name));
+            result->device_unit = node->info.device_unit;
+            strncpy(result->vendor, node->info.vendor, sizeof(result->vendor));
+            strncpy(result->product, node->info.product, sizeof(result->product));
+            strncpy(result->serial_number, node->info.serial_number, sizeof(result->serial_number));
+            strncpy(result->firmware_rev, node->info.firmware_rev, sizeof(result->firmware_rev));
+            /* Logging reduced to avoid spam, or keep for debug validation?
+               Let's log a small "hit" message for verification */
+            LOG_DEBUG("GetHardwareInfo: Cache Hit for '%s'", path);
+            return;
+        }
+        node = node->next;
+    }
+
+    /* 2. Cache Miss - Perform Full Query */
+    LOG_DEBUG("GetHardwareInfo: Cache Miss for '%s' - Querying...", path);
 
     /* Initialize with defaults */
     strncpy(result->device_name, "Unknown", sizeof(result->device_name));
@@ -297,18 +365,18 @@ void GetHardwareInfo(const char *path, BenchResult *result)
         struct DosList *dl = IDOS->LockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_READ);
         if (dl) {
             /* First try to find as a device directly since DN_DEVICEONLY was used */
-            struct DosList *node = IDOS->FindDosEntry(dl, search_name, LDF_DEVICES);
-            if (!node) {
+            struct DosList *dnode = IDOS->FindDosEntry(dl, search_name, LDF_DEVICES);
+            if (!dnode) {
                 /* Fallback to volume search if device lookup failed */
-                node = IDOS->FindDosEntry(dl, search_name, LDF_VOLUMES);
+                dnode = IDOS->FindDosEntry(dl, search_name, LDF_VOLUMES);
             }
 
-            if (node) {
+            if (dnode) {
                 uint32 startup = 0;
-                if (node->dol_Type == DLT_DEVICE) {
-                    startup = (uint32)node->dol_misc.dol_device.dol_Startup;
-                } else if (node->dol_Type == DLT_VOLUME) {
-                    startup = (uint32)node->dol_misc.dol_handler.dol_Startup;
+                if (dnode->dol_Type == DLT_DEVICE) {
+                    startup = (uint32)dnode->dol_misc.dol_device.dol_Startup;
+                } else if (dnode->dol_Type == DLT_VOLUME) {
+                    startup = (uint32)dnode->dol_misc.dol_handler.dol_Startup;
                 }
 
                 if (startup > 0 && startup <= 64) {
@@ -338,5 +406,33 @@ void GetHardwareInfo(const char *path, BenchResult *result)
     if (result->device_name[0] && strcmp(result->device_name, "Generic Disk") != 0 &&
         strcmp(result->device_name, "ramdrive.device") != 0) {
         GetScsiHardwareInfo(result->device_name, result->device_unit, result);
+    }
+
+    /* 3. Add to Cache */
+    struct DeviceCacheNode *new_node =
+        IExec->AllocVecTags(sizeof(struct DeviceCacheNode), AVT_Type, MEMF_SHARED, TAG_DONE);
+    if (new_node) {
+        strncpy(new_node->path_key, path, sizeof(new_node->path_key) - 1);
+        new_node->path_key[sizeof(new_node->path_key) - 1] = '\0';
+
+        strncpy(new_node->info.device_name, result->device_name, sizeof(new_node->info.device_name) - 1);
+        new_node->info.device_name[sizeof(new_node->info.device_name) - 1] = '\0';
+
+        new_node->info.device_unit = result->device_unit;
+
+        strncpy(new_node->info.vendor, result->vendor, sizeof(new_node->info.vendor) - 1);
+        new_node->info.vendor[sizeof(new_node->info.vendor) - 1] = '\0';
+
+        strncpy(new_node->info.product, result->product, sizeof(new_node->info.product) - 1);
+        new_node->info.product[sizeof(new_node->info.product) - 1] = '\0';
+
+        strncpy(new_node->info.serial_number, result->serial_number, sizeof(new_node->info.serial_number) - 1);
+        new_node->info.serial_number[sizeof(new_node->info.serial_number) - 1] = '\0';
+
+        strncpy(new_node->info.firmware_rev, result->firmware_rev, sizeof(new_node->info.firmware_rev) - 1);
+        new_node->info.firmware_rev[sizeof(new_node->info.firmware_rev) - 1] = '\0';
+
+        new_node->next = hardware_cache;
+        hardware_cache = new_node;
     }
 }

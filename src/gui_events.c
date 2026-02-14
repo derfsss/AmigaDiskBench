@@ -27,6 +27,64 @@
 #include <stdio.h>
 #include <string.h>
 
+void UpdateBulkTabInfo(void)
+{
+    if (!ui.bulk_info_label || !ui.window)
+        return;
+
+    char buf[128];
+    char test_name[32];
+
+    uint32 run_all_tests = 0;
+    uint32 run_all_blocks = 0;
+
+    if (ui.bulk_all_tests_check)
+        IIntuition->GetAttr(CHECKBOX_Checked, ui.bulk_all_tests_check, &run_all_tests);
+    if (ui.bulk_all_blocks_check)
+        IIntuition->GetAttr(CHECKBOX_Checked, ui.bulk_all_blocks_check, &run_all_blocks);
+
+    if (run_all_tests) {
+        strcpy(test_name, "All Test Types");
+    } else {
+        switch (ui.current_test_type) {
+        case TEST_SPRINTER:
+            strcpy(test_name, "Sprinter");
+            break;
+        case TEST_HEAVY_LIFTER:
+            strcpy(test_name, "HeavyLifter");
+            break;
+        case TEST_LEGACY:
+            strcpy(test_name, "Legacy");
+            break;
+        case TEST_DAILY_GRIND:
+            strcpy(test_name, "DailyGrind");
+            break;
+        case TEST_SEQUENTIAL:
+            strcpy(test_name, "Sequential");
+            break;
+        case TEST_RANDOM_4K:
+            strcpy(test_name, "Random 4K");
+            break;
+        case TEST_PROFILER:
+            strcpy(test_name, "Profiler");
+            break;
+        default:
+            strcpy(test_name, "Unknown");
+        }
+    }
+
+    const char *block_str;
+    if (run_all_blocks) {
+        block_str = "All Block Sizes";
+    } else {
+        block_str = FormatPresetBlockSize(ui.current_block_size);
+    }
+
+    snprintf(buf, sizeof(buf), "Settings: %s / %u Passes / %s", test_name, (unsigned int)ui.current_passes, block_str);
+
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.bulk_info_label, ui.window, NULL, GA_Text, (uint32)buf, TAG_DONE);
+}
+
 void HandleWorkerReply(struct Message *m)
 {
     LOG_DEBUG("GUI: Worker Msg received at %p. Type=%d", m, m->mn_Node.ln_Type);
@@ -34,8 +92,12 @@ void HandleWorkerReply(struct Message *m)
         BenchStatus *st = (BenchStatus *)m;
         if (st->msg_type == MSG_TYPE_STATUS) {
             if (st->finished) {
-                ui.jobs_pending--;
-                if (ui.jobs_pending == 0) {
+                /* Job finished, try to dispatch next one */
+                ui.worker_busy = FALSE; /* Briefly strictly to allow DispatchNextJob to see we are ready */
+                DispatchNextJob();
+
+                /* Only reset UI if queue is empty AND worker is not busy */
+                if (IsQueueEmpty() && !ui.worker_busy) {
                     IIntuition->SetGadgetAttrs((struct Gadget *)ui.status_light_obj, ui.window, NULL, LABEL_Text,
                                                (uint32) "[ IDLE ]", TAG_DONE);
 
@@ -172,6 +234,40 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             uint32 t = 0;
             IIntuition->GetAttr(CLICKTAB_Current, ui.tabs, &t);
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.page_obj, ui.window, NULL, PAGE_Current, t, TAG_DONE);
+            /* Refresh Bulk Tab Info when switching tabs (Tab 3 is Bulk) */
+            if (t == 3) {
+                UpdateBulkTabInfo();
+            }
+            break;
+        }
+        case GID_TEST_CHOOSER:
+            IIntuition->GetAttr(CHOOSER_Selected, ui.test_chooser, &ui.current_test_type);
+            LOG_DEBUG("GUI: Test Type changed to %u", ui.current_test_type);
+            UpdateBulkTabInfo();
+            break;
+        case GID_NUM_PASSES:
+            IIntuition->GetAttr(INTEGER_Number, ui.pass_gad, &ui.current_passes);
+            LOG_DEBUG("GUI: Passes changed to %u", ui.current_passes);
+            UpdateBulkTabInfo();
+            break;
+        case GID_BLOCK_SIZE: {
+            uint32 b_idx = 0;
+            IIntuition->GetAttr(CHOOSER_Selected, ui.block_chooser, &b_idx);
+            struct Node *bn = IExec->GetHead(&ui.block_list);
+            uint32 i = 0;
+            ui.current_block_size = 4096; /* Safety fallback */
+            while (bn) {
+                if (i == b_idx) {
+                    uint32 bs_val = 0;
+                    IChooser->GetChooserNodeAttrs(bn, CNA_UserData, &bs_val, TAG_DONE);
+                    ui.current_block_size = bs_val;
+                    break;
+                }
+                bn = IExec->GetSucc(bn);
+                i++;
+            }
+            LOG_DEBUG("GUI: Block Size changed to %u (idx=%u)", ui.current_block_size, b_idx);
+            UpdateBulkTabInfo();
             break;
         }
         case GID_RUN_ALL:
@@ -181,11 +277,22 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         case GID_BULK_RUN:
             LaunchBulkJobs();
             break;
+        case GID_BULK_ALL_TESTS:
+        case GID_BULK_ALL_BLOCKS:
+            UpdateBulkTabInfo();
+            break;
         case GID_FLUSH_CACHE:
             ui.flush_cache = code;
             break;
         case GID_REFRESH_HISTORY:
             RefreshHistory();
+            break;
+        case GID_REFRESH_DRIVES:
+            if (!ui.worker_busy) {
+                ClearHardwareInfoCache();
+                RefreshDriveList();
+                ShowMessage("Drives Refreshed", "Drive list and hardware info cache\nhave been refreshed.", "OK");
+            }
             break;
         case GID_HISTORY_LIST:
         case GID_CURRENT_RESULTS: {

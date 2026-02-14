@@ -101,30 +101,112 @@ extern GUIState ui;
 /* Prototypes for functions split out of gui.c */
 
 /* [gui_utils.c] - Formatting and Localization Helpers */
+
+/**
+ * @brief Format a block size in bytes (e.g., 4096) to a label (e.g., "4KB").
+ */
 const char *FormatPresetBlockSize(uint32 bytes);
+
+/**
+ * @brief Format a large byte count to a human-readable string (e.g., "1.5 GB").
+ */
 const char *FormatByteSize(uint64 bytes);
+
+/**
+ * @brief Thread-safe formatted size helper.
+ * @param bytes Size in bytes.
+ * @param out Output buffer (must be at least 32 bytes).
+ */
 void FormatSize(uint64 bytes, char *out);
+/**
+ * @brief Retrieve a localized string or fallback default.
+ * @param id The string ID.
+ * @param default_str The default string to return if catalog is missing.
+ */
 CONST_STRPTR GetString(uint32 id, CONST_STRPTR default_str);
+
+/**
+ * @brief Display a standard AmigaOS requester message.
+ */
 void ShowMessage(const char *title, const char *body, const char *gadgets);
+
+/**
+ * @brief Enable or disable a gadget by ID.
+ * @param gid The gadget ID.
+ * @param disabled TRUE to disable, FALSE to enable.
+ */
 void SetGadgetState(uint16 gid, BOOL disabled);
+
+/**
+ * @brief Display a confirmation requester.
+ * @return TRUE if affirmative action selected.
+ */
 BOOL ShowConfirm(const char *title, const char *body, const char *gadgets);
 
 /* [gui_system.c] - OS and System Info */
+
+/**
+ * @brief Refresh the list of available drives/volumes in the chooser.
+ */
 void RefreshDriveList(void);
+
+/**
+ * @brief Allocate system resources (Icons, AppLibrary, etc.).
+ * @return TRUE on success.
+ */
 BOOL InitSystemResources(void);
+
+/**
+ * @brief Free system resources.
+ */
 void CleanupSystemResources(void);
 
 /* [gui_history.c] - CSV History Management */
+
+/**
+ * @brief Reload history from CSV and update the listbrowser.
+ */
 void RefreshHistory(void);
+
+/**
+ * @brief Check if a result already exists in the history (by ID).
+ * @param current The result to check.
+ * @param out_prev [Optional] Pointer to store the found previous result.
+ * @return TRUE if found.
+ */
+BOOL FindMatchInList(struct List *list, BenchResult *current, BenchResult *out_prev, BOOL reverse);
 BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev);
 
 /* [gui_prefs.c] - Preferences Management */
+
+/**
+ * @brief Load application preferences from ENV/ENVARC.
+ */
 void LoadPrefs(void);
+
+/**
+ * @brief Open the ASL file requester to browse for a CSV file.
+ */
 void BrowseCSV(void);
+
+/**
+ * @brief Open the Preferences window.
+ */
 void OpenPrefsWindow(void);
+
+/**
+ * @brief Apply changes from the Preferences window and save them.
+ */
 void UpdatePreferences(void);
 
 /* [gui_layout.c] - UI Layout Construction */
+
+/**
+ * @brief Create the main application window layout.
+ * @param icon The application disk object (icon).
+ * @param tab_list Pointer to the list of tab labels.
+ * @return The WindowObject (Application Window).
+ */
 Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list);
 
 /* [gui_events.c] - Event Handlers */
@@ -132,6 +214,7 @@ void HandleWorkerReply(struct Message *m);
 void HandleWorkbenchMessage(struct ApplicationMsg *amsg, BOOL *running);
 void HandleGUIEvent(uint32 result, uint16 code, BOOL *running);
 void HandlePrefsEvent(uint32 result, uint16 code);
+void UpdateBulkTabInfo(void);
 
 /* [gui_worker.c] - Worker Thread */
 void BenchmarkWorker(void);
@@ -148,9 +231,27 @@ void RefreshBulkList(void);
 void LaunchBulkJobs(void);
 
 /* [gui_details_window.c] - Details Window management */
+
+/**
+ * @brief Handle "Show Details" action for selected list item.
+ * @param list_obj Pointer to the ListBrowser object (History or Bench).
+ */
 void ShowBenchmarkDetails(Object *list_obj);
+
+/**
+ * @brief Open the Details Window for a specific result.
+ * @param res The benchmark result to display.
+ */
 void OpenDetailsWindow(BenchResult *res);
+
+/**
+ * @brief Close the Details Window.
+ */
 void CloseDetailsWindow(void);
+
+/**
+ * @brief Handle events for the Details Window.
+ */
 void HandleDetailsWindowEvent(uint16 code, uint32 result);
 
 #endif /* GUI_INTERNAL_H */

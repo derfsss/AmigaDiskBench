@@ -48,13 +48,66 @@ extern struct TimeRequest *BenchTimerReq;
 /* Internal prototypes */
 
 /* Engine info helpers */
-/* No internal prototypes currently needed, public ones are in engine.h */
+
+/**
+ * @brief Retrieve hardware details for a volume path (Internal).
+ * Wrapper around GetScsiHardwareInfo.
+ *
+ * @param path The path to query.
+ * @param result Pointer to the BenchResult structure to populate.
+ */
+void GetHardwareInfo(const char *path, BenchResult *result);
+
+/**
+ * @brief Clear the internal hardware info cache.
+ */
+void ClearHardwareInfoCache(void);
 
 /* Engine test implementation */
+
+/**
+ * @brief Create a dummy file of a specified size for testing.
+ *
+ * @param path Full path to the file to create.
+ * @param size Total size of the file in bytes.
+ * @param chunk_size Size of chunks to write (for buffer alignment testing).
+ * @return Total bytes written, or 0 on error.
+ */
 uint32 WriteDummyFile(const char *path, uint32 size, uint32 chunk_size);
+
+/**
+ * @brief Get the current high-resolution system time (Microseconds).
+ *
+ * @param tv Pointer to a TimeVal structure to store the result.
+ */
 void GetMicroTime(struct TimeVal *tv);
+
+/**
+ * @brief Calculate duration between two time values in seconds.
+ *
+ * @param start Start time.
+ * @param end End time.
+ * @return Duration in seconds (with fractional part).
+ */
 float GetDuration(struct TimeVal *start, struct TimeVal *end);
+
+/**
+ * @brief Execute a single iteration of a benchmark test.
+ *
+ * @param type Test type.
+ * @param target_path Path to test.
+ * @param block_size Block size to use.
+ * @param out_result Pointer to store the result of this single run.
+ * @return TRUE if successful, FALSE on error.
+ */
 BOOL RunSingleBenchmark(BenchTestType type, const char *target_path, uint32 block_size, BenchResult *out_result);
+
+/**
+ * @brief Attempt to flush the disk cache for a specific path.
+ *
+ * @param path The path to flush.
+ * @return TRUE if successful (or not applicable), FALSE on error.
+ */
 BOOL FlushDiskCache(const char *path);
 
 /* Engine persistence helpers */

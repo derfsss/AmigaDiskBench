@@ -94,12 +94,12 @@ void UpdateVisualization(void)
     for (int i = 0; i < 5; i++) {
         if (i < count) {
             BenchResult *r = all_results[i];
-            char label_text[128];
-            snprintf(label_text, sizeof(label_text), " %d. %s (%s) - %.2f MB/s", i + 1, r->volume_name,
-                     FormatPresetBlockSize(r->block_size), r->mb_per_sec);
+            /* User persistent buffer in GUIState to avoid stack invalidation */
+            snprintf(ui.vis_label_buffers[i], sizeof(ui.vis_label_buffers[i]), " %d. %s (%s) - %.2f MB/s", i + 1,
+                     r->volume_name, FormatPresetBlockSize(r->block_size), r->mb_per_sec);
 
-            IIntuition->SetGadgetAttrs((struct Gadget *)ui.vis_labels[i], ui.window, NULL, LABEL_Text,
-                                       (uint32)label_text, TAG_DONE);
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.vis_labels[i], ui.window, NULL, GA_Text,
+                                       (uint32)ui.vis_label_buffers[i], TAG_DONE);
 
             /* Use a fixed scale (multiplied by 100 for integer fuelgauge) */
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.vis_bars[i], ui.window, NULL, FUELGAUGE_Max,
@@ -107,10 +107,9 @@ void UpdateVisualization(void)
                                        TAG_DONE);
         } else {
             /* Clear unused slots if there are fewer than 5 results */
-            char label_text[32];
-            snprintf(label_text, sizeof(label_text), " %d. N/A", i + 1);
-            IIntuition->SetGadgetAttrs((struct Gadget *)ui.vis_labels[i], ui.window, NULL, LABEL_Text,
-                                       (uint32)label_text, TAG_DONE);
+            snprintf(ui.vis_label_buffers[i], sizeof(ui.vis_label_buffers[i]), " %d. N/A", i + 1);
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.vis_labels[i], ui.window, NULL, GA_Text,
+                                       (uint32)ui.vis_label_buffers[i], TAG_DONE);
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.vis_bars[i], ui.window, NULL, FUELGAUGE_Level, 0, TAG_DONE);
         }
     }

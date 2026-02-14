@@ -22,6 +22,7 @@
  */
 
 #include "engine_internal.h"
+#include "engine_warmup.h"
 #include "engine_workloads.h"
 #include <float.h>
 #include <stdio.h>
@@ -124,6 +125,9 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     if (flush_cache) {
         FlushDiskCache(target_path);
     }
+
+    /* Perform Warmup */
+    RunWarmup(target_path);
 
     float *results = IExec->AllocVecTags(sizeof(float) * passes, AVT_Type, MEMF_SHARED, TAG_DONE);
     if (!results)

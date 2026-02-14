@@ -41,33 +41,37 @@ void BenchmarkWorker(void)
 
     while (running) {
         IExec->WaitPort(job_port);
-        BenchJob *job = (BenchJob *)IExec->GetMsg(job_port);
-        if (job) {
-            LOG_DEBUG("Worker: Received Job message...");
-            if (job->type == (BenchTestType)-1) {
-                running = FALSE;
-            } else {
-                BenchStatus *status =
-                    IExec->AllocVecTags(sizeof(BenchStatus), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
-                if (status) {
-                    status->msg_type = MSG_TYPE_STATUS;
-                    status->finished = FALSE;
-                    LOG_DEBUG("Worker: Type=%d, Passes=%u, BS=%u", job->type, (unsigned int)job->num_passes,
-                              (unsigned int)job->block_size);
-                    status->success = RunBenchmark(job->type, job->target_path, job->num_passes, job->block_size,
-                                                   job->use_trimmed_mean, job->flush_cache, &status->result);
-                    status->finished = TRUE;
-                    if (status->success) {
-                        SaveResultToCSV(ui.csv_path, &status->result);
-                    }
-                    IExec->PutMsg(job->msg.mn_ReplyPort, &status->msg);
-                } else {
-                    /* If allocation fails, we must at least reply to the job to prevent deadlock */
+        BenchJob *job;
+        while ((job = (BenchJob *)IExec->GetMsg(job_port))) {
+            if (job) {
+                LOG_DEBUG("Worker: Received Job message...");
+                if (job->type == (BenchTestType)-1) {
+                    running = FALSE;
                     IExec->ReplyMsg(&job->msg);
-                    continue;
+                    break; /* Exit inner loop, outer loop will terminate */
+                } else {
+                    BenchStatus *status = IExec->AllocVecTags(sizeof(BenchStatus), AVT_Type, MEMF_SHARED,
+                                                              AVT_ClearWithValue, 0, TAG_DONE);
+                    if (status) {
+                        status->msg_type = MSG_TYPE_STATUS;
+                        status->finished = FALSE;
+                        LOG_DEBUG("Worker: Type=%d, Passes=%u, BS=%u", job->type, (unsigned int)job->num_passes,
+                                  (unsigned int)job->block_size);
+                        status->success = RunBenchmark(job->type, job->target_path, job->num_passes, job->block_size,
+                                                       job->use_trimmed_mean, job->flush_cache, &status->result);
+                        status->finished = TRUE;
+                        if (status->success) {
+                            SaveResultToCSV(ui.csv_path, &status->result);
+                        }
+                        IExec->PutMsg(job->msg.mn_ReplyPort, &status->msg);
+                    } else {
+                        /* If allocation fails, we must at least reply to the job to prevent deadlock */
+                        IExec->ReplyMsg(&job->msg);
+                        continue;
+                    }
                 }
+                IExec->ReplyMsg(&job->msg);
             }
-            IExec->ReplyMsg(&job->msg);
         }
     }
 
@@ -133,7 +137,7 @@ void LaunchBenchmarkJob(void)
         job->flush_cache = ui.flush_cache;
         job->msg.mn_ReplyPort = ui.worker_reply_port;
 
-        SetGadgetState(GID_RUN_ALL, TRUE);
-        IExec->PutMsg(ui.worker_port, &job->msg);
+        /* Queue the job instead of sending directly */
+        EnqueueBenchmarkJob(job);
     }
 }

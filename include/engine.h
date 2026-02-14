@@ -29,16 +29,19 @@
 #include <exec/types.h>
 
 /* Test types */
+/**
+ * @brief Enumeration of available benchmark test types.
+ */
 typedef enum
 {
-    TEST_SPRINTER = 0, /* Small files / Metadata */
-    TEST_HEAVY_LIFTER, /* Large file / Big chunks */
-    TEST_LEGACY,       /* Large file / Small chunks */
-    TEST_DAILY_GRIND,  /* Pseudo-random mix */
-    TEST_SEQUENTIAL,   /* Professional: Sequential I/O */
-    TEST_RANDOM_4K,    /* Professional: Random 4K I/O */
-    TEST_PROFILER,     /* Professional: Filesystem Profiler (Metadata) */
-    TEST_COUNT
+    TEST_SPRINTER = 0, /**< Small files / Metadata performance */
+    TEST_HEAVY_LIFTER, /**< Large file / Big chunk transfer */
+    TEST_LEGACY,       /**< Large file / Small chunk transfer (Simulates older apps) */
+    TEST_DAILY_GRIND,  /**< Pseudo-random mix of operations */
+    TEST_SEQUENTIAL,   /**< Professional: Pure Sequential I/O */
+    TEST_RANDOM_4K,    /**< Professional: Random 4K I/O */
+    TEST_PROFILER,     /**< Professional: Filesystem Profiler (Metadata) */
+    TEST_COUNT         /**< Total number of test types */
 } BenchTestType;
 
 /* Performance sample for graphing */
@@ -99,22 +102,77 @@ typedef struct
 } BenchResult;
 
 /* Engine functions */
+/* Engine functions */
+
+/**
+ * @brief Initialize the benchmark engine and required resources.
+ *
+ * @return TRUE if initialization was successful, FALSE otherwise.
+ */
 BOOL InitEngine(void);
+
+/**
+ * @brief Cleanup engine resources and free memory.
+ */
 void CleanupEngine(void);
 
-/* Run a specific test on a target path */
-/* Returns TRUE on success, FALSE on error or user abort */
-/* passes: number of times to run the test (for averaging) */
+/**
+ * @brief Run a specified benchmark test on a target path.
+ *
+ * This function handles the setup, execution, and result collection for a benchmark job.
+ *
+ * @param type The type of benchmark test to run (e.g., TEST_SPRINTER).
+ * @param target_path The filesystem path to test (e.g., "DH0:").
+ * @param passes Number of times to run the test for averaging.
+ * @param block_size Block size to use for I/O operations (in bytes).
+ * @param use_trimmed_mean If TRUE, discard best/worst runs before averaging.
+ * @param flush_cache If TRUE, attempt to clear OS buffers before running.
+ * @param out_result Pointer to a BenchResult structure to store the results.
+ * @return TRUE if the benchmark completed successfully, FALSE on error or abort.
+ */
 BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, uint32 block_size, BOOL use_trimmed_mean,
                   BOOL flush_cache, BenchResult *out_result);
 
-/* Identify filesystem of a path */
+/**
+ * @brief Identify the filesystem of a given path.
+ *
+ * @param path The path to check (e.g., "DH0:").
+ * @param out_name Buffer to store the filesystem name (e.g., "NGF/00").
+ * @param name_size Size of the output buffer.
+ */
 void GetFileSystemInfo(const char *path, char *out_name, uint32 name_size);
 
-/* Retrieve hardware details for a volume path */
+/**
+ * @brief Retrieve hardware details for a volume path.
+ *
+ * Queries the device associated with the path (e.g., via SCSI_INQUIRY)
+ * to obtain vendor, product, and version information.
+ * Uses a caching mechanism to avoid redundant hardware queries.
+ *
+ * @param path The path to query.
+ * @param result Pointer to the BenchResult structure to populate with hardware info.
+ */
 void GetHardwareInfo(const char *path, BenchResult *result);
 
+/**
+ * @brief Clear the internal hardware info cache.
+ *
+ * Invalidates all cached hardware information, forcing a re-query on the next access.
+ * Useful when drives are changed or added.
+ */
+void ClearHardwareInfoCache(void);
+
 /* Persistence helpers */
+
+/**
+ * @brief Save a benchmark result to a CSV file.
+ *
+ * Appends the result to the specified file in a standardized CSV format.
+ *
+ * @param filename Path to the CSV file.
+ * @param result Pointer to the BenchResult to save.
+ * @return TRUE on success, FALSE on failure.
+ */
 BOOL SaveResultToCSV(const char *filename, BenchResult *result);
 
 typedef struct
@@ -130,6 +188,15 @@ typedef struct
     uint32 total_benchmarks;
 } GlobalReport;
 
+/**
+ * @brief Generate a global summary report from the CSV history.
+ *
+ * Aggregates statistics for all test types found in the history file.
+ *
+ * @param filename Path to the source CSV file.
+ * @param report Pointer to a GlobalReport structure to populate.
+ * @return TRUE if the report was generated successfully, FALSE otherwise.
+ */
 BOOL GenerateGlobalReport(const char *filename, GlobalReport *report);
 
 #endif /* ENGINE_H */

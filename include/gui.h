@@ -41,11 +41,14 @@
 #define MSG_TYPE_STATUS 1
 #define MSG_TYPE_JOB 2
 
-/* Message sent from GUI to Benchmark Process */
+/**
+ * @brief Message sent from GUI to Benchmark Process.
+ * Defines the parameters for a new benchmark job.
+ */
 typedef struct
 {
     struct Message msg;
-    uint32 msg_type; /* MSG_TYPE_JOB */
+    uint32 msg_type; /**< Message Type (e.g., MSG_TYPE_JOB) */
     BenchTestType type;
     char target_path[256];
     uint32 num_passes;
@@ -55,13 +58,18 @@ typedef struct
     struct MsgPort *reply_port;
 } BenchJob;
 
-/* GUI State structure */
+/**
+ * @brief Main GUI State structure.
+ * Holds all ReAction objects, system resources, and application state.
+ */
 typedef struct
 {
     Object *win_obj;
     struct Window *window;
     Object *tabs;
     Object *page_obj;
+
+    /* Gadgets - Application Window */
     Object *bench_list;
     Object *history_list;
     Object *bulk_list;
@@ -71,6 +79,8 @@ typedef struct
     Object *pass_gad;
     Object *block_chooser;
     Object *target_chooser;
+
+    /* Gadgets - Preferences Window */
     Object *prefs_win_obj;
     struct Window *prefs_window;
     Object *prefs_block_chooser;
@@ -79,6 +89,8 @@ typedef struct
     Object *prefs_trimmed_check;
     Object *prefs_test_chooser;
     Object *prefs_target_chooser;
+
+    /* Gadgets - Details Window */
     Object *details_win_obj;
     struct Window *details_window;
     Object *details_editor;
@@ -87,6 +99,7 @@ typedef struct
     Object *details_menu;
     Object *details_context_menu;
 
+    /* Lists for Choosers/ListBrowsers */
     struct List history_labels;
     struct List bench_labels;
     struct List drive_list;
@@ -94,6 +107,7 @@ typedef struct
     struct List block_list;
     struct List bulk_labels;
 
+    /* System Integration */
     uint32 app_id;
     struct MsgPort *gui_port;
     struct MsgPort *worker_port;
@@ -107,6 +121,7 @@ typedef struct
     Object *vis_bars[5];
     Object *vis_labels[5];
 
+    /* Library Bases */
     struct Library *IconBase, *LocaleBase, *ApplicationBase, *AslBase;
 
     /* Class library bases. Many are now handled by reaction.h but
@@ -122,6 +137,7 @@ typedef struct
     Class *CheckBoxClass, *ClickTabClass, *PageClass, *LabelClass, *StringClass, *IntegerClass;
     Class *TextEditorClass, *ScrollerClass, *FuelGaugeClass;
 
+    /* Interfaces */
     struct ApplicationIFace *IApp;
     struct LocaleIFace *ILoc;
     struct IconIFace *IIcn;
@@ -130,6 +146,7 @@ typedef struct
     struct PopupMenuIFace *IPopupMenu;
     struct PrefsObjectsIFace *IPrefsObjects;
 
+    /* Application State */
     BOOL PageAvailable;
     BOOL use_trimmed_mean;
     uint32 default_test_type;
@@ -139,13 +156,35 @@ typedef struct
     BOOL delete_prefs_needed;
     BOOL flush_cache;
     uint32 jobs_pending;
+
+    /* Current Benchmark Settings (Decoupled from Gadgets) */
+    uint32 current_test_type;
+    uint32 current_passes;
+    uint32 current_block_size;
+
+    /* Benchmark Queue State */
+    struct List benchmark_queue;
+    BOOL worker_busy;
+
+    /* Persistent buffers for Visualization Labels */
+    char vis_label_buffers[5][128];
+
+    /* Bulk Tab Gadgets */
+    Object *bulk_info_label;
+    Object *bulk_all_tests_check;
+    Object *bulk_all_blocks_check;
 } GUIState;
 
-/* Message sent from Benchmark Process to GUI for progress/results */
+#include "benchmark_queue.h"
+
+/**
+ * @brief Message status sent from Benchmark Process to GUI.
+ * Updates the GUI on the progress or completion of a job.
+ */
 typedef struct
 {
     struct Message msg;
-    uint32 msg_type; /* MSG_TYPE_STATUS */
+    uint32 msg_type; /**< Message Type (e.g., MSG_TYPE_STATUS) */
     BOOL finished;
     BOOL success;
     BenchResult result;
@@ -200,7 +239,11 @@ enum
     GID_VIS_LABEL_4,
     GID_VIS_LABEL_5,
     GID_BULK_LIST,
-    GID_BULK_RUN
+    GID_BULK_RUN,
+    GID_BULK_INFO,
+    GID_BULK_ALL_TESTS,
+    GID_BULK_ALL_BLOCKS,
+    GID_REFRESH_DRIVES
 };
 
 #define MID_ABOUT 1
@@ -225,9 +268,36 @@ enum
 #define COL_DUMMY 11
 
 /* GUI Functions */
+
+/**
+ * @brief Initialize and start the GUI application.
+ * Defines the event loop and manages the application lifecycle.
+ *
+ * @return 0 on normal exit.
+ */
 int StartGUI(void);
+
+/**
+ * @brief Format a block size in bytes to a readable string with unit.
+ *
+ * @param bytes The block size in bytes.
+ * @return String representation (e.g., "4MB").
+ */
 const char *FormatPresetBlockSize(uint32 bytes);
+
+/**
+ * @brief Format a generic byte size to a human-readable string.
+ *
+ * @param bytes The size in bytes.
+ * @return String representation (e.g., "1.5 GB").
+ */
 const char *FormatByteSize(uint64 bytes);
+
+/**
+ * @brief Export current benchmark history to an ANSI text file.
+ *
+ * @param filename The destination filename.
+ */
 void ExportToAnsiText(const char *filename);
 
 #endif /* GUI_H */

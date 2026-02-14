@@ -124,7 +124,30 @@ void LoadPrefs(void)
         ui.use_trimmed_mean = DEFAULT_TRIMMED_MEAN;
         strcpy(ui.csv_path, DEFAULT_CSV_PATH);
     }
-    LOG_DEBUG("LoadPrefs: Finished");
+    LOG_DEBUG("LoadPrefs: Finished (Pre-Decouple)");
+
+    /* Initialize decoupled state variables */
+    ui.current_test_type = ui.default_test_type;
+    uint32 p_num = 3;
+    IIntuition->GetAttr(INTEGER_Number, ui.pass_gad, &p_num);
+    ui.current_passes = p_num;
+
+    /* Map default block index to byte size */
+    ui.current_block_size = 4096; /* Default fallback */
+    struct Node *bn = IExec->GetHead(&ui.block_list);
+    uint32 i = 0;
+    while (bn) {
+        if (i == ui.default_block_size_idx) {
+            uint32 bs_val = 0;
+            IChooser->GetChooserNodeAttrs(bn, CNA_UserData, &bs_val, TAG_DONE);
+            ui.current_block_size = bs_val;
+            break;
+        }
+        bn = IExec->GetSucc(bn);
+        i++;
+    }
+    LOG_DEBUG("LoadPrefs: Initialized current_test=%u, passes=%u, block_size=%u", ui.current_test_type,
+              ui.current_passes, ui.current_block_size);
 }
 
 void BrowseCSV(void)
@@ -217,15 +240,37 @@ void UpdatePreferences(void)
 
     /* Update active state in main window */
     IIntuition->SetGadgetAttrs((struct Gadget *)ui.pass_gad, ui.window, NULL, INTEGER_Number, p_num, TAG_DONE);
+    ui.current_passes = p_num;
     ui.use_trimmed_mean = (BOOL)t_mean;
 
     uint32 t_type = DEFAULT_LAST_TEST;
     IIntuition->GetAttr(CHOOSER_Selected, ui.prefs_test_chooser, &t_type);
     ui.default_test_type = t_type;
+    /* Also update the gadget in main window and our state */
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.test_chooser, ui.window, NULL, CHOOSER_Selected, t_type, TAG_DONE);
+    ui.current_test_type = t_type;
 
     uint32 b_size_idx = DEFAULT_BLOCK_SIZE_IDX;
     IIntuition->GetAttr(CHOOSER_Selected, ui.prefs_block_chooser, &b_size_idx);
     ui.default_block_size_idx = b_size_idx;
+    /* Update gadget and state */
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.block_chooser, ui.window, NULL, CHOOSER_Selected, b_size_idx,
+                               TAG_DONE);
+
+    /* lookup block bytes for current_block_size */
+    ui.current_block_size = 4096;
+    struct Node *bn = IExec->GetHead(&ui.block_list);
+    uint32 i = 0;
+    while (bn) {
+        if (i == b_size_idx) {
+            uint32 bs = 0;
+            IChooser->GetChooserNodeAttrs(bn, CNA_UserData, &bs, TAG_DONE);
+            ui.current_block_size = bs;
+            break;
+        }
+        bn = IExec->GetSucc(bn);
+        i++;
+    }
 
     /* Update Default Drive from Prefs Chooser */
     struct Node *d_node = NULL;

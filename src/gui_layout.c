@@ -73,11 +73,12 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
            CHILD_WeightedHeight, 0, /* End Group "Benchmark Control" */
         /* Benchmark Actions Group */
         LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Benchmark Actions", LAYOUT_BevelStyle, BVS_GROUP,
-           LAYOUT_AddChild,
+           LAYOUT_ShrinkWrap, TRUE, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild,
            (ui.run_button = ButtonObject, GA_ID, GID_RUN_ALL, GA_RelVerify, TRUE, GA_Text,
             GetString(8, "Run Benchmark"), End),
-           CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, CHILD_MinWidth, 160, CHILD_MinHeight, 40, End,
-           CHILD_WeightedHeight, 0, /* End Group "Benchmark Actions" */
+           LAYOUT_AddChild, ButtonObject, GA_ID, GID_REFRESH_DRIVES, GA_RelVerify, TRUE, GA_Text, "Refresh Drives", End,
+           End, CHILD_WeightedHeight, 0, End, /* End Group "Benchmark Actions" */
+        CHILD_WeightedHeight, 0,              /* Fix: Prevent group from expanding vertically in main page */
         /* Benchmark List */
         LAYOUT_AddChild,
            (ui.bench_list = ListBrowserObject, GA_ID, GID_CURRENT_RESULTS, GA_RelVerify, TRUE, LISTBROWSER_ColumnInfo,
@@ -95,21 +96,36 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
            GID_VIEW_REPORT, GA_Text, GetString(10, "Global Report"), End, End, CHILD_WeightedHeight, 0, End;
 
     /* Page 2 (Visualization) */
+    /* Switched Labels to ReadOnly Buttons to allow dynamic text updates via SetGadgetAttrs */
     Object *page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_Label,
            "Top Results (MB/s)", LAYOUT_BevelStyle, BVS_GROUP, LAYOUT_AddChild,
-           (ui.vis_labels[0] = LabelObject, LABEL_Text, " 1. N/A", End), LAYOUT_AddChild,
+           (ui.vis_labels[0] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 1. N/A", BUTTON_BevelStyle, BVS_NONE,
+            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
+           LAYOUT_AddChild,
            (ui.vis_bars[0] = FuelGaugeObject, GA_ID, GID_VIS_BAR_1, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
             FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
-           LAYOUT_AddChild, (ui.vis_labels[1] = LabelObject, LABEL_Text, " 2. N/A", End), LAYOUT_AddChild,
+           LAYOUT_AddChild,
+           (ui.vis_labels[1] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 2. N/A", BUTTON_BevelStyle, BVS_NONE,
+            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
+           LAYOUT_AddChild,
            (ui.vis_bars[1] = FuelGaugeObject, GA_ID, GID_VIS_BAR_2, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
             FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
-           LAYOUT_AddChild, (ui.vis_labels[2] = LabelObject, LABEL_Text, " 3. N/A", End), LAYOUT_AddChild,
+           LAYOUT_AddChild,
+           (ui.vis_labels[2] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 3. N/A", BUTTON_BevelStyle, BVS_NONE,
+            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
+           LAYOUT_AddChild,
            (ui.vis_bars[2] = FuelGaugeObject, GA_ID, GID_VIS_BAR_3, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
             FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
-           LAYOUT_AddChild, (ui.vis_labels[3] = LabelObject, LABEL_Text, " 4. N/A", End), LAYOUT_AddChild,
+           LAYOUT_AddChild,
+           (ui.vis_labels[3] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 4. N/A", BUTTON_BevelStyle, BVS_NONE,
+            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
+           LAYOUT_AddChild,
            (ui.vis_bars[3] = FuelGaugeObject, GA_ID, GID_VIS_BAR_4, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
             FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
-           LAYOUT_AddChild, (ui.vis_labels[4] = LabelObject, LABEL_Text, " 5. N/A", End), LAYOUT_AddChild,
+           LAYOUT_AddChild,
+           (ui.vis_labels[4] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 5. N/A", BUTTON_BevelStyle, BVS_NONE,
+            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
+           LAYOUT_AddChild,
            (ui.vis_bars[4] = FuelGaugeObject, GA_ID, GID_VIS_BAR_5, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
             FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
            End, LAYOUT_AddChild, VLayoutObject, End, End;
@@ -119,7 +135,18 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
            (ui.bulk_list = ListBrowserObject, GA_ID, GID_BULK_LIST, GA_RelVerify, TRUE, LISTBROWSER_ColumnInfo,
             (uint32)bulk_cols, LISTBROWSER_ColumnTitles, TRUE, LISTBROWSER_Labels, (uint32)&ui.bulk_labels,
             LISTBROWSER_AutoFit, TRUE, LISTBROWSER_HorizontalProp, TRUE, End),
-           CHILD_WeightedHeight, 100, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, ButtonObject, GA_ID,
+           CHILD_WeightedHeight, 100,
+           /* Queued Job Settings & Options */
+        LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Queued Job Settings", LAYOUT_BevelStyle, BVS_GROUP,
+           LAYOUT_AddChild,
+           (ui.bulk_info_label = ButtonObject, GA_ID, GID_BULK_INFO, GA_ReadOnly, TRUE, GA_Text, "Init...", End),
+           LAYOUT_AddChild,
+           (ui.bulk_all_tests_check = CheckBoxObject, GA_ID, GID_BULK_ALL_TESTS, GA_RelVerify, TRUE, GA_Text,
+            "Run All Test Types (Sprinter..Profiler)", CHECKBOX_Checked, FALSE, End),
+           LAYOUT_AddChild,
+           (ui.bulk_all_blocks_check = CheckBoxObject, GA_ID, GID_BULK_ALL_BLOCKS, GA_RelVerify, TRUE, GA_Text,
+            "Run All Block Sizes (4K..1M)", CHECKBOX_Checked, FALSE, End),
+           End, CHILD_WeightedHeight, 0, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, ButtonObject, GA_ID,
            GID_BULK_RUN, GA_Text, "Run Bulk Benchmark on Selected", End, End, CHILD_WeightedHeight, 0, End;
 
     static struct NewMenu menu_data[] = {
