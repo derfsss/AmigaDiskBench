@@ -88,10 +88,13 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     Object *page1 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild,
            (ui.history_list = ListBrowserObject, GA_ID, GID_HISTORY_LIST, GA_RelVerify, TRUE, LISTBROWSER_ColumnInfo,
             (uint32)bench_cols, LISTBROWSER_ColumnTitles, TRUE, LISTBROWSER_Labels, (uint32)&ui.history_labels,
-            LISTBROWSER_AutoFit, TRUE, LISTBROWSER_ShowSelected, TRUE, LISTBROWSER_HorizontalProp, TRUE, End),
+            LISTBROWSER_AutoFit, TRUE, LISTBROWSER_ShowSelected, TRUE, LISTBROWSER_HorizontalProp, TRUE,
+            LISTBROWSER_MultiSelect, TRUE, End),
            CHILD_WeightedHeight, 100, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, ButtonObject, GA_ID,
            GID_REFRESH_HISTORY, GA_Text, GetString(9, "Refresh History"), End, LAYOUT_AddChild, ButtonObject, GA_ID,
-           GID_VIEW_REPORT, GA_Text, GetString(10, "Global Report"), End, End, CHILD_WeightedHeight, 0, End;
+           GID_VIEW_REPORT, GA_Text, GetString(10, "Global Report"), End, LAYOUT_AddChild,
+           (ui.compare_button = ButtonObject, GA_ID, GID_HISTORY_COMPARE, GA_Text, "Compare Selected", GA_Disabled, TRUE,
+           End), End, CHILD_WeightedHeight, 0, End;
 
     /* Page 2 (Visualization) - History Trend Graph */
     Object *page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE,

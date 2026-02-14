@@ -103,6 +103,11 @@ typedef struct
     Object *details_menu;
     Object *details_context_menu;
 
+    /* Gadgets - Compare Window */
+    Object *compare_win_obj;
+    struct Window *compare_window;
+    Object *compare_button;
+
     /* Lists for Choosers/ListBrowsers */
     struct List history_labels;
     struct List bench_labels;
@@ -221,6 +226,7 @@ enum
     GID_HISTORY_LIST,
     GID_REFRESH_HISTORY,
     GID_VIEW_REPORT,
+    GID_HISTORY_COMPARE,
     GID_TEST_DESCRIPTION,
     GID_NUM_PASSES,
     GID_BLOCK_SIZE,

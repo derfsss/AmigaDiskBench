@@ -110,7 +110,7 @@ static void AddSample(BenchSampleData *sd, float time, float value)
 }
 
 BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, uint32 block_size, BOOL use_trimmed_mean,
-                  BOOL flush_cache, BenchResult *out_result, BenchSampleData *out_samples)
+                  BOOL flush_cache, ProgressCallback progress_cb, BenchResult *out_result, BenchSampleData *out_samples)
 {
     if (passes == 0)
         passes = 1;
@@ -199,6 +199,19 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
                 float val = (out_result->type == TEST_PROFILER) ? (float)pass_ops / duration
                                                                 : ((float)pass_bytes / (1024.0f * 1024.0f)) / duration;
                 AddSample(out_samples, total_duration, val);
+
+                /* Report progress if callback provided */
+                if (progress_cb) {
+                    char progress_text[128];
+                    if (out_result->type == TEST_PROFILER) {
+                        snprintf(progress_text, sizeof(progress_text), "Pass %u/%u - %.0f IOPS", (unsigned int)(i + 1),
+                                 (unsigned int)passes, val);
+                    } else {
+                        snprintf(progress_text, sizeof(progress_text), "Pass %u/%u - %.1f MB/s", (unsigned int)(i + 1),
+                                 (unsigned int)passes, val);
+                    }
+                    progress_cb(progress_text, FALSE);
+                }
             }
         }
     }

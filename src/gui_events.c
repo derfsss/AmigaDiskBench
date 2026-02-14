@@ -63,6 +63,21 @@ void HandleWorkerReply(struct Message *m)
     if (m->mn_Node.ln_Type == NT_REPLYMSG || m->mn_Node.ln_Type == NT_MESSAGE) {
         BenchStatus *st = (BenchStatus *)m;
         if (st->msg_type == MSG_TYPE_STATUS) {
+            /* Handle intermediate progress updates */
+            if (!st->finished) {
+                /* Update status text with progress information */
+                if (ui.status_light_obj && st->status_text[0] != '\0') {
+                    IIntuition->SetGadgetAttrs((struct Gadget *)ui.status_light_obj, ui.window, NULL,
+                                               LABEL_Text, (uint32)st->status_text,
+                                               TAG_DONE);
+                    LOG_DEBUG("GUI: Progress update - %s", st->status_text);
+                }
+                /* Free intermediate status message */
+                IExec->FreeVec(st);
+                return;
+            }
+
+            /* Handle final completion */
             if (st->finished) {
                 /* Job finished, try to dispatch next one */
                 ui.worker_busy = FALSE; /* Briefly strictly to allow DispatchNextJob to see we are ready */

@@ -262,4 +262,17 @@ void CloseDetailsWindow(void);
  */
 void HandleDetailsWindowEvent(uint16 code, uint32 result);
 
+/**
+ * @brief Open the comparison window to compare two benchmark results side-by-side.
+ *
+ * @param result1 Pointer to the first BenchResult to compare.
+ * @param result2 Pointer to the second BenchResult to compare.
+ */
+void OpenCompareWindow(BenchResult *result1, BenchResult *result2);
+
+/**
+ * @brief Close the comparison window.
+ */
+void CloseCompareWindow(void);
+
 #endif /* GUI_INTERNAL_H */

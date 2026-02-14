@@ -124,6 +124,16 @@ const char *TestTypeToDisplayName(BenchTestType type);
  */
 BenchTestType StringToTestType(const char *name);
 
+/**
+ * @brief Progress callback function type for multi-pass benchmarks.
+ *
+ * Called by the engine to report intermediate progress during benchmark execution.
+ *
+ * @param status_text Status message (e.g., "Pass 3/5 - 145.3 MB/s").
+ * @param finished TRUE if the benchmark is complete, FALSE for intermediate updates.
+ */
+typedef void (*ProgressCallback)(const char *status_text, BOOL finished);
+
 /* Engine functions */
 
 /**
@@ -149,12 +159,13 @@ void CleanupEngine(void);
  * @param block_size Block size to use for I/O operations (in bytes).
  * @param use_trimmed_mean If TRUE, discard best/worst runs before averaging.
  * @param flush_cache If TRUE, attempt to clear OS buffers before running.
+ * @param progress_cb Optional progress callback for multi-pass updates (may be NULL).
  * @param out_result Pointer to a BenchResult structure to store the results.
  * @param out_samples Optional pointer to a BenchSampleData structure for time-series data (may be NULL).
  * @return TRUE if the benchmark completed successfully, FALSE on error or abort.
  */
 BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, uint32 block_size, BOOL use_trimmed_mean,
-                  BOOL flush_cache, BenchResult *out_result, BenchSampleData *out_samples);
+                  BOOL flush_cache, ProgressCallback progress_cb, BenchResult *out_result, BenchSampleData *out_samples);
 
 /**
  * @brief Identify the filesystem of a given path.

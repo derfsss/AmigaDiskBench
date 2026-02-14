@@ -24,6 +24,32 @@
 #include "gui_internal.h"
 #include <stdint.h>
 
+/* Static pointer to GUI reply port for progress callback */
+static struct MsgPort *s_gui_reply_port = NULL;
+
+/**
+ * @brief Send progress update to GUI
+ *
+ * This function is called by the engine's progress callback to send intermediate
+ * status messages during multi-pass benchmarks.
+ */
+static void SendProgressUpdate(const char *status_text, BOOL finished)
+{
+    if (!s_gui_reply_port || !status_text)
+        return;
+
+    BenchStatus *status = IExec->AllocVecTags(sizeof(BenchStatus), AVT_Type, MEMF_SHARED,
+                                              AVT_ClearWithValue, 0, TAG_DONE);
+    if (status) {
+        status->msg_type = MSG_TYPE_STATUS;
+        status->finished = finished;
+        status->success = TRUE;
+        snprintf(status->status_text, sizeof(status->status_text), "%s", status_text);
+        IExec->PutMsg(s_gui_reply_port, &status->msg);
+        LOG_DEBUG("Worker: Sent progress - %s", status_text);
+    }
+}
+
 void BenchmarkWorker(void)
 {
     struct Process *me = (struct Process *)IExec->FindTask(NULL);
@@ -55,12 +81,23 @@ void BenchmarkWorker(void)
                         status->finished = FALSE;
                         LOG_DEBUG("Worker: Type=%d, Passes=%u, BS=%u", job->type, (unsigned int)job->num_passes,
                                   (unsigned int)job->block_size);
+
+                        /* Store GUI reply port for progress callback */
+                        s_gui_reply_port = job->msg.mn_ReplyPort;
+
                         status->success = RunBenchmark(job->type, job->target_path, job->num_passes, job->block_size,
-                                                       job->use_trimmed_mean, job->flush_cache, &status->result,
-                                                       &status->sample_data);
+                                                       job->use_trimmed_mean, job->flush_cache, SendProgressUpdate,
+                                                       &status->result, &status->sample_data);
                         status->finished = TRUE;
+
+                        /* Clear static pointer */
+                        s_gui_reply_port = NULL;
+
                         if (status->success) {
                             SaveResultToCSV(ui.csv_path, &status->result);
+                            snprintf(status->status_text, sizeof(status->status_text), "Complete");
+                        } else {
+                            snprintf(status->status_text, sizeof(status->status_text), "Failed");
                         }
                         IExec->PutMsg(job->msg.mn_ReplyPort, &status->msg);
                     } else {
