@@ -26,6 +26,10 @@
 #include <interfaces/locale.h>
 #include <proto/locale.h>
 #include <stdlib.h>
+#include <utility/hooks.h>
+
+/* Static render hook for visualization SpaceObject */
+static struct Hook viz_hook;
 
 /* Global UI state */
 GUIState ui;
@@ -120,6 +124,9 @@ int StartGUI(void)
         ui.IApp->GetApplicationAttrs(ui.app_id, APPATTR_Port, (uint32 *)&ui.app_port, TAG_DONE);
     }
 
+    /* Initialize visualization filter labels (must be before CreateMainLayout) */
+    InitVizFilterLabels();
+
     ui.win_obj = CreateMainLayout(icon, &tab_list);
 
     if (!ui.win_obj) {
@@ -142,10 +149,20 @@ int StartGUI(void)
         } else
             snprintf(pv, sizeof(pv), "SYS:");
 
+        /* Install render hook on visualization SpaceObject */
+        memset(&viz_hook, 0, sizeof(viz_hook));
+        viz_hook.h_Entry = (HOOKFUNC)VizRenderHook;
+        viz_hook.h_Data = NULL;
+        if (ui.viz_canvas) {
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_canvas, ui.window, NULL,
+                                       SPACE_RenderHook, (uint32)&viz_hook, TAG_DONE);
+        }
+
         RefreshDriveList();
         LoadPrefs();
         UpdateBulkTabInfo();
         RefreshHistory();
+        RefreshVizVolumeFilter();
 
         /* Select Default Drive */
         struct Node *sel_node = NULL, *vn;
@@ -285,6 +302,8 @@ int StartGUI(void)
         if (ui.prefs_port)
             IExec->FreeSysObject(ASOT_PORT, ui.prefs_port);
 
+        CleanupVizFilterLabels();
+
         if (icon)
             ui.IIcn->FreeDiskObject(icon);
 
@@ -292,6 +311,7 @@ int StartGUI(void)
         CleanupBenchmarkQueue();
         return 0;
     }
+    CleanupVizFilterLabels();
     CleanupSystemResources();
     CleanupBenchmarkQueue();
     return 1;

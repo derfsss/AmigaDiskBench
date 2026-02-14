@@ -163,6 +163,7 @@ BOOL InitSystemResources(void)
     ui.TextEditorBase = IIntuition->OpenClass("gadgets/texteditor.gadget", MINVERSION, &ui.TextEditorClass);
     ui.ScrollerBase = IIntuition->OpenClass("gadgets/scroller.gadget", MINVERSION, &ui.ScrollerClass);
     ui.FuelGaugeBase = IIntuition->OpenClass("gadgets/fuelgauge.gadget", MINVERSION, &ui.FuelGaugeClass);
+    ui.SpaceBase = IIntuition->OpenClass("gadgets/space.gadget", MINVERSION, &ui.SpaceClass);
     ui.CheckBoxBase = IIntuition->OpenClass("gadgets/checkbox.gadget", MINVERSION, &ui.CheckBoxClass);
     ui.ClickTabBase = IIntuition->OpenClass("gadgets/clicktab.gadget", MINVERSION, &ui.ClickTabClass);
     ui.LabelBase = IIntuition->OpenClass("images/label.image", MINVERSION, &ui.LabelClass);
@@ -260,6 +261,8 @@ void CleanupSystemResources(void)
         IIntuition->CloseClass(ui.ScrollerBase);
     if (ui.FuelGaugeBase)
         IIntuition->CloseClass(ui.FuelGaugeBase);
+    if (ui.SpaceBase)
+        IIntuition->CloseClass(ui.SpaceBase);
 
     /* Free Bulk Labels */
     struct Node *bulk_node = IExec->GetHead(&ui.bulk_labels);
@@ -283,8 +286,10 @@ void CleanupSystemResources(void)
 
     ui.WindowBase = ui.LayoutBase = ui.ButtonBase = ui.ListBrowserBase = ui.ChooserBase = NULL;
     ui.IntegerBase = ui.CheckBoxBase = ui.ClickTabBase = ui.PageBase = ui.LabelBase = ui.StringBase = NULL;
+    ui.SpaceBase = NULL;
     ui.WindowClass = ui.LayoutClass = ui.ButtonClass = ui.ListBrowserClass = ui.ChooserClass = NULL;
     ui.IntegerClass = ui.CheckBoxClass = ui.ClickTabClass = ui.PageClass = ui.LabelClass = ui.StringClass = NULL;
+    ui.SpaceClass = NULL;
 
     LOG_DEBUG("CleanupSystemResources: Finished");
 }

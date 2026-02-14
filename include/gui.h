@@ -122,8 +122,18 @@ typedef struct
     struct Catalog *catalog;
 
     Object *history_popup;
-    Object *vis_bars[5];
-    Object *vis_labels[5];
+
+    /* Visualization Tab - Trend Graph */
+    Object *viz_canvas;          /* SpaceObject for custom graph rendering */
+    Object *viz_filter_volume;   /* Chooser: filter by volume */
+    Object *viz_filter_test;     /* Chooser: filter by test type */
+    Object *viz_filter_metric;   /* Chooser: MB/s or IOPS */
+    struct List viz_volume_labels;  /* Chooser labels for volume filter */
+    struct List viz_test_labels;    /* Chooser labels for test type filter */
+    struct List viz_metric_labels;  /* Chooser labels for metric filter */
+    uint32 viz_filter_volume_idx;
+    uint32 viz_filter_test_idx;
+    uint32 viz_filter_metric_idx;
 
     /* Library Bases */
     struct Library *IconBase, *LocaleBase, *ApplicationBase, *AslBase;
@@ -132,14 +142,14 @@ typedef struct
        we keep those we explicitly manage via OpenClass for safety. */
     struct ClassLibrary *WindowBase, *LayoutBase, *ButtonBase, *ListBrowserBase, *ChooserBase;
     struct ClassLibrary *CheckBoxBase, *ClickTabBase, *PageBase, *LabelBase, *StringBase, *IntegerBase;
-    struct ClassLibrary *TextEditorBase, *ScrollerBase, *FuelGaugeBase;
+    struct ClassLibrary *TextEditorBase, *ScrollerBase, *FuelGaugeBase, *SpaceBase;
 
     /* BOOPSI class pointers. reaction.h macros often use class strings (e.g. "button.gadget"),
        but we retain these for cases where explicit class pointers are preferred.
        Note: MenuClass/MenuBase removed as they are built-in to Intuition. */
     Class *WindowClass, *LayoutClass, *ButtonClass, *ListBrowserClass, *ChooserClass;
     Class *CheckBoxClass, *ClickTabClass, *PageClass, *LabelClass, *StringClass, *IntegerClass;
-    Class *TextEditorClass, *ScrollerClass, *FuelGaugeClass;
+    Class *TextEditorClass, *ScrollerClass, *FuelGaugeClass, *SpaceClass;
 
     /* Interfaces */
     struct ApplicationIFace *IApp;
@@ -169,9 +179,6 @@ typedef struct
     /* Benchmark Queue State */
     struct List benchmark_queue;
     BOOL worker_busy;
-
-    /* Persistent buffers for Visualization Labels */
-    char vis_label_buffers[5][128];
 
     /* Bulk Tab Gadgets */
     Object *bulk_info_label;
@@ -233,16 +240,10 @@ enum
     GID_DETAILS_HSCROLL,
     GID_DETAILS_CLOSE,
     GID_FLUSH_CACHE,
-    GID_VIS_BAR_1,
-    GID_VIS_BAR_2,
-    GID_VIS_BAR_3,
-    GID_VIS_BAR_4,
-    GID_VIS_BAR_5,
-    GID_VIS_LABEL_1,
-    GID_VIS_LABEL_2,
-    GID_VIS_LABEL_3,
-    GID_VIS_LABEL_4,
-    GID_VIS_LABEL_5,
+    GID_VIZ_CANVAS,
+    GID_VIZ_FILTER_VOLUME,
+    GID_VIZ_FILTER_TEST,
+    GID_VIZ_FILTER_METRIC,
     GID_BULK_LIST,
     GID_BULK_RUN,
     GID_BULK_INFO,

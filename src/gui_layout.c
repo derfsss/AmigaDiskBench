@@ -93,40 +93,57 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
            GID_REFRESH_HISTORY, GA_Text, GetString(9, "Refresh History"), End, LAYOUT_AddChild, ButtonObject, GA_ID,
            GID_VIEW_REPORT, GA_Text, GetString(10, "Global Report"), End, End, CHILD_WeightedHeight, 0, End;
 
-    /* Page 2 (Visualization) */
-    /* Switched Labels to ReadOnly Buttons to allow dynamic text updates via SetGadgetAttrs */
-    Object *page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_Label,
-           "Top Results (MB/s)", LAYOUT_BevelStyle, BVS_GROUP, LAYOUT_AddChild,
-           (ui.vis_labels[0] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 1. N/A", BUTTON_BevelStyle, BVS_NONE,
-            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
-           LAYOUT_AddChild,
-           (ui.vis_bars[0] = FuelGaugeObject, GA_ID, GID_VIS_BAR_1, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
-            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
-           LAYOUT_AddChild,
-           (ui.vis_labels[1] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 2. N/A", BUTTON_BevelStyle, BVS_NONE,
-            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
-           LAYOUT_AddChild,
-           (ui.vis_bars[1] = FuelGaugeObject, GA_ID, GID_VIS_BAR_2, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
-            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
-           LAYOUT_AddChild,
-           (ui.vis_labels[2] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 3. N/A", BUTTON_BevelStyle, BVS_NONE,
-            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
-           LAYOUT_AddChild,
-           (ui.vis_bars[2] = FuelGaugeObject, GA_ID, GID_VIS_BAR_3, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
-            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
-           LAYOUT_AddChild,
-           (ui.vis_labels[3] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 4. N/A", BUTTON_BevelStyle, BVS_NONE,
-            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
-           LAYOUT_AddChild,
-           (ui.vis_bars[3] = FuelGaugeObject, GA_ID, GID_VIS_BAR_4, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
-            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
-           LAYOUT_AddChild,
-           (ui.vis_labels[4] = ButtonObject, GA_ReadOnly, TRUE, GA_Text, " 5. N/A", BUTTON_BevelStyle, BVS_NONE,
-            BUTTON_Transparent, TRUE, BUTTON_Justification, BCJ_LEFT, End),
-           LAYOUT_AddChild,
-           (ui.vis_bars[4] = FuelGaugeObject, GA_ID, GID_VIS_BAR_5, FUELGAUGE_Min, 0, FUELGAUGE_Max, 100,
-            FUELGAUGE_Level, 0, FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL, End),
-           End, LAYOUT_AddChild, VLayoutObject, End, End;
+    /* Page 2 (Visualization) - History Trend Graph */
+    Object *page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE,
+
+        /* Filter Controls */
+        LAYOUT_AddChild, HLayoutObject,
+            LAYOUT_Label, "Filters",
+            LAYOUT_BevelStyle, BVS_GROUP,
+
+            LAYOUT_AddChild,
+            (ui.viz_filter_volume = ChooserObject,
+                GA_ID, GID_VIZ_FILTER_VOLUME,
+                GA_RelVerify, TRUE,
+                CHOOSER_Labels, (uint32)&ui.viz_volume_labels,
+            End),
+            CHILD_Label, LabelObject, LABEL_Text, "Volume:", End,
+
+            LAYOUT_AddChild,
+            (ui.viz_filter_test = ChooserObject,
+                GA_ID, GID_VIZ_FILTER_TEST,
+                GA_RelVerify, TRUE,
+                CHOOSER_Labels, (uint32)&ui.viz_test_labels,
+            End),
+            CHILD_Label, LabelObject, LABEL_Text, "Test:", End,
+
+            LAYOUT_AddChild,
+            (ui.viz_filter_metric = ChooserObject,
+                GA_ID, GID_VIZ_FILTER_METRIC,
+                GA_RelVerify, TRUE,
+                CHOOSER_Labels, (uint32)&ui.viz_metric_labels,
+            End),
+            CHILD_Label, LabelObject, LABEL_Text, "Metric:", End,
+        End,
+        CHILD_WeightedHeight, 0,
+
+        /* Graph Canvas */
+        LAYOUT_AddChild, VLayoutObject,
+            LAYOUT_Label, "Performance Trend",
+            LAYOUT_BevelStyle, BVS_GROUP,
+
+            LAYOUT_AddChild,
+            (ui.viz_canvas = SpaceObject,
+                GA_ID, GID_VIZ_CANVAS,
+                SPACE_MinWidth, 400,
+                SPACE_MinHeight, 250,
+                SPACE_BevelStyle, BVS_FIELD,
+                SPACE_Transparent, TRUE,
+            SpaceEnd),
+            CHILD_WeightedHeight, 100,
+        End,
+        CHILD_WeightedHeight, 100,
+    End;
 
     /* Page 3 (Bulk Testing) */
     Object *page3 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild,

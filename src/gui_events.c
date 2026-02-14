@@ -225,6 +225,18 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         case GID_FLUSH_CACHE:
             ui.flush_cache = code;
             break;
+        case GID_VIZ_FILTER_VOLUME:
+            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_volume, &ui.viz_filter_volume_idx);
+            UpdateVisualization();
+            break;
+        case GID_VIZ_FILTER_TEST:
+            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_test, &ui.viz_filter_test_idx);
+            UpdateVisualization();
+            break;
+        case GID_VIZ_FILTER_METRIC:
+            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_metric, &ui.viz_filter_metric_idx);
+            UpdateVisualization();
+            break;
         case GID_REFRESH_HISTORY:
             RefreshHistory();
             break;

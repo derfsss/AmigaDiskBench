@@ -191,6 +191,7 @@ void RefreshHistory(void)
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels,
                                    &ui.history_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
         IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
+        RefreshVizVolumeFilter();
         UpdateVisualization();
     } else {
         LOG_DEBUG("RefreshHistory: Skiping UI update, win=%p, list=%p", ui.window, ui.history_list);

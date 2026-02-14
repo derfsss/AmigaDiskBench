@@ -67,6 +67,7 @@
 #include <gadgets/layout.h>
 #include <gadgets/listbrowser.h>
 #include <gadgets/scroller.h>
+#include <gadgets/space.h>
 #include <gadgets/string.h>
 #include <gadgets/texteditor.h>
 #include <images/label.h>
@@ -224,6 +225,14 @@ void ShowGlobalReport(void);
 
 /* [gui_viz.c] - Visualizations */
 void UpdateVisualization(void);
+void InitVizFilterLabels(void);
+void RefreshVizVolumeFilter(void);
+void CleanupVizFilterLabels(void);
+uint32 VizRenderHook(struct Hook *hook, Object *space_obj, struct gpRender *gpr);
+
+/* [gui_viz_render.c] - Graph Rendering */
+void RenderTrendGraph(struct RastPort *rp, struct IBox *box,
+                      BenchResult **results, uint32 count);
 
 /* [gui_bulk.c] - Bulk Testing */
 void RefreshBulkList(void);
