@@ -139,7 +139,7 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
     IExec->FreeSysObject(ASOT_PORT, port);
 }
 
-void GetFileSystemName(const char *path, char *out_name, uint32 name_size)
+void GetFileSystemInfo(const char *path, char *out_name, uint32 name_size)
 {
     struct InfoData *info = IDOS->AllocDosObject(DOS_INFODATA, NULL);
     if (info) {

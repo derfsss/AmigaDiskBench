@@ -79,7 +79,7 @@ void UpdateVolumeInfo(const char *volume)
 
         /* Get Filesystem Name */
         char fs_name[32];
-        GetFileSystemName(volume, fs_name, sizeof(fs_name));
+        GetFileSystemInfo(volume, fs_name, sizeof(fs_name));
         snprintf(fs_buf, sizeof(fs_buf), "%s", fs_name);
 
         /* Get Device Name */

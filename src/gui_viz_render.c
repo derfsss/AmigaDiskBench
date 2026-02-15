@@ -22,16 +22,17 @@
  */
 
 #include "gui_internal.h"
-#include <proto/graphics.h>
 #include <graphics/rpattr.h>
+#include <proto/graphics.h>
 #include <stdlib.h>
 
+
 /* Graph layout constants - margins in pixels */
-#define MARGIN_LEFT   60
-#define MARGIN_RIGHT  16
-#define MARGIN_TOP    16
+#define MARGIN_LEFT 60
+#define MARGIN_RIGHT 16
+#define MARGIN_TOP 16
 #define MARGIN_BOTTOM 28
-#define TICK_LEN       4
+#define TICK_LEN 4
 #define MAX_GRAPH_POINTS 200
 
 /* Fixed color palette indices for graph series - ARGB32 values */
@@ -51,25 +52,40 @@ static const uint32 series_colors[] = {
 
 static LONG ObtainColorPen(struct RastPort *rp, uint32 argb)
 {
-    struct ColorMap *cm = rp->BitMap ? IGraphics->GetColorMap(rp->BitMap) : NULL;
-    if (!cm) {
-        /* Fallback: screen colormap via GadgetInfo */
-        return 1; /* textpen fallback */
+    struct ColorMap *cm = NULL;
+
+    /* Use the window's screen colormap if available (safest) */
+    if (ui.window && ui.window->WScreen) {
+        cm = ui.window->WScreen->ViewPort.ColorMap;
+    } else if (rp->BitMap) {
+        /* Fallback to RastPort's bitmap */
+        cm = IGraphics->GetColorMap(rp->BitMap);
     }
+
+    if (!cm) {
+        return 1; /* TextPen fallback */
+    }
+
     uint8 r = (argb >> 16) & 0xFF;
-    uint8 g = (argb >> 8)  & 0xFF;
-    uint8 b =  argb        & 0xFF;
-    /* Expand 8-bit to 32-bit color components */
-    return IGraphics->ObtainBestPen(cm,
-        (uint32)r << 24 | (uint32)r << 16 | (uint32)r << 8 | r,
-        (uint32)g << 24 | (uint32)g << 16 | (uint32)g << 8 | g,
-        (uint32)b << 24 | (uint32)b << 16 | (uint32)b << 8 | b,
-        OBP_Precision, PRECISION_IMAGE, TAG_DONE);
+    uint8 g = (argb >> 8) & 0xFF;
+    uint8 b = argb & 0xFF;
+
+    return IGraphics->ObtainBestPen(cm, (uint32)r << 24 | (uint32)r << 16 | (uint32)r << 8 | r,
+                                    (uint32)g << 24 | (uint32)g << 16 | (uint32)g << 8 | g,
+                                    (uint32)b << 24 | (uint32)b << 16 | (uint32)b << 8 | b, OBP_Precision,
+                                    PRECISION_IMAGE, TAG_DONE);
 }
 
 static void ReleaseColorPen(struct RastPort *rp, LONG pen)
 {
-    struct ColorMap *cm = rp->BitMap ? IGraphics->GetColorMap(rp->BitMap) : NULL;
+    struct ColorMap *cm = NULL;
+
+    if (ui.window && ui.window->WScreen) {
+        cm = ui.window->WScreen->ViewPort.ColorMap;
+    } else if (rp->BitMap) {
+        cm = IGraphics->GetColorMap(rp->BitMap);
+    }
+
     if (cm && pen >= 0)
         IGraphics->ReleasePen(cm, pen);
 }
@@ -81,7 +97,8 @@ static void DrawDashedHLine(struct RastPort *rp, int x1, int x2, int y, int dash
     int on = 1;
     for (int x = x1; x <= x2; x += dash_len) {
         int end = x + dash_len - 1;
-        if (end > x2) end = x2;
+        if (end > x2)
+            end = x2;
         if (on) {
             IGraphics->Move(rp, x, y);
             IGraphics->Draw(rp, end, y);
@@ -98,8 +115,7 @@ static void DrawSmallText(struct RastPort *rp, int x, int y, const char *text)
 
 /* --- Main graph rendering --- */
 
-void RenderTrendGraph(struct RastPort *rp, struct IBox *box,
-                      BenchResult **results, uint32 count)
+void RenderTrendGraph(struct RastPort *rp, struct IBox *box, BenchResult **results, uint32 count)
 {
     if (!rp || !box || box->Width < 120 || box->Height < 80)
         return;
@@ -142,8 +158,10 @@ void RenderTrendGraph(struct RastPort *rp, struct IBox *box,
     float min_val = 1e30f, max_val = 0.0f;
     for (uint32 i = 0; i < count; i++) {
         float v = use_iops ? (float)results[i]->iops : results[i]->mb_per_sec;
-        if (v < min_val) min_val = v;
-        if (v > max_val) max_val = v;
+        if (v < min_val)
+            min_val = v;
+        if (v > max_val)
+            max_val = v;
     }
 
     /* Add padding to value range */
@@ -152,10 +170,12 @@ void RenderTrendGraph(struct RastPort *rp, struct IBox *box,
     }
     float range = max_val - min_val;
     min_val -= range * 0.05f;
-    if (min_val < 0.0f) min_val = 0.0f;
+    if (min_val < 0.0f)
+        min_val = 0.0f;
     max_val += range * 0.05f;
     float val_range = max_val - min_val;
-    if (val_range < 0.01f) val_range = 0.01f;
+    if (val_range < 0.01f)
+        val_range = 0.01f;
 
     /* Draw horizontal grid lines (5 lines) */
     IGraphics->SetAPen(rp, grid_pen);
@@ -206,8 +226,10 @@ void RenderTrendGraph(struct RastPort *rp, struct IBox *box,
         }
         /* Y position: scaled to plot area */
         int dy = py + ph - (int)(((v - min_val) / val_range) * (float)ph);
-        if (dy < py) dy = py;
-        if (dy > py + ph) dy = py + ph;
+        if (dy < py)
+            dy = py;
+        if (dy > py + ph)
+            dy = py + ph;
 
         if (i == 0) {
             IGraphics->Move(rp, dx, dy);

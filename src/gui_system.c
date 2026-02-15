@@ -64,7 +64,7 @@ void RefreshDriveList(void)
             /* vol_node->ln_Name is already a C-string (STRPTR) from DOS_VOLUMELIST */
             snprintf(bare_name, sizeof(bare_name), "%s", vol_node->ln_Name);
             /* Get FS type from engine's helper */
-            GetFileSystemName(bare_name, fs_info, sizeof(fs_info));
+            GetFileSystemInfo(bare_name, fs_info, sizeof(fs_info));
             /* Get Space info and check for Writable state */
             struct InfoData *info = IDOS->AllocDosObject(DOS_INFODATA, NULL);
             if (info) {

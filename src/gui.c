@@ -69,17 +69,11 @@ int StartGUI(void)
         if (bn)
             IExec->AddTail(&ui.block_list, bn);
     }
-    struct Node *tnNodes[] = {
-        IChooser->AllocChooserNode(CNA_Text, GetString(11, "Sprinter (10MB)"), TAG_DONE),
-        IChooser->AllocChooserNode(CNA_Text, GetString(12, "HeavyLifter (100MB)"), TAG_DONE),
-        IChooser->AllocChooserNode(CNA_Text, GetString(13, "Legacy (4MB)"), TAG_DONE),
-        IChooser->AllocChooserNode(CNA_Text, GetString(14, "DailyGrind (Random 4K-64K)"), TAG_DONE),
-        IChooser->AllocChooserNode(CNA_Text, GetString(17, "Sequential (Professional)"), TAG_DONE),
-        IChooser->AllocChooserNode(CNA_Text, GetString(18, "Random 4K (Professional)"), TAG_DONE),
-        IChooser->AllocChooserNode(CNA_Text, GetString(19, "Profiler (Professional)"), TAG_DONE)};
-    for (int i = 0; i < sizeof(tnNodes) / sizeof(tnNodes[0]); i++) {
-        if (tnNodes[i])
-            IExec->AddTail(&ui.test_labels, tnNodes[i]);
+    /* Dynamically populate test types from the engine definition */
+    for (int i = 0; i < TEST_COUNT; i++) {
+        struct Node *tn = IChooser->AllocChooserNode(CNA_Text, TestTypeToDisplayName((BenchTestType)i), TAG_DONE);
+        if (tn)
+            IExec->AddTail(&ui.test_labels, tn);
     }
 
     if (!(ui.gui_port = (struct MsgPort *)IExec->AllocSysObject(ASOT_PORT, NULL)))

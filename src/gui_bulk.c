@@ -67,7 +67,7 @@ void RefreshBulkList(void)
                  * Col 3: Spacer
                  */
                 char fs_info[64] = "Unknown";
-                GetFileSystemName(ddata->bare_name, fs_info, sizeof(fs_info));
+                GetFileSystemInfo(ddata->bare_name, fs_info, sizeof(fs_info));
 
                 struct Node *bn = IListBrowser->AllocListBrowserNode(
                     4, LBNA_CheckBox, TRUE, LBNA_Column, 0, LBNCA_Text, (uint32) "", LBNA_Column, 1, LBNCA_CopyText,
@@ -109,16 +109,13 @@ void LaunchBulkJobs(void)
         IIntuition->GetAttr(CHECKBOX_Checked, ui.bulk_all_blocks_check, &run_all_blocks);
 
     /* Define Test Types to run */
-    uint32 tests[8];
+    uint32 tests[TEST_COUNT];
     int num_tests = 0;
     if (run_all_tests) {
-        tests[num_tests++] = TEST_SPRINTER;
-        tests[num_tests++] = TEST_HEAVY_LIFTER;
-        tests[num_tests++] = TEST_LEGACY;
-        tests[num_tests++] = TEST_DAILY_GRIND;
-        tests[num_tests++] = TEST_SEQUENTIAL;
-        tests[num_tests++] = TEST_RANDOM_4K;
-        tests[num_tests++] = TEST_PROFILER;
+        /* Dynamically add all available tests */
+        for (int i = 0; i < TEST_COUNT; i++) {
+            tests[num_tests++] = i;
+        }
     } else {
         tests[num_tests++] = ui.current_test_type;
     }
