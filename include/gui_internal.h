@@ -161,6 +161,12 @@ BOOL InitSystemResources(void);
  */
 void CleanupSystemResources(void);
 
+/**
+ * @brief Update the volume information labels based on the selected drive.
+ * @param volume The volume name (e.g., "DH0:").
+ */
+void UpdateVolumeInfo(const char *volume);
+
 /* [gui_history.c] - CSV History Management */
 
 /**
@@ -176,6 +182,9 @@ void RefreshHistory(void);
  */
 BOOL FindMatchInList(struct List *list, BenchResult *current, BenchResult *out_prev, BOOL reverse);
 BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev);
+void DeleteSelectedHistoryItems(void);
+void ClearHistory(void);
+void ExportHistoryToCSV(const char *filename);
 
 /* [gui_prefs.c] - Preferences Management */
 
@@ -231,8 +240,7 @@ void CleanupVizFilterLabels(void);
 uint32 VizRenderHook(struct Hook *hook, Object *space_obj, struct gpRender *gpr);
 
 /* [gui_viz_render.c] - Graph Rendering */
-void RenderTrendGraph(struct RastPort *rp, struct IBox *box,
-                      BenchResult **results, uint32 count);
+void RenderTrendGraph(struct RastPort *rp, struct IBox *box, BenchResult **results, uint32 count);
 
 /* [gui_bulk.c] - Bulk Testing */
 void RefreshBulkList(void);
@@ -261,6 +269,11 @@ void CloseDetailsWindow(void);
  * @brief Handle events for the Details Window.
  */
 void HandleDetailsWindowEvent(uint16 code, uint32 result);
+
+/**
+ * @brief Handle events for the Compare Window.
+ */
+void HandleCompareWindowEvent(uint16 code, uint32 result);
 
 /**
  * @brief Open the comparison window to compare two benchmark results side-by-side.

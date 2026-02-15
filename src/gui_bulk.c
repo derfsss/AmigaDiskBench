@@ -67,7 +67,7 @@ void RefreshBulkList(void)
                  * Col 3: Spacer
                  */
                 char fs_info[64] = "Unknown";
-                GetFileSystemInfo(ddata->bare_name, fs_info, sizeof(fs_info));
+                GetFileSystemName(ddata->bare_name, fs_info, sizeof(fs_info));
 
                 struct Node *bn = IListBrowser->AllocListBrowserNode(
                     4, LBNA_CheckBox, TRUE, LBNA_Column, 0, LBNCA_Text, (uint32) "", LBNA_Column, 1, LBNCA_CopyText,

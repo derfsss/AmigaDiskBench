@@ -24,6 +24,9 @@
 #include "gui_internal.h"
 #include <stdlib.h>
 
+/* Forward declaration */
+static void SaveHistoryToCSV(const char *filename);
+
 void RefreshHistory(void)
 {
     /* Detach list before modification */
@@ -240,4 +243,118 @@ BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev)
     }
     /* Fall back to history_labels (forward: newest at head via AddHead) */
     return FindMatchInList(&ui.history_labels, current, out_prev, FALSE);
+}
+
+static void SaveHistoryToCSV(const char *filename)
+{
+    BPTR file = IDOS->FOpen(filename, MODE_NEWFILE, 0);
+    if (!file)
+        return;
+
+    IDOS->FPuts(file, "ID,DateTime,Type,Volume,FS,MB/s,IOPS,Hardware,Unit,AppVersion,Passes,BlockSize,Trimmed,Min,Max,"
+                      "Duration,TotalBytes,Vendor,Product,Firmware,Serial\n");
+
+    /* History list is Newest-First (Head->Tail).
+       CSV should be Oldest-First (Append).
+       So iterate from Tail to Head. */
+    struct Node *node = IExec->GetTail(&ui.history_labels);
+    while (node->ln_Pred) /* Stop before header */
+    {
+        BenchResult *result = NULL;
+        IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &result, TAG_DONE);
+
+        if (result) {
+            /* Map test type enum to CSV string via centralised lookup */
+            const char *typeName = TestTypeToString(result->type);
+
+            char line[1024];
+            snprintf(line, sizeof(line), "%s,%s,%s,%s,%s,%.2f,%u,%s,%u,%s,%u,%u,%d,%.2f,%.2f,%.2f,%llu,%s,%s,%s,%s\n",
+                     result->result_id, result->timestamp, typeName, result->volume_name, result->fs_type,
+                     result->mb_per_sec, (unsigned int)result->iops, result->device_name,
+                     (unsigned int)result->device_unit, result->app_version, (unsigned int)result->passes,
+                     (unsigned int)result->block_size, (int)result->use_trimmed_mean, result->min_mbps,
+                     result->max_mbps, result->total_duration, (unsigned long long)result->cumulative_bytes,
+                     result->vendor, result->product, result->firmware_rev, result->serial_number);
+            IDOS->FPuts(file, line);
+        }
+        node = IExec->GetPred(node);
+    }
+
+    IDOS->FClose(file);
+}
+
+void DeleteSelectedHistoryItems(void)
+{
+    BOOL removed_any = FALSE;
+    struct Node *node = IExec->GetHead(&ui.history_labels);
+    struct Node *next;
+
+    /* Detach list */
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels, (ULONG)-1,
+                               TAG_DONE);
+
+    while (node) {
+        next = IExec->GetSucc(node);
+        uint32 is_selected = 0;
+        IListBrowser->GetListBrowserNodeAttrs(node, LBNA_Selected, &is_selected, TAG_DONE);
+
+        if (is_selected) {
+            void *udata = NULL;
+            IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &udata, TAG_DONE);
+            IExec->Remove(node);
+            /* Node is now detached, can free */
+            if (udata)
+                IExec->FreeVec(udata);
+            IListBrowser->FreeListBrowserNode(node);
+            removed_any = TRUE;
+        }
+        node = next;
+    }
+
+    if (removed_any) {
+        /* Rewrite CSV */
+        SaveHistoryToCSV(ui.csv_path);
+        RefreshVizVolumeFilter();
+        UpdateVisualization();
+    }
+
+    /* Reattach list */
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels,
+                               &ui.history_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
+    IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
+}
+
+void ClearHistory(void)
+{
+    /* Detach list */
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels, (ULONG)-1,
+                               TAG_DONE);
+
+    struct Node *node = IExec->GetHead(&ui.history_labels);
+    struct Node *next;
+    while (node) {
+        next = IExec->GetSucc(node);
+        void *udata = NULL;
+        IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &udata, TAG_DONE);
+        IExec->Remove(node);
+        if (udata)
+            IExec->FreeVec(udata);
+        IListBrowser->FreeListBrowserNode(node);
+        node = next;
+    }
+
+    /* Overwrite CSV with empty header */
+    SaveHistoryToCSV(ui.csv_path);
+    RefreshVizVolumeFilter();
+    UpdateVisualization();
+
+    /* Reattach list (empty) */
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels,
+                               &ui.history_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
+    IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
+}
+
+void ExportHistoryToCSV(const char *filename)
+{
+    SaveHistoryToCSV(filename);
 }

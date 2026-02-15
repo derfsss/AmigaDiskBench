@@ -154,8 +154,8 @@ int StartGUI(void)
         viz_hook.h_Entry = (HOOKFUNC)VizRenderHook;
         viz_hook.h_Data = NULL;
         if (ui.viz_canvas) {
-            IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_canvas, ui.window, NULL,
-                                       SPACE_RenderHook, (uint32)&viz_hook, TAG_DONE);
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_canvas, ui.window, NULL, SPACE_RenderHook,
+                                       (uint32)&viz_hook, TAG_DONE);
         }
 
         RefreshDriveList();
@@ -185,6 +185,28 @@ int StartGUI(void)
                 }
             }
         }
+
+        /* Update volume info for initially selected drive */
+        if (sel_node) {
+            DriveNodeData *dd = NULL;
+            IChooser->GetChooserNodeAttrs(sel_node, CNA_UserData, &dd, TAG_DONE);
+            if (dd && dd->bare_name) {
+                UpdateVolumeInfo(dd->bare_name);
+            }
+        } else {
+            /* Fallback to program dir volume if selection failed */
+            char prog_vol[32];
+            char *c = strchr(pv, ':');
+            if (c) {
+                int len = c - pv + 1;
+                if (len < sizeof(prog_vol)) {
+                    strncpy(prog_vol, pv, len);
+                    prog_vol[len] = '\0';
+                    UpdateVolumeInfo(prog_vol);
+                }
+            }
+        }
+
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.target_chooser, ui.window, NULL,
                                    sel_node ? CHOOSER_SelectedNode : CHOOSER_Selected, sel_node ? (uint32)sel_node : 0,
                                    TAG_DONE);
@@ -197,7 +219,8 @@ int StartGUI(void)
         BOOL running = TRUE;
         while (running) {
             uint32 sig =
-                IExec->Wait(wait_mask | (ui.details_win_obj ? (1L << ui.details_window->UserPort->mp_SigBit) : 0));
+                IExec->Wait(wait_mask | (ui.details_win_obj ? (1L << ui.details_window->UserPort->mp_SigBit) : 0) |
+                            (ui.compare_win_obj ? (1L << ui.compare_window->UserPort->mp_SigBit) : 0));
             if (sig & SIGBREAKF_CTRL_C)
                 running = FALSE;
 

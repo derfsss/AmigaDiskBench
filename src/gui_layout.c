@@ -23,17 +23,17 @@
 
 #include "gui_internal.h"
 
-static struct ColumnInfo bench_cols[] = {{100, "Date", CIF_FIXED | CIF_DRAGGABLE},
-                                         {80, "Volume", CIF_FIXED | CIF_DRAGGABLE},
-                                         {100, "Test Type", CIF_FIXED | CIF_DRAGGABLE},
-                                         {80, "Block Size", CIF_FIXED | CIF_DRAGGABLE},
-                                         {100, "No. of Passes", CIF_FIXED | CIF_DRAGGABLE},
-                                         {120, "Average (MB/s)", CIF_FIXED | CIF_DRAGGABLE},
-                                         {60, "IOPS", CIF_FIXED | CIF_DRAGGABLE},
-                                         {80, "Device", CIF_FIXED | CIF_DRAGGABLE},
-                                         {40, "Unit", CIF_FIXED | CIF_DRAGGABLE},
-                                         {120, "App Version", CIF_FIXED | CIF_DRAGGABLE},
-                                         {80, "vs Prev (%)", CIF_FIXED | CIF_DRAGGABLE},
+static struct ColumnInfo bench_cols[] = {{100, "Date", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {80, "Volume", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {100, "Test Type", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {80, "Block Size", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {100, "No. of Passes", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {120, "Average (MB/s)", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {60, "IOPS", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {80, "Device", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {40, "Unit", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {120, "App Version", CIF_SORTABLE | CIF_DRAGGABLE},
+                                         {80, "vs Prev (%)", CIF_SORTABLE | CIF_DRAGGABLE},
                                          {1, "", CIF_FIXED},
                                          {-1, NULL, 0}};
 
@@ -69,7 +69,21 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
             CHOOSER_Labels, (uint32)&ui.block_list, End),
            CHILD_Label, LabelObject, LABEL_Text, GetString(7, "Block Size:"), End, CHILD_WeightedHeight, 0, End,
            CHILD_WeightedHeight, 0, /* End Group "Benchmark Control" */
-        /* Benchmark Actions Group */
+
+        /* Volume Information Group */
+        LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Volume Information", LAYOUT_BevelStyle, BVS_GROUP,
+           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, LabelObject, LABEL_Text, "Size:", End, LAYOUT_AddChild,
+           (ui.vol_size_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", End), CHILD_WeightedWidth, 100, End,
+           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, LabelObject, LABEL_Text, "Free:", End, LAYOUT_AddChild,
+           (ui.vol_free_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", End), CHILD_WeightedWidth, 100, End,
+           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, LabelObject, LABEL_Text, "Filesystem:", End,
+           LAYOUT_AddChild, (ui.vol_fs_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", End),
+           CHILD_WeightedWidth, 100, End, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, LabelObject, LABEL_Text,
+           "Device:", End, LAYOUT_AddChild,
+           (ui.vol_device_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", End), CHILD_WeightedWidth, 100, End,
+           End, CHILD_WeightedHeight, 0,
+
+           /* Benchmark Actions Group */
         LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Benchmark Actions", LAYOUT_BevelStyle, BVS_GROUP,
            LAYOUT_ShrinkWrap, TRUE, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild,
            (ui.run_button = ButtonObject, GA_ID, GID_RUN_ALL, GA_RelVerify, TRUE, GA_Text,
@@ -93,60 +107,40 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
            CHILD_WeightedHeight, 100, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, ButtonObject, GA_ID,
            GID_REFRESH_HISTORY, GA_Text, GetString(9, "Refresh History"), End, LAYOUT_AddChild, ButtonObject, GA_ID,
            GID_VIEW_REPORT, GA_Text, GetString(10, "Global Report"), End, LAYOUT_AddChild,
-           (ui.compare_button = ButtonObject, GA_ID, GID_HISTORY_COMPARE, GA_Text, "Compare Selected", GA_Disabled, TRUE,
-           End), End, CHILD_WeightedHeight, 0, End;
+           (ui.compare_button = ButtonObject, GA_ID, GID_HISTORY_COMPARE, GA_Text, "Compare Selected", GA_Disabled,
+            TRUE, End),
+           LAYOUT_AddChild, ButtonObject, GA_ID, GID_HISTORY_DELETE, GA_Text, "Delete Selected", End, LAYOUT_AddChild,
+           ButtonObject, GA_ID, GID_HISTORY_CLEAR_ALL, GA_Text, "Clear All", End, LAYOUT_AddChild, ButtonObject, GA_ID,
+           GID_HISTORY_EXPORT, GA_Text, "Export", End, End, CHILD_WeightedHeight, 0, End;
 
     /* Page 2 (Visualization) - History Trend Graph */
     Object *page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE,
 
-        /* Filter Controls */
-        LAYOUT_AddChild, HLayoutObject,
-            LAYOUT_Label, "Filters",
-            LAYOUT_BevelStyle, BVS_GROUP,
+           /* Filter Controls */
+        LAYOUT_AddChild, HLayoutObject, LAYOUT_Label, "Filters", LAYOUT_BevelStyle, BVS_GROUP,
 
-            LAYOUT_AddChild,
-            (ui.viz_filter_volume = ChooserObject,
-                GA_ID, GID_VIZ_FILTER_VOLUME,
-                GA_RelVerify, TRUE,
-                CHOOSER_Labels, (uint32)&ui.viz_volume_labels,
-            End),
-            CHILD_Label, LabelObject, LABEL_Text, "Volume:", End,
+           LAYOUT_AddChild,
+           (ui.viz_filter_volume = ChooserObject, GA_ID, GID_VIZ_FILTER_VOLUME, GA_RelVerify, TRUE, CHOOSER_Labels,
+            (uint32)&ui.viz_volume_labels, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Volume:", End,
 
-            LAYOUT_AddChild,
-            (ui.viz_filter_test = ChooserObject,
-                GA_ID, GID_VIZ_FILTER_TEST,
-                GA_RelVerify, TRUE,
-                CHOOSER_Labels, (uint32)&ui.viz_test_labels,
-            End),
-            CHILD_Label, LabelObject, LABEL_Text, "Test:", End,
+           LAYOUT_AddChild,
+           (ui.viz_filter_test = ChooserObject, GA_ID, GID_VIZ_FILTER_TEST, GA_RelVerify, TRUE, CHOOSER_Labels,
+            (uint32)&ui.viz_test_labels, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Test:", End,
 
-            LAYOUT_AddChild,
-            (ui.viz_filter_metric = ChooserObject,
-                GA_ID, GID_VIZ_FILTER_METRIC,
-                GA_RelVerify, TRUE,
-                CHOOSER_Labels, (uint32)&ui.viz_metric_labels,
-            End),
-            CHILD_Label, LabelObject, LABEL_Text, "Metric:", End,
-        End,
-        CHILD_WeightedHeight, 0,
+           LAYOUT_AddChild,
+           (ui.viz_filter_metric = ChooserObject, GA_ID, GID_VIZ_FILTER_METRIC, GA_RelVerify, TRUE, CHOOSER_Labels,
+            (uint32)&ui.viz_metric_labels, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Metric:", End, End, CHILD_WeightedHeight, 0,
 
-        /* Graph Canvas */
-        LAYOUT_AddChild, VLayoutObject,
-            LAYOUT_Label, "Performance Trend",
-            LAYOUT_BevelStyle, BVS_GROUP,
+           /* Graph Canvas */
+        LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Performance Trend", LAYOUT_BevelStyle, BVS_GROUP,
 
-            LAYOUT_AddChild,
-            (ui.viz_canvas = SpaceObject,
-                GA_ID, GID_VIZ_CANVAS,
-                SPACE_MinWidth, 400,
-                SPACE_MinHeight, 250,
-                SPACE_BevelStyle, BVS_FIELD,
-                SPACE_Transparent, TRUE,
-            SpaceEnd),
-            CHILD_WeightedHeight, 100,
-        End,
-        CHILD_WeightedHeight, 100,
-    End;
+           LAYOUT_AddChild,
+           (ui.viz_canvas = SpaceObject, GA_ID, GID_VIZ_CANVAS, SPACE_MinWidth, 400, SPACE_MinHeight, 250,
+            SPACE_BevelStyle, BVS_FIELD, SPACE_Transparent, TRUE, SpaceEnd),
+           CHILD_WeightedHeight, 100, End, CHILD_WeightedHeight, 100, End;
 
     /* Page 3 (Bulk Testing) */
     Object *page3 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild,

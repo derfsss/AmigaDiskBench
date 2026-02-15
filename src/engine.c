@@ -136,7 +136,7 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     out_result->passes = passes;
     out_result->block_size = block_size;
 
-    GetFileSystemInfo(target_path, out_result->fs_type, sizeof(out_result->fs_type));
+    GetFileSystemName(target_path, out_result->fs_type, sizeof(out_result->fs_type));
     GetHardwareInfo(target_path, out_result);
 
     /* Populate volume name */

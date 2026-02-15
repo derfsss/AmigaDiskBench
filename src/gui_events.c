@@ -21,6 +21,7 @@
  * SOFTWARE.
  */
 
+#include "engine_internal.h" /* For GetFileSystemName, GetDeviceFromVolume */
 #include "gui_internal.h"
 
 void UpdateBulkTabInfo(void)
@@ -57,6 +58,47 @@ void UpdateBulkTabInfo(void)
     IIntuition->SetGadgetAttrs((struct Gadget *)ui.bulk_info_label, ui.window, NULL, GA_Text, (uint32)buf, TAG_DONE);
 }
 
+void UpdateVolumeInfo(const char *volume)
+{
+    if (!ui.window || !ui.vol_size_label)
+        return;
+
+    char size_buf[64] = "N/A";
+    char free_buf[64] = "N/A";
+    char fs_buf[64] = "N/A";
+    char dev_buf[64] = "N/A";
+
+    struct InfoData info;
+    if (IDOS->GetDiskInfoTags(GDI_StringNameInput, volume, GDI_InfoData, &info, TAG_DONE)) {
+        uint64 total_bytes = (uint64)info.id_NumBlocks * info.id_BytesPerBlock;
+        uint64 free_bytes = (uint64)(info.id_NumBlocks - info.id_NumBlocksUsed) * info.id_BytesPerBlock;
+
+        FormatByteSize(total_bytes); /* Returns static buffer, careful if called twice in printf */
+        snprintf(size_buf, sizeof(size_buf), "%s", FormatByteSize(total_bytes));
+        snprintf(free_buf, sizeof(free_buf), "%s", FormatByteSize(free_bytes));
+
+        /* Get Filesystem Name */
+        char fs_name[32];
+        GetFileSystemName(volume, fs_name, sizeof(fs_name));
+        snprintf(fs_buf, sizeof(fs_buf), "%s", fs_name);
+
+        /* Get Device Name */
+        char device_name[32];
+        uint32 unit = 0;
+        if (GetDeviceFromVolume(volume, device_name, sizeof(device_name), &unit)) {
+            snprintf(dev_buf, sizeof(dev_buf), "%s:%u", device_name, (unsigned int)unit);
+        }
+    }
+
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.vol_size_label, ui.window, NULL, GA_Text, (uint32)size_buf,
+                               TAG_DONE);
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.vol_free_label, ui.window, NULL, GA_Text, (uint32)free_buf,
+                               TAG_DONE);
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.vol_fs_label, ui.window, NULL, GA_Text, (uint32)fs_buf, TAG_DONE);
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.vol_device_label, ui.window, NULL, GA_Text, (uint32)dev_buf,
+                               TAG_DONE);
+}
+
 void HandleWorkerReply(struct Message *m)
 {
     LOG_DEBUG("GUI: Worker Msg received at %p. Type=%d", m, m->mn_Node.ln_Type);
@@ -67,9 +109,8 @@ void HandleWorkerReply(struct Message *m)
             if (!st->finished) {
                 /* Update status text with progress information */
                 if (ui.status_light_obj && st->status_text[0] != '\0') {
-                    IIntuition->SetGadgetAttrs((struct Gadget *)ui.status_light_obj, ui.window, NULL,
-                                               LABEL_Text, (uint32)st->status_text,
-                                               TAG_DONE);
+                    IIntuition->SetGadgetAttrs((struct Gadget *)ui.status_light_obj, ui.window, NULL, LABEL_Text,
+                                               (uint32)st->status_text, TAG_DONE);
                     LOG_DEBUG("GUI: Progress update - %s", st->status_text);
                 }
                 /* Free intermediate status message */
@@ -193,6 +234,18 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         break;
     case WMHI_GADGETUP:
         switch (gid) {
+        case GID_VOL_CHOOSER: {
+            struct Node *vn = NULL;
+            IIntuition->GetAttr(CHOOSER_SelectedNode, ui.target_chooser, (uint32 *)&vn);
+            if (vn) {
+                DriveNodeData *dd = NULL;
+                IChooser->GetChooserNodeAttrs(vn, CNA_UserData, &dd, TAG_DONE);
+                if (dd && dd->bare_name) {
+                    UpdateVolumeInfo(dd->bare_name);
+                }
+            }
+            break;
+        }
         case GID_TABS: {
             uint32 t = 0;
             IIntuition->GetAttr(CLICKTAB_Current, ui.tabs, &t);
@@ -262,13 +315,84 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
                 ShowMessage("Drives Refreshed", "Drive list and hardware info cache\nhave been refreshed.", "OK");
             }
             break;
+        case GID_HISTORY_DELETE:
+            if (ShowConfirm("Delete Benchmark History", "Are you sure you want to delete\nthe selected history items?",
+                            "Delete|Cancel")) {
+                DeleteSelectedHistoryItems();
+            }
+            break;
+        case GID_HISTORY_CLEAR_ALL:
+            if (ShowConfirm("Clear All History",
+                            "Are you sure you want to delete\nALL history items?\nThis cannot be undone.",
+                            "Clear All|Cancel")) {
+                ClearHistory();
+            }
+            break;
+        case GID_HISTORY_EXPORT: {
+            if (ui.IAsl) {
+                struct FileRequester *req = ui.IAsl->AllocAslRequestTags(
+                    ASL_FileRequest, ASLFR_TitleText, (uint32) "Export History to CSV", ASLFR_DoSaveMode, TRUE,
+                    ASLFR_InitialFile, (uint32) "AmigaDiskBench_History.csv", TAG_DONE);
+                if (req) {
+                    if (ui.IAsl->AslRequestTags(req, ASLFR_Window, (uint32)ui.window, TAG_DONE)) {
+                        char path[512];
+                        snprintf(path, sizeof(path), "%s", req->fr_Drawer);
+                        IDOS->AddPart(path, req->fr_File, sizeof(path));
+                        ExportHistoryToCSV(path);
+                    }
+                    ui.IAsl->FreeAslRequest(req);
+                }
+            }
+            break;
+        }
         case GID_HISTORY_LIST:
         case GID_CURRENT_RESULTS: {
             uint32 re = 0;
             Object *lb = (gid == GID_HISTORY_LIST) ? ui.history_list : ui.bench_list;
             IIntuition->GetAttr(LISTBROWSER_RelEvent, lb, &re);
+
+            /* Update Compare Button state if History list selected */
+            if (gid == GID_HISTORY_LIST) {
+                uint32 selected_count = 0;
+                struct Node *n;
+                for (n = IExec->GetHead(&ui.history_labels); n; n = IExec->GetSucc(n)) {
+                    uint32 is_selected = 0;
+                    IListBrowser->GetListBrowserNodeAttrs(n, LBNA_Selected, &is_selected, TAG_DONE);
+                    if (is_selected) {
+                        selected_count++;
+                    }
+                }
+
+                SetGadgetState(GID_HISTORY_COMPARE, (selected_count != 2)); // Disabled if not exactly 2
+            }
+
             if (re & LBRE_DOUBLECLICK) {
                 ShowBenchmarkDetails(lb);
+            }
+            break;
+        }
+        case GID_HISTORY_COMPARE: {
+            BenchResult *res1 = NULL;
+            BenchResult *res2 = NULL;
+
+            struct Node *n;
+            for (n = IExec->GetHead(&ui.history_labels); n; n = IExec->GetSucc(n)) {
+                uint32 is_selected = 0;
+                IListBrowser->GetListBrowserNodeAttrs(n, LBNA_Selected, &is_selected, TAG_DONE);
+                if (is_selected) {
+                    BenchResult *res = NULL;
+                    IListBrowser->GetListBrowserNodeAttrs(n, LBNA_UserData, &res, TAG_DONE);
+                    if (res) {
+                        if (!res1)
+                            res1 = res;
+                        else if (!res2)
+                            res2 = res;
+                    }
+                }
+            }
+
+            if (res1 && res2) {
+                OpenCompareWindow(res1, res2);
             }
             break;
         }
@@ -353,6 +477,21 @@ void HandlePrefsEvent(uint32 result, uint16 code)
             ui.prefs_window = NULL;
         } else if (gid == GID_PREFS_CSV_BR) {
             BrowseCSV();
+        }
+        break;
+    }
+}
+
+void HandleCompareWindowEvent(uint16 code, uint32 result)
+{
+    uint32 gid = result & WMHI_GADGETMASK;
+    switch (result & WMHI_CLASSMASK) {
+    case WMHI_CLOSEWINDOW:
+        CloseCompareWindow();
+        break;
+    case WMHI_GADGETUP:
+        if (gid == GID_COMPARE_CLOSE) {
+            CloseCompareWindow();
         }
         break;
     }

@@ -139,7 +139,7 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
     IExec->FreeSysObject(ASOT_PORT, port);
 }
 
-void GetFileSystemInfo(const char *path, char *out_name, uint32 name_size)
+void GetFileSystemName(const char *path, char *out_name, uint32 name_size)
 {
     struct InfoData *info = IDOS->AllocDosObject(DOS_INFODATA, NULL);
     if (info) {
@@ -428,10 +428,29 @@ void GetHardwareInfo(const char *path, BenchResult *result)
         snprintf(new_node->info.serial_number, sizeof(new_node->info.serial_number), "%s", result->serial_number);
         new_node->info.serial_number[sizeof(new_node->info.serial_number) - 1] = '\0';
 
-        snprintf(new_node->info.firmware_rev, sizeof(new_node->info.firmware_rev), "%s", result->firmware_rev);
         new_node->info.firmware_rev[sizeof(new_node->info.firmware_rev) - 1] = '\0';
 
         new_node->next = hardware_cache;
         hardware_cache = new_node;
     }
+}
+
+BOOL GetDeviceFromVolume(const char *volume, char *out_device, uint32 device_size, uint32 *out_unit)
+{
+    if (!volume || !out_device || !out_unit)
+        return FALSE;
+
+    /* Create a dummy BenchResult to reuse GetHardwareInfo logic */
+    BenchResult res;
+    memset(&res, 0, sizeof(BenchResult));
+
+    GetHardwareInfo(volume, &res);
+
+    if (res.device_name[0] != '\0') {
+        snprintf(out_device, device_size, "%s", res.device_name);
+        *out_unit = res.device_unit;
+        return TRUE;
+    }
+
+    return FALSE;
 }

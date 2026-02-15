@@ -116,4 +116,17 @@ BOOL FlushDiskCache(const char *path);
 /* Engine persistence helpers */
 /* No internal prototypes currently needed, public ones are in engine.h */
 
+void GetFileSystemName(const char *path, char *out_name, uint32 name_size);
+
+/**
+ * @brief Get the device name and unit for a volume.
+ *
+ * @param volume The volume name (e.g., "DH0:").
+ * @param out_device Buffer to receive the device name (e.g., "sb600sata.device").
+ * @param device_size Size of the output buffer.
+ * @param out_unit Pointer to receive the unit number.
+ * @return TRUE if successful, FALSE otherwise.
+ */
+BOOL GetDeviceFromVolume(const char *volume, char *out_device, uint32 device_size, uint32 *out_unit);
+
 #endif /* ENGINE_INTERNAL_H */

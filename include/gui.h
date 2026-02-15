@@ -84,6 +84,12 @@ typedef struct
     Object *block_chooser;
     Object *target_chooser;
 
+    /* Gadgets - Volume Info */
+    Object *vol_size_label;
+    Object *vol_free_label;
+    Object *vol_fs_label;
+    Object *vol_device_label;
+
     /* Gadgets - Preferences Window */
     Object *prefs_win_obj;
     struct Window *prefs_window;
@@ -129,13 +135,13 @@ typedef struct
     Object *history_popup;
 
     /* Visualization Tab - Trend Graph */
-    Object *viz_canvas;          /* SpaceObject for custom graph rendering */
-    Object *viz_filter_volume;   /* Chooser: filter by volume */
-    Object *viz_filter_test;     /* Chooser: filter by test type */
-    Object *viz_filter_metric;   /* Chooser: MB/s or IOPS */
-    struct List viz_volume_labels;  /* Chooser labels for volume filter */
-    struct List viz_test_labels;    /* Chooser labels for test type filter */
-    struct List viz_metric_labels;  /* Chooser labels for metric filter */
+    Object *viz_canvas;            /* SpaceObject for custom graph rendering */
+    Object *viz_filter_volume;     /* Chooser: filter by volume */
+    Object *viz_filter_test;       /* Chooser: filter by test type */
+    Object *viz_filter_metric;     /* Chooser: MB/s or IOPS */
+    struct List viz_volume_labels; /* Chooser labels for volume filter */
+    struct List viz_test_labels;   /* Chooser labels for test type filter */
+    struct List viz_metric_labels; /* Chooser labels for metric filter */
     uint32 viz_filter_volume_idx;
     uint32 viz_filter_test_idx;
     uint32 viz_filter_metric_idx;
@@ -255,7 +261,11 @@ enum
     GID_BULK_INFO,
     GID_BULK_ALL_TESTS,
     GID_BULK_ALL_BLOCKS,
-    GID_REFRESH_DRIVES
+    GID_REFRESH_DRIVES,
+    GID_HISTORY_DELETE,
+    GID_HISTORY_CLEAR_ALL,
+    GID_HISTORY_EXPORT,
+    GID_COMPARE_CLOSE = 5000
 };
 
 #define MID_ABOUT 1
