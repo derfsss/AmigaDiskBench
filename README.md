@@ -6,61 +6,75 @@
 
 ## Key Features
 
-- **Multiple Benchmark Profiles**:
-  - **Sprinter**: Small files and metadata performance.
+- **Comprehensive Benchmark Profiles**:
+  - **Sprinter**: Small file I/O and metadata performance.
   - **Heavy Lifter**: Large file sequential throughput with big chunks.
   - **Legacy**: Large file performance with standard 512-byte blocks.
   - **Daily Grind**: A pseudo-random mix of operations representing real-world usage.
-- **Microsecond Precision**: Uses `timer.device` for high-accuracy timing.
-- **Advanced Metrics**: Reports MB/s, IOPS, and supports Trimmed Mean calculations to filter out background OS interference.
-- **Hardware & FS Identification**: Automatically detects hardware device names, units, and filesystem types (NGFS, SFS, FFS, etc.).
-- **Persistence**: Saves results to a standardized CSV format for historical tracking.
-- **Global Reporting**: Generates aggregate statistics across all past benchmarks.
+  - **Sequential Read/Write**: Professional-grade pure sequential throughput tests.
+  - **Random 4K Read/Write**: High-stress IOPS testing for SSDs and fast media.
+  - **Mixed 70/30**: Real-world read/write mix simulation.
+  - **Profiler**: Filesystem metadata performance analysis.
+
+- **Precision & Reliability**:
+  - **Microsecond Precision**: Uses `timer.device` for high-accuracy timing.
+  - **Trimmed Mean**: Optional outlier filtering to remove OS background noise from results.
+  - **Cache Flushing**: Automatic buffer flushing attempts to ensure measuring disk speed, not RAM speed.
+
+- **Data Management**:
+  - **Current Session vs. History**: Separate tabs for active benchmarking and historical analysis.
+  - **CSV Persistence**: Results are automatically saved to a standardized CSV format (`AmigaDiskBench_History.csv`).
+  - **Smart Sync**: Changing the CSV path automatically keeps your session context clean.
+
+- **Analysis Tools**:
+  - **Comparison Mode**: Compare any two results side-by-side (Session or History).
+  - **Global Report**: Aggregate statistics (Avg/Max) across all run tests.
+  - **Visualizations**: Interactive trend graphs to track performance over time.
+  - **Hardware ID**: Automatic detection of device names (e.g., `ahci.device`), units, and filesystem types.
+
+## Installation
+
+No special installation is required. Just extract the archive to a location of your choice.
+Requires **AmigaOS 4.1 Final Edition** or newer.
 
 ## How to Use
 
-1. **Select a Target**: Use the "Benchmark Control" tab to select a volume or partition.
-2. **Configure Tests**: Choose the test type, block size, and number of passes.
-3. **Run**: Click the "Run Benchmark" button. The status light will indicate activity.
-4. **Analyze**:
-   - View live updates in the "Benchmark" tab.
-   - Access persistent records in the "History" tab.
-   - Right-click any result for a "Show Details" report.
-5. **Preferences**: Customize your defaults, including the CSV storage path and trimmed mean settings.
+### Running a Benchmark
+1.  **Select a Target**: Use the "Benchmark Control" tab to select a volume or partition.
+2.  **Configure Tests**: Choose a Test Type, Block Size, and number of Passes (3-5 recommended).
+3.  **Run**: Click the "Run Benchmark" button.
+    *   *Tip*: Toggle the "Bulk" tab to run multiple tests in sequence.
 
-## How to Compile
+### Analyzing Results
+*   **Benchmark Tab**: Displays results from your *current session*.
+*   **History Tab**: Displays all historical results saved to your CSV file.
+    *   **Compare**: Check the boxes next to any two results and click "Compare Selected".
+    *   **Details**: Double-click any result to see detailed hardware info and raw metrics.
+    *   **Delete/Clear**: Remove specific entries or wipe the entire history.
+*   **Visualization Tab**: View performance trends filtered by Volume and Test Type.
 
-AmigaDiskBench is cross-compiled using a modern Docker-based toolchain.
+### Preferences
+Access the Preferences menu to:
+*   Set default test parameters (Passes, Block Size).
+*   Toggle "Trimmed Mean" calculation.
+*   Change the location of the history CSV file.
+
+## Building from Source
+
+AmigaDiskBench is cross-compiled using a Docker-based toolchain (GCC 11).
 
 ### Prerequisites
-- **WSL2** (on Windows) or **Linux/macOS**.
-- **Docker** installed and running.
-- **AmigaOS 4 Cross-Compiler Container**:
-  - Link: [walkero/amigagccondocker](https://hub.docker.com/r/walkero/amigagccondocker)
-  - Pull command: `docker pull walkero/amigagccondocker:os4-gcc11` (for GCC v11)
+*   **Docker Desktop** (Windows/Mac/Linux)
+*   **WSL2** (Windows users)
 
-### Build Instructions
-
-The project uses the `walkero/amigagccondocker:os4-gcc11` container which includes the AmigaOS 4 SDK.
-
-Run the following command from the project root:
+### Build Command
+From the project root:
 
 ```bash
 docker run --rm -v $(pwd):/work -w /work walkero/amigagccondocker:os4-gcc11 make clean all
 ```
 
-This will:
-1. Clean previous build artifacts.
-2. Compile all modules (GUI, Engine, System).
-3. Link the final `AmigaDiskBench` binary into the `build/` directory.
-
-### Installation
-
-To copy the binary and icons to a `dist/` folder:
-
-```bash
-docker run --rm -v $(pwd):/work -w /work walkero/amigagccondocker:os4-gcc11 make install
-```
+This will compile the `AmigaDiskBench` binary into the `build/` directory.
 
 ## Licensing
 
