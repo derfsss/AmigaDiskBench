@@ -27,6 +27,13 @@
 /* Forward declaration */
 static void SaveHistoryToCSV(const char *filename);
 
+/**
+ * @brief Refreshes the History list from the CSV file.
+ *
+ * Detaches the list browser, frees existing nodes, parses the CSV file,
+ * creates new nodes, and reattaches the list.
+ * Also triggers visualization updates.
+ */
 void RefreshHistory(void)
 {
     /* Detach list before modification */
@@ -203,6 +210,18 @@ void RefreshHistory(void)
     }
 }
 
+/**
+ * @brief Helper to find a matching benchmark result in a list.
+ *
+ * Scans the provided list for a result with matching Volume, Test Type, Block Size,
+ * Device Name, and Unit.
+ *
+ * @param list The Exec List to search.
+ * @param current The BenchResult to match against.
+ * @param out_prev Pointer to store the found match (copy), if any.
+ * @param reverse If TRUE, search from Tail to Head (used for chronological lists).
+ * @return TRUE if a match was found, FALSE otherwise.
+ */
 BOOL FindMatchInList(struct List *list, BenchResult *current, BenchResult *out_prev, BOOL reverse)
 {
     struct Node *node;
@@ -237,6 +256,16 @@ BOOL FindMatchInList(struct List *list, BenchResult *current, BenchResult *out_p
     return FALSE;
 }
 
+/**
+ * @brief Finds a previous run matching the current result.
+ *
+ * Searches the Session list first, then the History list, to find a comparable
+ * previous run for calculating % difference.
+ *
+ * @param current The current benchmark result.
+ * @param out_prev Pointer to store the previous result data.
+ * @return TRUE if a comparable previous run was found.
+ */
 BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev)
 {
     /* Search bench_labels first (reverse: newest at tail via AddTail) */
@@ -247,6 +276,14 @@ BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev)
     return FindMatchInList(&ui.history_labels, current, out_prev, FALSE);
 }
 
+/**
+ * @brief Saves the entire History list to the CSV file.
+ *
+ * Overwrites the existing CSV file with the current contents of the
+ * history list (iterating from Tail to Head to restore chronological order).
+ *
+ * @param filename The full path to the CSV file.
+ */
 static void SaveHistoryToCSV(const char *filename)
 {
     LOG_DEBUG("SaveHistoryToCSV: Opening '%s'...", filename);
@@ -292,6 +329,12 @@ static void SaveHistoryToCSV(const char *filename)
     IDOS->FClose(file);
 }
 
+/**
+ * @brief Deletes selected items from the History list.
+ *
+ * Removes checked or selected items, updates the CSV file, and refreshes
+ * the visualization to reflect the removal.
+ */
 void DeleteSelectedHistoryItems(void)
 {
     BOOL removed_any = FALSE;
@@ -342,6 +385,12 @@ void DeleteSelectedHistoryItems(void)
     }
 }
 
+/**
+ * @brief Clears the "Current Session" benchmark list.
+ *
+ * Frees all nodes in the Session list browser. Used when changing context
+ * (e.g., loading a different history file) to prevent ambiguity.
+ */
 void ClearBenchmarkList(void)
 {
     if (ui.bench_list) {
@@ -369,6 +418,12 @@ void ClearBenchmarkList(void)
     }
 }
 
+/**
+ * @brief Wipes all history data.
+ *
+ * Clears the History list, the Session list, and the CSV file.
+ * Also resets the visualization. This action is irreversible.
+ */
 void ClearHistory(void)
 {
     /* 1. Clear History List */
@@ -404,11 +459,21 @@ void ClearHistory(void)
     IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
 }
 
+/**
+ * @brief Exports the current history to a new CSV file.
+ *
+ * @param filename The destination path for the copy.
+ */
 void ExportHistoryToCSV(const char *filename)
 {
     SaveHistoryToCSV(filename);
 }
 
+/**
+ * @brief Deselects all checkboxes and list selections in the History tab.
+ *
+ * Used to reset the UI state after operations like Compare or Delete.
+ */
 void DeselectAllHistoryItems(void)
 {
     if (!ui.history_list || !ui.window)

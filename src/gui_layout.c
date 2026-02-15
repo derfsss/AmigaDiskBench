@@ -52,6 +52,16 @@ static struct ColumnInfo bulk_cols[] = {{20, "", CIF_FIXED}, /* Checkbox */
                                         {1, "", CIF_FIXED},
                                         {-1, NULL, 0}};
 
+/**
+ * @brief Creates the main application window layout.
+ *
+ * defines the ReAction GUI object hierarchy, including tabs for Benchmark,
+ * History, Visualization, and Bulk testing.
+ *
+ * @param icon Pointer to the DiskObject (icon) for the window.
+ * @param tab_list Pointer to the list of tab labels.
+ * @return Pointer to the root WindowObject, or NULL on failure.
+ */
 Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
 {
     /* Refactored Page 0 (Benchmark) using standard ReAction macros */

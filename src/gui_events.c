@@ -24,6 +24,12 @@
 #include "engine_internal.h" /* For GetFileSystemName, GetDeviceFromVolume */
 #include "gui_internal.h"
 
+/**
+ * @brief Updates the info label on the Bulk tab based on current settings.
+ *
+ * Refreshes the text to show selected test type, pass count, and block size,
+ * or "All" if the respective checkboxes are checked.
+ */
 void UpdateBulkTabInfo(void)
 {
     if (!ui.bulk_info_label || !ui.window)
@@ -58,6 +64,14 @@ void UpdateBulkTabInfo(void)
     IIntuition->SetGadgetAttrs((struct Gadget *)ui.bulk_info_label, ui.window, NULL, GA_Text, (uint32)buf, TAG_DONE);
 }
 
+/**
+ * @brief Updates the volume information display for a selected drive.
+ *
+ * Queries the filesystem for size, free space, filesystem type, and device name,
+ * then updates the read-only gadgets in the "Volume Information" group.
+ *
+ * @param volume The volume name (e.g., "DH0:").
+ */
 void UpdateVolumeInfo(const char *volume)
 {
     if (!ui.window || !ui.vol_size_label)
@@ -99,6 +113,14 @@ void UpdateVolumeInfo(const char *volume)
                                TAG_DONE);
 }
 
+/**
+ * @brief Handles asynchronous reply messages from the benchmark worker process.
+ *
+ * Processes status updates (progress text) and completion messages (final results).
+ * Updates the GUI status light, progress bar (if any), and populates the result list.
+ *
+ * @param m Pointer to the message received from the worker's reply port.
+ */
 void HandleWorkerReply(struct Message *m)
 {
     LOG_DEBUG("GUI: Worker Msg received at %p. Type=%d", m, m->mn_Node.ln_Type);
@@ -202,6 +224,15 @@ void HandleWorkerReply(struct Message *m)
     }
 }
 
+/**
+ * @brief Handles Workbench-specific messages (AppLib).
+ *
+ * Responds to Quit, Hide, Unhide, and OpenPrefs messages sent by the system
+ * or application library.
+ *
+ * @param amsg Pointer to the ApplicationMsg.
+ * @param running Pointer to the main loop's running flag.
+ */
 void HandleWorkbenchMessage(struct ApplicationMsg *amsg, BOOL *running)
 {
     switch (amsg->type) {
@@ -221,6 +252,16 @@ void HandleWorkbenchMessage(struct ApplicationMsg *amsg, BOOL *running)
     }
 }
 
+/**
+ * @brief Main event handler for the application window.
+ *
+ * Processes gadget up/down events, menu selections, and window close events.
+ * Dispatches actions to appropriate helper functions.
+ *
+ * @param result The result from RA_HandleInput or WM_HANDLEINPUT.
+ * @param code The code field from the IntuiMessage.
+ * @param running Pointer to the main loop's running flag.
+ */
 void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
 {
     uint32 gid = result & WMHI_GADGETMASK;
@@ -453,6 +494,14 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
     }
 }
 
+/**
+ * @brief Event handler for the Preferences window.
+ *
+ * Handles Save, Cancel, and CSV Browse events for the settings dialog.
+ *
+ * @param result The result from RA_HandleInput.
+ * @param code The code field from the IntuiMessage.
+ */
 void HandlePrefsEvent(uint32 result, uint16 code)
 {
     uint32 gid = result & WMHI_GADGETMASK;
@@ -478,6 +527,15 @@ void HandlePrefsEvent(uint32 result, uint16 code)
     }
 }
 
+/**
+ * @brief Event handler for the Comparison window.
+ *
+ * Handles the "Close" button and window close gadget.
+ * Automatically deselects history items when closed.
+ *
+ * @param code The code field from the IntuiMessage.
+ * @param result The result from RA_HandleInput.
+ */
 void HandleCompareWindowEvent(uint16 code, uint32 result)
 {
     uint32 gid = result & WMHI_GADGETMASK;

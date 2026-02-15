@@ -34,6 +34,10 @@ struct TimerIFace *IBenchTimer = NULL;
 struct MsgPort *BenchTimerPort = NULL;
 struct TimeRequest *BenchTimerReq = NULL;
 
+/*
+ * Initializes the benchmark engine.
+ * Sets up timer.device and the workload registry.
+ */
 BOOL InitEngine(void)
 {
     BenchTimerPort = IExec->AllocSysObjectTags(ASOT_PORT, TAG_DONE);
@@ -64,6 +68,10 @@ BOOL InitEngine(void)
     return FALSE;
 }
 
+/*
+ * Frees all engine resources.
+ * Safe to call even if partially initialized.
+ */
 void CleanupEngine(void)
 {
     LOG_DEBUG("Cleaning up engine...");
@@ -259,6 +267,12 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
                 out_result->max_mbps = results[i];
             filtered_count++;
         }
+        /*
+         * Filtered Mean Calculation:
+         * We skip the min_idx and max_idx found earlier.
+         * This removes the single best and single worst run from the average,
+         * reducing the impact of background OS tasks or caching spikes.
+         */
         out_result->mb_per_sec = filtered_sum / filtered_count;
         out_result->effective_passes = filtered_count;
     } else {
