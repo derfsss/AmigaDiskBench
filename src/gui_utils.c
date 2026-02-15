@@ -128,6 +128,9 @@ void SetGadgetState(uint16 gid, BOOL disabled)
         case GID_BULK_RUN:
             obj = ui.run_button; /* Reused for bulk */
             break;
+        case GID_HISTORY_COMPARE:
+            obj = ui.compare_button;
+            break;
         }
 
         if (obj) {

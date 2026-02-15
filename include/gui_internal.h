@@ -185,6 +185,8 @@ BOOL FindMatchingResult(BenchResult *current, BenchResult *out_prev);
 void DeleteSelectedHistoryItems(void);
 void ClearHistory(void);
 void ExportHistoryToCSV(const char *filename);
+void DeselectAllHistoryItems(void);
+void ClearBenchmarkList(void);
 
 /* [gui_prefs.c] - Preferences Management */
 

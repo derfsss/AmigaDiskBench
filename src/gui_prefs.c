@@ -110,7 +110,7 @@ void LoadPrefs(void)
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.pass_gad, ui.window, NULL, INTEGER_Number, p_num, TAG_DONE);
         ui.use_trimmed_mean = IPrefs->DictGetBoolForKey(dict, "TrimmedMean", DEFAULT_TRIMMED_MEAN);
         CONST_STRPTR p = IPrefs->DictGetStringForKey(dict, "CSVPath", DEFAULT_CSV_PATH);
-        LOG_DEBUG("LoadPrefs: DictGetStringForKey(CSVPath) returned '%s'", p ? p : "NULL");
+        LOG_DEBUG("LoadPrefs: DictGetStringForKey(CSVPath) returned '%s'", (const char *)(p ? p : "NULL"));
         if (p) {
             snprintf(ui.csv_path, sizeof(ui.csv_path), "%s", p);
             ui.csv_path[sizeof(ui.csv_path) - 1] = '\0';
@@ -357,7 +357,9 @@ void UpdatePreferences(void)
     }
 
     if (path_changed) {
-        RefreshHistory();
+        ClearBenchmarkList();     /* Clear "Current Session" as we switched context */
+        RefreshHistory();         /* Loads new history and triggers UpdateVisualization */
+        RefreshVizVolumeFilter(); /* Ensure filter list matches new history */
     }
 
     IIntuition->IDoMethod(ui.prefs_win_obj, WM_CLOSE);

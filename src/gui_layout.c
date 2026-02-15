@@ -23,7 +23,8 @@
 
 #include "gui_internal.h"
 
-static struct ColumnInfo bench_cols[] = {{100, "Date", CIF_SORTABLE | CIF_DRAGGABLE},
+static struct ColumnInfo bench_cols[] = {{20, "", CIF_FIXED}, /* Checkbox */
+                                         {100, "Date", CIF_SORTABLE | CIF_DRAGGABLE},
                                          {80, "Volume", CIF_SORTABLE | CIF_DRAGGABLE},
                                          {100, "Test Type", CIF_SORTABLE | CIF_DRAGGABLE},
                                          {80, "Block Size", CIF_SORTABLE | CIF_DRAGGABLE},
@@ -36,6 +37,14 @@ static struct ColumnInfo bench_cols[] = {{100, "Date", CIF_SORTABLE | CIF_DRAGGA
                                          {80, "vs Prev (%)", CIF_SORTABLE | CIF_DRAGGABLE},
                                          {1, "", CIF_FIXED},
                                          {-1, NULL, 0}};
+
+static struct ColumnInfo current_run_cols[] = {{100, "Date", CIF_SORTABLE | CIF_DRAGGABLE},
+                                               {80, "Volume", CIF_SORTABLE | CIF_DRAGGABLE},
+                                               {100, "Test Type", CIF_SORTABLE | CIF_DRAGGABLE},
+                                               {120, "Average (MB/s)", CIF_SORTABLE | CIF_DRAGGABLE},
+                                               {80, "vs Prev (%)", CIF_SORTABLE | CIF_DRAGGABLE},
+                                               {120, "App Version", CIF_SORTABLE | CIF_DRAGGABLE},
+                                               {-1, NULL, 0}};
 
 static struct ColumnInfo bulk_cols[] = {{20, "", CIF_FIXED}, /* Checkbox */
                                         {150, "Volume", CIF_FIXED | CIF_DRAGGABLE},
@@ -72,16 +81,15 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
 
         /* Volume Information Group */
         LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Volume Information", LAYOUT_BevelStyle, BVS_GROUP,
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, LabelObject, LABEL_Text, "Size:", End, LAYOUT_AddChild,
-           (ui.vol_size_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", End), CHILD_WeightedWidth, 100, End,
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, LabelObject, LABEL_Text, "Free:", End, LAYOUT_AddChild,
-           (ui.vol_free_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", End), CHILD_WeightedWidth, 100, End,
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, LabelObject, LABEL_Text, "Filesystem:", End,
-           LAYOUT_AddChild, (ui.vol_fs_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", End),
-           CHILD_WeightedWidth, 100, End, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, LabelObject, LABEL_Text,
-           "Device:", End, LAYOUT_AddChild,
-           (ui.vol_device_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", End), CHILD_WeightedWidth, 100, End,
-           End, CHILD_WeightedHeight, 0,
+           LAYOUT_AddChild,
+           (ui.vol_size_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Size:", End, CHILD_WeightedHeight, 0, LAYOUT_AddChild,
+           (ui.vol_free_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Free:", End, CHILD_WeightedHeight, 0, LAYOUT_AddChild,
+           (ui.vol_fs_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Filesystem:", End, CHILD_WeightedHeight, 0, LAYOUT_AddChild,
+           (ui.vol_device_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "N/A", BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Device:", End, CHILD_WeightedHeight, 0, End, CHILD_WeightedHeight, 0,
 
            /* Benchmark Actions Group */
         LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Benchmark Actions", LAYOUT_BevelStyle, BVS_GROUP,
@@ -94,7 +102,7 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
         /* Benchmark List */
         LAYOUT_AddChild,
            (ui.bench_list = ListBrowserObject, GA_ID, GID_CURRENT_RESULTS, GA_RelVerify, TRUE, LISTBROWSER_ColumnInfo,
-            (uint32)bench_cols, LISTBROWSER_ColumnTitles, TRUE, LISTBROWSER_Labels, (uint32)&ui.bench_labels,
+            (uint32)current_run_cols, LISTBROWSER_ColumnTitles, TRUE, LISTBROWSER_Labels, (uint32)&ui.bench_labels,
             LISTBROWSER_AutoFit, TRUE, LISTBROWSER_ShowSelected, TRUE, LISTBROWSER_HorizontalProp, TRUE, End),
            CHILD_WeightedHeight, 100, End;
 

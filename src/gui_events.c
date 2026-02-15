@@ -140,7 +140,8 @@ void HandleWorkerReply(struct Message *m)
                                                (uint32)GetString(8, "Run Benchmark"), TAG_DONE);
 
                     /* Force visual refresh for ReAction layout to reflect enabled state */
-                    IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
+                    // IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
+                    IIntuition->RefreshGList((struct Gadget *)ui.run_button, ui.window, NULL, 1);
                 }
                 if (st->success) {
                     char tn[64], ms[32], is[32], ut[32];
@@ -176,17 +177,12 @@ void HandleWorkerReply(struct Message *m)
                     }
 
                     struct Node *n = IListBrowser->AllocListBrowserNode(
-                        12, LBNA_Column, COL_DATE, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)st->result.timestamp,
-                        LBNA_Column, COL_VOL, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)st->result.volume_name,
-                        LBNA_Column, COL_TEST, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)tn, LBNA_Column, COL_BS,
-                        LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)abs, LBNA_Column, COL_PASSES, LBNCA_CopyText, TRUE,
-                        LBNCA_Text, (uint32)aps, LBNA_Column, COL_MBPS, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)ms,
-                        LBNA_Column, COL_IOPS, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)is, LBNA_Column, COL_DEVICE,
-                        LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)st->result.device_name, LBNA_Column, COL_UNIT,
-                        LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)ut, LBNA_Column, COL_VER, LBNCA_CopyText, TRUE,
-                        LBNCA_Text, (uint32)st->result.app_version, LBNA_Column, COL_DIFF, LBNCA_CopyText, TRUE,
-                        LBNCA_Text, (uint32)ds, LBNA_Column, COL_DUMMY, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32) "",
-                        LBNA_UserData, (uint32)res, TAG_DONE);
+                        6, LBNA_Column, BCOL_DATE, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)st->result.timestamp,
+                        LBNA_Column, BCOL_VOL, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)st->result.volume_name,
+                        LBNA_Column, BCOL_TEST, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)tn, LBNA_Column, BCOL_MBPS,
+                        LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)ms, LBNA_Column, BCOL_DIFF, LBNCA_CopyText, TRUE,
+                        LBNCA_Text, (uint32)ds, LBNA_Column, BCOL_VER, LBNCA_CopyText, TRUE, LBNCA_Text,
+                        (uint32)st->result.app_version, LBNA_UserData, (uint32)res, TAG_DONE);
                     if (n) {
                         IIntuition->SetGadgetAttrs((struct Gadget *)ui.bench_list, ui.window, NULL, LISTBROWSER_Labels,
                                                    (ULONG)-1, TAG_DONE);
@@ -356,9 +352,9 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
                 uint32 selected_count = 0;
                 struct Node *n;
                 for (n = IExec->GetHead(&ui.history_labels); n; n = IExec->GetSucc(n)) {
-                    uint32 is_selected = 0;
-                    IListBrowser->GetListBrowserNodeAttrs(n, LBNA_Selected, &is_selected, TAG_DONE);
-                    if (is_selected) {
+                    uint32 is_checked = 0;
+                    IListBrowser->GetListBrowserNodeAttrs(n, LBNA_Checked, &is_checked, TAG_DONE);
+                    if (is_checked) {
                         selected_count++;
                     }
                 }
@@ -377,9 +373,9 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
 
             struct Node *n;
             for (n = IExec->GetHead(&ui.history_labels); n; n = IExec->GetSucc(n)) {
-                uint32 is_selected = 0;
-                IListBrowser->GetListBrowserNodeAttrs(n, LBNA_Selected, &is_selected, TAG_DONE);
-                if (is_selected) {
+                uint32 is_checked = 0;
+                IListBrowser->GetListBrowserNodeAttrs(n, LBNA_Checked, &is_checked, TAG_DONE);
+                if (is_checked) {
                     BenchResult *res = NULL;
                     IListBrowser->GetListBrowserNodeAttrs(n, LBNA_UserData, &res, TAG_DONE);
                     if (res) {
@@ -488,10 +484,12 @@ void HandleCompareWindowEvent(uint16 code, uint32 result)
     switch (result & WMHI_CLASSMASK) {
     case WMHI_CLOSEWINDOW:
         CloseCompareWindow();
+        DeselectAllHistoryItems();
         break;
     case WMHI_GADGETUP:
         if (gid == GID_COMPARE_CLOSE) {
             CloseCompareWindow();
+            DeselectAllHistoryItems();
         }
         break;
     }

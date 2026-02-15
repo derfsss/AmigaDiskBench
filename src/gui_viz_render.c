@@ -26,7 +26,6 @@
 #include <proto/graphics.h>
 #include <stdlib.h>
 
-
 /* Graph layout constants - margins in pixels */
 #define MARGIN_LEFT 60
 #define MARGIN_RIGHT 16
@@ -57,9 +56,6 @@ static LONG ObtainColorPen(struct RastPort *rp, uint32 argb)
     /* Use the window's screen colormap if available (safest) */
     if (ui.window && ui.window->WScreen) {
         cm = ui.window->WScreen->ViewPort.ColorMap;
-    } else if (rp->BitMap) {
-        /* Fallback to RastPort's bitmap */
-        cm = IGraphics->GetColorMap(rp->BitMap);
     }
 
     if (!cm) {
@@ -82,8 +78,6 @@ static void ReleaseColorPen(struct RastPort *rp, LONG pen)
 
     if (ui.window && ui.window->WScreen) {
         cm = ui.window->WScreen->ViewPort.ColorMap;
-    } else if (rp->BitMap) {
-        cm = IGraphics->GetColorMap(rp->BitMap);
     }
 
     if (cm && pen >= 0)

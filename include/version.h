@@ -26,8 +26,8 @@
 
 #define APP_VERSION 2
 #define APP_REVISION 2
-#define APP_PATCH 8
-#define APP_VERSION_STR "2.2.8"
+#define APP_PATCH 9
+#define APP_VERSION_STR "2.2.9"
 #define APP_DATE "11.02.2026"
 #define APP_TITLE "AmigaDiskBench"
 #define APP_VER_TITLE APP_TITLE " v" APP_VERSION_STR

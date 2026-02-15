@@ -36,7 +36,10 @@ void ShowGlobalReport(void)
                  "Legacy:      Avg %.2f MB/s, Max %.2f MB/s (%u runs)\n"
                  "DailyGrind:  Avg %.2f MB/s, Max %.2f MB/s (%u runs)\n"
                  "Sequential:  Avg %.2f MB/s, Max %.2f MB/s (%u runs)\n"
+                 "Seq Read:    Avg %.2f MB/s, Max %.2f MB/s (%u runs)\n"
                  "Random 4K:   Avg %.2f MB/s, Max %.2f MB/s (%u runs)\n"
+                 "Rnd 4K Read: Avg %.2f MB/s, Max %.2f MB/s (%u runs)\n"
+                 "Mixed 70/30: Avg %.2f MB/s, Max %.2f MB/s (%u runs)\n"
                  "Profiler:    Avg %.2f MB/s, Max %.2f MB/s (%u runs)",
                  (unsigned int)report.total_benchmarks, report.stats[TEST_SPRINTER].avg_mbps,
                  report.stats[TEST_SPRINTER].max_mbps, (unsigned int)report.stats[TEST_SPRINTER].total_runs,
@@ -46,9 +49,14 @@ void ShowGlobalReport(void)
                  report.stats[TEST_DAILY_GRIND].avg_mbps, report.stats[TEST_DAILY_GRIND].max_mbps,
                  (unsigned int)report.stats[TEST_DAILY_GRIND].total_runs, report.stats[TEST_SEQUENTIAL].avg_mbps,
                  report.stats[TEST_SEQUENTIAL].max_mbps, (unsigned int)report.stats[TEST_SEQUENTIAL].total_runs,
-                 report.stats[TEST_RANDOM_4K].avg_mbps, report.stats[TEST_RANDOM_4K].max_mbps,
-                 (unsigned int)report.stats[TEST_RANDOM_4K].total_runs, report.stats[TEST_PROFILER].avg_mbps,
-                 report.stats[TEST_PROFILER].max_mbps, (unsigned int)report.stats[TEST_PROFILER].total_runs);
+                 report.stats[TEST_SEQUENTIAL_READ].avg_mbps, report.stats[TEST_SEQUENTIAL_READ].max_mbps,
+                 (unsigned int)report.stats[TEST_SEQUENTIAL_READ].total_runs, report.stats[TEST_RANDOM_4K].avg_mbps,
+                 report.stats[TEST_RANDOM_4K].max_mbps, (unsigned int)report.stats[TEST_RANDOM_4K].total_runs,
+                 report.stats[TEST_RANDOM_4K_READ].avg_mbps, report.stats[TEST_RANDOM_4K_READ].max_mbps,
+                 (unsigned int)report.stats[TEST_RANDOM_4K_READ].total_runs, report.stats[TEST_MIXED_RW_70_30].avg_mbps,
+                 report.stats[TEST_MIXED_RW_70_30].max_mbps, (unsigned int)report.stats[TEST_MIXED_RW_70_30].total_runs,
+                 report.stats[TEST_PROFILER].avg_mbps, report.stats[TEST_PROFILER].max_mbps,
+                 (unsigned int)report.stats[TEST_PROFILER].total_runs);
         ShowMessage("AmigaDiskBench Report", msg, "Close");
     } else {
         ShowMessage("AmigaDiskBench Error", "No historical data found or CSV error.", "OK");

@@ -276,18 +276,27 @@ enum
 #define MID_SHOW_DETAILS 5
 #define MID_DETAILS_COPY 6
 
-#define COL_DATE 0
-#define COL_VOL 1
-#define COL_TEST 2
-#define COL_BS 3
-#define COL_PASSES 4
-#define COL_MBPS 5
-#define COL_IOPS 6
-#define COL_DEVICE 7
-#define COL_UNIT 8
-#define COL_VER 9
-#define COL_DIFF 10
-#define COL_DUMMY 11
+#define COL_CHECK 0
+#define COL_DATE 1
+#define COL_VOL 2
+#define COL_TEST 3
+#define COL_BS 4
+#define COL_PASSES 5
+#define COL_MBPS 6
+#define COL_IOPS 7
+#define COL_DEVICE 8
+#define COL_UNIT 9
+#define COL_VER 10
+#define COL_DIFF 11
+#define COL_DUMMY 12
+
+/* Benchmark Tab Specific Columns */
+#define BCOL_DATE 0
+#define BCOL_VOL 1
+#define BCOL_TEST 2
+#define BCOL_MBPS 3
+#define BCOL_DIFF 4
+#define BCOL_VER 5
 
 /* GUI Functions */
 

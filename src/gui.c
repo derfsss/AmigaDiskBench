@@ -250,6 +250,13 @@ int StartGUI(void)
                        (dresult = IIntuition->IDoMethod(ui.details_win_obj, WM_HANDLEINPUT, &dcode)) != WMHI_LASTMSG)
                     HandleDetailsWindowEvent(dcode, dresult);
             }
+            if (ui.compare_win_obj && (sig & (1L << ui.compare_window->UserPort->mp_SigBit))) {
+                uint16 ccode;
+                uint32 cresult;
+                while (ui.compare_win_obj &&
+                       (cresult = IIntuition->IDoMethod(ui.compare_win_obj, WM_HANDLEINPUT, &ccode)) != WMHI_LASTMSG)
+                    HandleCompareWindowEvent(ccode, cresult);
+            }
         }
         IClickTab->FreeClickTabList(&tab_list);
         /* Signal worker to quit and wait for it */

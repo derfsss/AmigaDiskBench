@@ -51,7 +51,7 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
     IExec->NewList(compare_list);
 
     /* Helper macros for creating comparison rows */
-    char val1[64], val2[64], diff[64];
+    char val1[256], val2[256], diff[256];
 
     /* Add comparison rows */
 
