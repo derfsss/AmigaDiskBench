@@ -22,11 +22,76 @@
  */
 
 #include "gui_internal.h"
+#include <graphics/gfxmacros.h>
 #include <interfaces/arexx.h>
 #include <interfaces/locale.h>
 #include <proto/locale.h>
 #include <stdlib.h>
 #include <utility/hooks.h>
+
+/* Traffic Light Render Hook */
+static struct Hook traffic_light_hook;
+
+static LONG ObtainTrafficPen(uint32 rgb)
+{
+    struct ColorMap *cm = NULL;
+    if (ui.window && ui.window->WScreen) {
+        cm = ui.window->WScreen->ViewPort.ColorMap;
+    }
+    if (!cm)
+        return 1;
+
+    uint32 r = (rgb >> 16) & 0xFF;
+    uint32 g = (rgb >> 8) & 0xFF;
+    uint32 b = rgb & 0xFF;
+
+    return IGraphics->ObtainBestPen(cm, r << 24, g << 24, b << 24, OBP_Precision, PRECISION_IMAGE, TAG_DONE);
+}
+
+static void ReleaseTrafficPen(LONG pen)
+{
+    struct ColorMap *cm = NULL;
+    if (ui.window && ui.window->WScreen) {
+        cm = ui.window->WScreen->ViewPort.ColorMap;
+    }
+    if (cm && pen >= 0) {
+        IGraphics->ReleasePen(cm, pen);
+    }
+}
+
+static uint32 TrafficLightDraw(struct Hook *hook, Object *obj, struct gpRender *gpr)
+{
+    struct RastPort *rp = gpr->gpr_RPort;
+    if (!rp)
+        return 0;
+
+    struct IBox *box = NULL;
+    IIntuition->GetAttr(SPACE_AreaBox, obj, (uint32 *)&box);
+
+    if (box) {
+        LOG_DEBUG("TrafficLight: Draw Box[%d, %d, %d, %d] Busy=%d", box->Left, box->Top, box->Width, box->Height,
+                  ui.worker_busy);
+
+        /* Red (Busy) or Green (Idle) */
+        uint32 color = ui.worker_busy ? 0x00FF0000 : 0x0000FF00;
+
+        LONG pen = ObtainTrafficPen(color);
+
+        LOG_DEBUG("TrafficLight: Color=0x%06X -> Pen=%ld", color, pen);
+
+        if (pen >= 0) {
+            IGraphics->SetAPen(rp, pen);
+            IGraphics->RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top + box->Height - 1);
+            ReleaseTrafficPen(pen);
+        } else {
+            /* Fallback to simple pens if Obtain fails */
+            LOG_DEBUG("TrafficLight: ObtainPen failed, using fallback.");
+            IGraphics->SetAPen(rp, ui.worker_busy ? 2 : 1);
+            IGraphics->RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top + box->Height - 1);
+        }
+    }
+    return 0;
+}
 
 /* Static render hook for visualization SpaceObject */
 static struct Hook viz_hook;
@@ -150,6 +215,17 @@ int StartGUI(void)
         if (ui.viz_canvas) {
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_canvas, ui.window, NULL, SPACE_RenderHook,
                                        (uint32)&viz_hook, TAG_DONE);
+        }
+
+        /* Install Traffic Light Hook */
+        memset(&traffic_light_hook, 0, sizeof(traffic_light_hook));
+        traffic_light_hook.h_Entry = (HOOKFUNC)TrafficLightDraw;
+        traffic_light_hook.h_Data = NULL;
+        if (ui.traffic_light) {
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.traffic_light, ui.window, NULL, SPACE_RenderHook,
+                                       (uint32)&traffic_light_hook, TAG_DONE);
+            /* Trigger initial refresh */
+            IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
         }
 
         RefreshDriveList();

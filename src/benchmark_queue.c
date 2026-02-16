@@ -70,7 +70,9 @@ void DispatchNextJob(void)
 
     /* Get head of queue */
     struct BenchJobNode *qn = (struct BenchJobNode *)IExec->RemHead(&ui.benchmark_queue);
+
     if (qn) {
+        LOG_DEBUG("DispatchNextJob: Found node %p", qn);
         BenchJob *job = qn->job;
 
         /* We are about to send the job message, so we don't free the job structure yet.
@@ -87,7 +89,14 @@ void DispatchNextJob(void)
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.status_light_obj, ui.window, NULL, LABEL_Text,
                                        (uint32) "[ BUSY ]", TAG_DONE);
 
+            /* Update Traffic Light Red */
+            if (ui.traffic_light) {
+                IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
+            }
+
+            LOG_DEBUG("DispatchNextJob: Sending message to worker port %p", ui.worker_port);
             IExec->PutMsg(ui.worker_port, &job->msg);
+            LOG_DEBUG("DispatchNextJob: Message sent");
         }
     }
 }

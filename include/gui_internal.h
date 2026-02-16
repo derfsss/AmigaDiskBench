@@ -45,6 +45,7 @@
 #include <proto/clicktab.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <proto/icon.h>
 #include <proto/integer.h>
 #include <proto/intuition.h>
@@ -56,6 +57,7 @@
 #include <proto/scroller.h>
 #include <proto/string.h>
 #include <proto/texteditor.h>
+
 
 /* Specific Class headers for tags and constants (e.g. WM_OPEN, CNA_Text) */
 #include <classes/window.h>

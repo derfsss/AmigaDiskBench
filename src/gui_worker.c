@@ -38,8 +38,8 @@ static void SendProgressUpdate(const char *status_text, BOOL finished)
     if (!s_gui_reply_port || !status_text)
         return;
 
-    BenchStatus *status = IExec->AllocVecTags(sizeof(BenchStatus), AVT_Type, MEMF_SHARED,
-                                              AVT_ClearWithValue, 0, TAG_DONE);
+    BenchStatus *status =
+        IExec->AllocVecTags(sizeof(BenchStatus), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
     if (status) {
         status->msg_type = MSG_TYPE_STATUS;
         status->finished = finished;
@@ -144,6 +144,26 @@ void LaunchBenchmarkJob(void)
 
     if (ui.pass_gad) {
         IIntuition->GetAttr(INTEGER_Number, ui.pass_gad, &passes);
+    }
+
+    /* Update Visual Indicators */
+    // ui.worker_busy = TRUE; /* Removed to fix deadlock */
+
+    /* Increment total_jobs to support appending to an active queue (cumulative progress) */
+    ui.total_jobs++;
+    /* ui.completed_jobs preserves its value */
+
+    // Traffic light refresh removed - handled by DispatchNextJob
+
+    if (ui.fuel_gauge) {
+        char buf[32];
+        uint32 percent = 0;
+        if (ui.total_jobs > 0) {
+            percent = (ui.completed_jobs * 100) / ui.total_jobs;
+        }
+        snprintf(buf, sizeof(buf), "%lu/%lu", ui.completed_jobs, ui.total_jobs);
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.fuel_gauge, ui.window, NULL, FUELGAUGE_Level, percent,
+                                   FUELGAUGE_VarArgs, (uint32)buf, TAG_DONE);
     }
 
     uint32 block_val = 4096;

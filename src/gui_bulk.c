@@ -99,6 +99,10 @@ void LaunchBulkJobs(void)
 {
     uint32 job_count = 0;
 
+    /* Update Visual Indicators Init */
+    // ui.worker_busy = TRUE; /* Removed to fix deadlock */
+    // Traffic light refresh removed - handled by DispatchNextJob
+
     /* 1. Gather Settings */
     /* Check "Run All" flags */
     uint32 run_all_tests = 0;
@@ -177,7 +181,26 @@ void LaunchBulkJobs(void)
     }
 
     if (job_count == 0) {
+        ui.worker_busy = FALSE;
+        if (ui.traffic_light) {
+            IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
+        }
         LOG_DEBUG("Bulk: No volumes selected for benchmarking.");
         ShowMessage("AmigaDiskBench", "Please select at least one volume\nin the bulk list.", "OK");
+    } else {
+        /* Add to total_jobs to support appending to an active queue (cumulative progress) */
+        ui.total_jobs += job_count;
+        /* ui.completed_jobs preserves its value (starts at 0 if new run) */
+
+        if (ui.fuel_gauge) {
+            char buf[32];
+            uint32 percent = 0;
+            if (ui.total_jobs > 0) {
+                percent = (ui.completed_jobs * 100) / ui.total_jobs;
+            }
+            snprintf(buf, sizeof(buf), "%lu/%lu", ui.completed_jobs, ui.total_jobs);
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.fuel_gauge, ui.window, NULL, FUELGAUGE_Level, percent,
+                                       FUELGAUGE_VarArgs, (uint32)buf, TAG_DONE);
+        }
     }
 }

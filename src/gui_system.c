@@ -150,8 +150,12 @@ BOOL InitSystemResources(void)
     ui.AslBase = IExec->OpenLibrary("asl.library", 0);
     if (ui.AslBase)
         ui.IAsl = (struct AslIFace *)IExec->GetInterface(ui.AslBase, "main", 1, NULL);
+
+    ui.GraphicsBase = IExec->OpenLibrary("graphics.library", 53);
+    if (ui.GraphicsBase)
+        ui.IGraphics = (struct GraphicsIFace *)IExec->GetInterface(ui.GraphicsBase, "main", 1, NULL);
     else
-        LOG_DEBUG("InitSystemResources: FAILED to open asl.library");
+        LOG_DEBUG("InitSystemResources: FAILED to open graphics.library");
 
     /* Open ReAction Classes Explicitly */
     ui.WindowBase = IIntuition->OpenClass("window.class", MINVERSION, &ui.WindowClass);
@@ -240,6 +244,15 @@ void CleanupSystemResources(void)
     if (ui.AslBase) {
         IExec->CloseLibrary(ui.AslBase);
         ui.AslBase = NULL;
+    }
+
+    if (ui.IGraphics) {
+        IExec->DropInterface((struct Interface *)ui.IGraphics);
+        ui.IGraphics = NULL;
+    }
+    if (ui.GraphicsBase) {
+        IExec->CloseLibrary(ui.GraphicsBase);
+        ui.GraphicsBase = NULL;
     }
 
     /* Close ReAction classes */

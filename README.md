@@ -30,7 +30,7 @@
   - **Comparison Mode**: Compare any two results side-by-side (Session or History).
   - **Global Report**: Aggregate statistics (Avg/Max) across all run tests.
   - **Visualizations**: Interactive trend graphs to track performance over time.
-  - **Hardware ID**: Automatic detection of device names (e.g., `ahci.device`), units, and filesystem types.
+  - **Hardware ID**: Automatic detection of device names (e.g., `a1ide.device`), units, and filesystem types.
 
 ## Installation
 

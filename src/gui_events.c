@@ -142,7 +142,19 @@ void HandleWorkerReply(struct Message *m)
 
             /* Handle final completion */
             if (st->finished) {
-                /* Job finished, try to dispatch next one */
+                /* Job finished */
+                ui.completed_jobs++;
+
+                /* Update Fuel Gauge */
+                if (ui.fuel_gauge && ui.total_jobs > 0) {
+                    uint32 percent = (ui.completed_jobs * 100) / ui.total_jobs;
+                    char buf[32];
+                    snprintf(buf, sizeof(buf), "%lu/%lu", ui.completed_jobs, ui.total_jobs);
+                    IIntuition->SetGadgetAttrs((struct Gadget *)ui.fuel_gauge, ui.window, NULL, FUELGAUGE_Level,
+                                               percent, FUELGAUGE_VarArgs, (uint32)buf, TAG_DONE);
+                }
+
+                /* Try to dispatch next one */
                 ui.worker_busy = FALSE; /* Briefly strictly to allow DispatchNextJob to see we are ready */
                 DispatchNextJob();
 
@@ -164,6 +176,22 @@ void HandleWorkerReply(struct Message *m)
                     /* Force visual refresh for ReAction layout to reflect enabled state */
                     // IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
                     IIntuition->RefreshGList((struct Gadget *)ui.run_button, ui.window, NULL, 1);
+
+                    /* Reset Traffic Light to Green */
+                    if (ui.traffic_light) {
+                        IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
+                    }
+
+                    /* Reset Progress Counters */
+                    ui.total_jobs = 0;
+                    ui.completed_jobs = 0;
+                }
+                /* If queue is NOT empty, we are still busy processing the NextJob dispatched above.
+                   DispatchNextJob sets ui.worker_busy = TRUE if it successfully dispatches a job.
+                   We re-assert the busy state here to ensure the UI remains locked until the queue is fully drained. */
+                if (!IsQueueEmpty()) {
+                    ui.worker_busy = TRUE;
+                    /* Traffic light remains Red */
                 }
                 if (st->success) {
                     char tn[64], ms[32], is[32], ut[32];

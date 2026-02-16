@@ -29,8 +29,7 @@
 #define MAX_PLOT_RESULTS 200
 
 /* Forward declaration of render function from gui_viz_render.c */
-extern void RenderTrendGraph(struct RastPort *rp, struct IBox *box,
-                             BenchResult **results, uint32 count);
+extern void RenderTrendGraph(struct RastPort *rp, struct IBox *box, BenchResult **results, uint32 count);
 
 /* Comparison for sorting results by timestamp (ascending = oldest first) */
 static int compare_by_timestamp(const void *a, const void *b)
@@ -167,22 +166,21 @@ void UpdateVisualization(void)
  */
 uint32 VizRenderHook(struct Hook *hook, Object *space_obj, struct gpRender *gpr)
 {
-    (void)hook;
-    struct RastPort *rp = gpr->gpr_RPort;
-
-    /* Get rendering bounds */
-    struct IBox *box = NULL;
-    IIntuition->GetAttr(SPACE_AreaBox, space_obj, (uint32 *)&box);
-    if (!box || !rp)
+    if (!ui.viz_canvas || !ui.window)
         return 0;
 
-    /* Collect filtered results */
-    BenchResult *plot_results[MAX_PLOT_RESULTS];
-    uint32 count = CollectFilteredResults(plot_results, MAX_PLOT_RESULTS);
+    struct RastPort *rp = gpr->gpr_RPort;
+    if (!rp)
+        return 0;
 
-    /* Render the graph */
-    RenderTrendGraph(rp, box, plot_results, count);
+    struct IBox *box = NULL;
+    IIntuition->GetAttr(SPACE_AreaBox, space_obj, (uint32 *)&box);
 
+    if (box) {
+        BenchResult *results[MAX_PLOT_RESULTS];
+        uint32 count = CollectFilteredResults(results, MAX_PLOT_RESULTS);
+        RenderTrendGraph(rp, box, results, count);
+    }
     return 0;
 }
 
@@ -201,23 +199,27 @@ void InitVizFilterLabels(void)
     /* Volume filter: "All Volumes" + populate from history on refresh */
     struct Node *n;
     n = IChooser->AllocChooserNode(CNA_Text, "All Volumes", CNA_CopyText, TRUE, TAG_DONE);
-    if (n) IExec->AddTail(&ui.viz_volume_labels, n);
+    if (n)
+        IExec->AddTail(&ui.viz_volume_labels, n);
 
     /* Test type filter: "All Tests" + each test type */
     n = IChooser->AllocChooserNode(CNA_Text, "All Tests", CNA_CopyText, TRUE, TAG_DONE);
-    if (n) IExec->AddTail(&ui.viz_test_labels, n);
+    if (n)
+        IExec->AddTail(&ui.viz_test_labels, n);
 
     for (int i = 0; i < TEST_COUNT; i++) {
-        n = IChooser->AllocChooserNode(CNA_Text, TestTypeToDisplayName((BenchTestType)i),
-                                       CNA_CopyText, TRUE, TAG_DONE);
-        if (n) IExec->AddTail(&ui.viz_test_labels, n);
+        n = IChooser->AllocChooserNode(CNA_Text, TestTypeToDisplayName((BenchTestType)i), CNA_CopyText, TRUE, TAG_DONE);
+        if (n)
+            IExec->AddTail(&ui.viz_test_labels, n);
     }
 
     /* Metric filter: MB/s, IOPS */
     n = IChooser->AllocChooserNode(CNA_Text, "MB/s", CNA_CopyText, TRUE, TAG_DONE);
-    if (n) IExec->AddTail(&ui.viz_metric_labels, n);
+    if (n)
+        IExec->AddTail(&ui.viz_metric_labels, n);
     n = IChooser->AllocChooserNode(CNA_Text, "IOPS", CNA_CopyText, TRUE, TAG_DONE);
-    if (n) IExec->AddTail(&ui.viz_metric_labels, n);
+    if (n)
+        IExec->AddTail(&ui.viz_metric_labels, n);
 
     ui.viz_filter_volume_idx = 0;
     ui.viz_filter_test_idx = 0;
@@ -236,8 +238,8 @@ void RefreshVizVolumeFilter(void)
         return;
 
     /* Detach labels from chooser */
-    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_volume, ui.window, NULL,
-                               CHOOSER_Labels, (ULONG)-1, TAG_DONE);
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_volume, ui.window, NULL, CHOOSER_Labels, (ULONG)-1,
+                               TAG_DONE);
 
     /* Free existing nodes */
     struct Node *node, *next;
@@ -252,7 +254,8 @@ void RefreshVizVolumeFilter(void)
     /* Re-add "All Volumes" */
     struct Node *n;
     n = IChooser->AllocChooserNode(CNA_Text, "All Volumes", CNA_CopyText, TRUE, TAG_DONE);
-    if (n) IExec->AddTail(&ui.viz_volume_labels, n);
+    if (n)
+        IExec->AddTail(&ui.viz_volume_labels, n);
 
     /* Collect unique volume names from history */
     char seen_volumes[50][32];
@@ -271,12 +274,11 @@ void RefreshVizVolumeFilter(void)
                 }
             }
             if (!found) {
-                snprintf(seen_volumes[seen_count], sizeof(seen_volumes[seen_count]),
-                         "%s", res->volume_name);
+                snprintf(seen_volumes[seen_count], sizeof(seen_volumes[seen_count]), "%s", res->volume_name);
                 seen_count++;
-                n = IChooser->AllocChooserNode(CNA_Text, res->volume_name,
-                                               CNA_CopyText, TRUE, TAG_DONE);
-                if (n) IExec->AddTail(&ui.viz_volume_labels, n);
+                n = IChooser->AllocChooserNode(CNA_Text, res->volume_name, CNA_CopyText, TRUE, TAG_DONE);
+                if (n)
+                    IExec->AddTail(&ui.viz_volume_labels, n);
             }
         }
         hnode = IExec->GetSucc(hnode);
@@ -284,9 +286,8 @@ void RefreshVizVolumeFilter(void)
 
     /* Reattach labels and reset selection */
     ui.viz_filter_volume_idx = 0;
-    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_volume, ui.window, NULL,
-                               CHOOSER_Labels, (uint32)&ui.viz_volume_labels,
-                               CHOOSER_Selected, 0, TAG_DONE);
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_volume, ui.window, NULL, CHOOSER_Labels,
+                               (uint32)&ui.viz_volume_labels, CHOOSER_Selected, 0, TAG_DONE);
 }
 
 /**

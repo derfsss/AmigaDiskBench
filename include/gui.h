@@ -146,8 +146,12 @@ typedef struct
     uint32 viz_filter_test_idx;
     uint32 viz_filter_metric_idx;
 
+    /* Job Tracking */
+    uint32 total_jobs;
+    uint32 completed_jobs;
+
     /* Library Bases */
-    struct Library *IconBase, *LocaleBase, *ApplicationBase, *AslBase;
+    struct Library *IconBase, *LocaleBase, *ApplicationBase, *AslBase, *GraphicsBase;
 
     /* Class library bases. Many are now handled by reaction.h but
        we keep those we explicitly manage via OpenClass for safety. */
@@ -170,6 +174,7 @@ typedef struct
     struct AslIFace *IAsl;
     struct PopupMenuIFace *IPopupMenu;
     struct PrefsObjectsIFace *IPrefsObjects;
+    struct GraphicsIFace *IGraphics;
 
     /* Application State */
     BOOL PageAvailable;
@@ -195,6 +200,11 @@ typedef struct
     Object *bulk_info_label;
     Object *bulk_all_tests_check;
     Object *bulk_all_blocks_check;
+    Object *fuel_gauge;
+
+    /* Visual Indicators */
+    Object *traffic_light;
+    struct Hook traffic_light_hook;
 } GUIState;
 
 #include "benchmark_queue.h"
@@ -265,6 +275,8 @@ enum
     GID_HISTORY_DELETE,
     GID_HISTORY_CLEAR_ALL,
     GID_HISTORY_EXPORT,
+    GID_TRAFFIC_LIGHT,
+    GID_FUEL_GAUGE,
     GID_COMPARE_CLOSE = 5000
 };
 
