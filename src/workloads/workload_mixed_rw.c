@@ -42,6 +42,7 @@ struct MixedRWData
     uint8 *buffer;
     uint32 file_size;
     uint32 num_ops;
+    uint32 block_size;
 };
 
 static BOOL Setup_MixedRW(const char *path, uint32 block_size, void **data)
@@ -54,6 +55,7 @@ static BOOL Setup_MixedRW(const char *path, uint32 block_size, void **data)
     snprintf(md->path, sizeof(md->path), "%s", path);
     md->file_size = MIXED_FILE_SIZE;
     md->num_ops = MIXED_NUM_OPS;
+    md->block_size = block_size ? block_size : MIXED_BLOCK_SIZE;
 
     /* If we are on RAM:, use a smaller size */
     if (strncasecmp(path, "RAM:", 4) == 0) {
@@ -76,14 +78,14 @@ static BOOL Setup_MixedRW(const char *path, uint32 block_size, void **data)
         return FALSE;
     }
 
-    md->buffer = IExec->AllocVecTags(MIXED_BLOCK_SIZE, AVT_Type, MEMF_SHARED, TAG_DONE);
+    md->buffer = IExec->AllocVecTags(md->block_size, AVT_Type, MEMF_SHARED, TAG_DONE);
     if (!md->buffer) {
         IDOS->Close(md->file);
         IDOS->Delete(md->file_path);
         IExec->FreeVec(md);
         return FALSE;
     }
-    memset(md->buffer, 0xAA, MIXED_BLOCK_SIZE);
+    memset(md->buffer, 0xAA, md->block_size);
 
     *data = md;
     return TRUE;
@@ -93,7 +95,7 @@ static BOOL Run_MixedRW(void *data, uint32 *bytes_processed, uint32 *op_count)
 {
     struct MixedRWData *md = (struct MixedRWData *)data;
     uint32 total_bytes = 0;
-    uint32 max_offset = md->file_size - MIXED_BLOCK_SIZE;
+    uint32 max_offset = md->file_size - md->block_size;
 
     for (uint32 i = 0; i < md->num_ops; i++) {
         uint32 offset = (uint32)rand() % max_offset;
@@ -106,14 +108,14 @@ static BOOL Run_MixedRW(void *data, uint32 *bytes_processed, uint32 *op_count)
         if (IDOS->ChangeFilePosition(md->file, offset, OFFSET_BEGINNING)) {
             if (is_read) {
                 /* Read operation */
-                int32 bytes_read = IDOS->Read(md->file, md->buffer, MIXED_BLOCK_SIZE);
+                int32 bytes_read = IDOS->Read(md->file, md->buffer, md->block_size);
                 if (bytes_read > 0) {
                     total_bytes += bytes_read;
                 }
             } else {
                 /* Write operation */
-                if (IDOS->Write(md->file, md->buffer, MIXED_BLOCK_SIZE) == MIXED_BLOCK_SIZE) {
-                    total_bytes += MIXED_BLOCK_SIZE;
+                if (IDOS->Write(md->file, md->buffer, md->block_size) == md->block_size) {
+                    total_bytes += md->block_size;
                 }
             }
         }
@@ -143,12 +145,10 @@ static void GetDefaultSettings_MixedRW(uint32 *block_size, uint32 *passes)
     *passes = 3;
 }
 
-const BenchWorkload Workload_MixedRW = {
-    .type = TEST_MIXED_RW_70_30,
-    .name = "Mixed R/W 70/30",
-    .description = "Real-world: 2048 ops, 70% reads, 30% writes",
-    .Setup = Setup_MixedRW,
-    .Run = Run_MixedRW,
-    .Cleanup = Cleanup_MixedRW,
-    .GetDefaultSettings = GetDefaultSettings_MixedRW
-};
+const BenchWorkload Workload_MixedRW = {.type = TEST_MIXED_RW_70_30,
+                                        .name = "Mixed R/W 70/30",
+                                        .description = "Real-world: 2048 ops, 70% reads, 30% writes",
+                                        .Setup = Setup_MixedRW,
+                                        .Run = Run_MixedRW,
+                                        .Cleanup = Cleanup_MixedRW,
+                                        .GetDefaultSettings = GetDefaultSettings_MixedRW};

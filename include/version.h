@@ -24,18 +24,23 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#define APP_VERSION 2
-#define APP_REVISION 2
-#define APP_PATCH 9
-#define APP_VERSION_STR "2.2.9"
-#define APP_DATE "11.02.2026"
+#define XSTR(x) #x
+#define STR(x) XSTR(x)
+
+#define VERSION_MAJOR 2
+#define VERSION_MINOR 2
+#define VERSION_REV 10
+#define VERSION_BUILD 1015
+#define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_REV) "." STR(VERSION_BUILD)
+#define APP_VERSION_STR VERSION_STR
+#define APP_DATE "17.02.2026"
 #define APP_TITLE "AmigaDiskBench"
-#define APP_VER_TITLE APP_TITLE " v" APP_VERSION_STR
+#define APP_VER_TITLE APP_TITLE " v" VERSION_STR
 #define APP_DESCRIPTION "Amiga Disk Benchmark Utility v" APP_VERSION_STR
 #define APP_COPYRIGHT "(C) 2026 Team Derfs"
 #define APP_ABOUT_MSG APP_TITLE " v" APP_VERSION_STR "\n" APP_COPYRIGHT "\nA modern benchmark for AmigaOS 4.x"
 
 /* Amiga style $VER string */
-#define VER_STRING "$VER: " APP_TITLE " " APP_VERSION_STR " (" APP_DATE ")\r\n"
+#define VER_STRING "$VER: " APP_TITLE " " VERSION_STR " (" APP_DATE ")\r\n"
 
 #endif /* VERSION_H */

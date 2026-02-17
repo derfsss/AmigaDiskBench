@@ -41,6 +41,7 @@ struct RandomData
     uint8 *buffer;
     uint32 file_size;
     uint32 num_ios;
+    uint32 block_size;
 };
 
 static BOOL Setup_Random4K(const char *path, uint32 block_size, void **data)
@@ -53,6 +54,7 @@ static BOOL Setup_Random4K(const char *path, uint32 block_size, void **data)
     snprintf(rd->path, sizeof(rd->path), "%s", path);
     rd->file_size = RAND_FILE_SIZE;
     rd->num_ios = RAND_NUM_IOS;
+    rd->block_size = block_size ? block_size : RAND_BLOCK_SIZE;
 
     /* If we are on RAM:, use a smaller size */
     if (strncasecmp(path, "RAM:", 4) == 0) {
@@ -75,14 +77,14 @@ static BOOL Setup_Random4K(const char *path, uint32 block_size, void **data)
         return FALSE;
     }
 
-    rd->buffer = IExec->AllocVecTags(RAND_BLOCK_SIZE, AVT_Type, MEMF_SHARED, TAG_DONE);
+    rd->buffer = IExec->AllocVecTags(rd->block_size, AVT_Type, MEMF_SHARED, TAG_DONE);
     if (!rd->buffer) {
         IDOS->Close(rd->file);
         IDOS->Delete(rd->file_path);
         IExec->FreeVec(rd);
         return FALSE;
     }
-    memset(rd->buffer, 0x55, RAND_BLOCK_SIZE);
+    memset(rd->buffer, 0x55, rd->block_size);
 
     *data = rd;
     return TRUE;
@@ -92,7 +94,7 @@ static BOOL Run_Random4K(void *data, uint32 *bytes_processed, uint32 *op_count)
 {
     struct RandomData *rd = (struct RandomData *)data;
     uint32 total_bytes = 0;
-    uint32 max_offset = rd->file_size - RAND_BLOCK_SIZE;
+    uint32 max_offset = rd->file_size - rd->block_size;
 
     for (uint32 i = 0; i < rd->num_ios; i++) {
         uint32 offset = (uint32)rand() % max_offset;
@@ -100,8 +102,8 @@ static BOOL Run_Random4K(void *data, uint32 *bytes_processed, uint32 *op_count)
         offset &= ~RAND_SECTOR_ALIGN;
 
         if (IDOS->ChangeFilePosition(rd->file, offset, OFFSET_BEGINNING)) {
-            if (IDOS->Write(rd->file, rd->buffer, RAND_BLOCK_SIZE) == RAND_BLOCK_SIZE) {
-                total_bytes += RAND_BLOCK_SIZE;
+            if (IDOS->Write(rd->file, rd->buffer, rd->block_size) == rd->block_size) {
+                total_bytes += rd->block_size;
             }
         }
     }
@@ -130,9 +132,9 @@ static void GetDefaultSettings_Random4K(uint32 *block_size, uint32 *passes)
     *passes = 3;
 }
 
-const BenchWorkload Workload_Random4K = {.type = TEST_RANDOM_4K,
-                                         .name = "Random 4K I/O",
-                                         .description = "Seek performance: 4096 random 4KB writes",
+const BenchWorkload Workload_Random4K = {.type = TEST_RANDOM_WRITE,
+                                         .name = "Random Write I/O",
+                                         .description = "Seek performance: Random writes (User Block Size)",
                                          .Setup = Setup_Random4K,
                                          .Run = Run_Random4K,
                                          .Cleanup = Cleanup_Random4K,

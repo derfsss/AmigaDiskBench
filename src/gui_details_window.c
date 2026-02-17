@@ -91,14 +91,14 @@ void OpenDetailsWindow(BenchResult *res)
              " Application:\n"
              "  Version:    %s\n",
              res->timestamp,
-             (res->type == TEST_SPRINTER)       ? "Sprinter"
-             : (res->type == TEST_HEAVY_LIFTER) ? "HeavyLifter"
-             : (res->type == TEST_LEGACY)       ? "Legacy"
-             : (res->type == TEST_DAILY_GRIND)  ? "DailyGrind"
-             : (res->type == TEST_SEQUENTIAL)   ? "Sequential"
-             : (res->type == TEST_RANDOM_4K)    ? "Random4K"
-             : (res->type == TEST_PROFILER)     ? "FullProfiler"
-                                                : "Unknown",
+             (res->type == TEST_SPRINTER)           ? "Sprinter"
+             : (res->type == TEST_HEAVY_LIFTER)     ? "HeavyLifter"
+             : (res->type == TEST_LEGACY)           ? "Legacy"
+             : (res->type == TEST_DAILY_GRIND)      ? "DailyGrind"
+             : (res->type == TEST_SEQUENTIAL_WRITE) ? "Sequential Write"
+             : (res->type == TEST_RANDOM_WRITE)     ? "Random Write"
+             : (res->type == TEST_PROFILER)         ? "FullProfiler"
+                                                    : "Unknown",
              res->volume_name, res->result_id, res->fs_type, (unsigned int)res->passes,
              res->use_trimmed_mean ? "Yes" : "No", FormatPresetBlockSize(res->block_size), res->mb_per_sec,
              res->min_mbps, res->max_mbps, (unsigned int)res->iops, res->total_duration,

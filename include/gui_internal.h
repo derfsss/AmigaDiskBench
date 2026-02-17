@@ -57,7 +57,7 @@
 #include <proto/scroller.h>
 #include <proto/string.h>
 #include <proto/texteditor.h>
-
+#include <proto/utility.h>
 
 /* Specific Class headers for tags and constants (e.g. WM_OPEN, CNA_Text) */
 #include <classes/window.h>

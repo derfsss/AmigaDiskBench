@@ -34,17 +34,17 @@
  */
 typedef enum
 {
-    TEST_SPRINTER = 0,      /**< Small files / Metadata performance */
-    TEST_HEAVY_LIFTER,      /**< Large file / Big chunk transfer */
-    TEST_LEGACY,            /**< Large file / Small chunk transfer (Simulates older apps) */
-    TEST_DAILY_GRIND,       /**< Pseudo-random mix of operations */
-    TEST_SEQUENTIAL,        /**< Professional: Pure Sequential I/O (Write) */
-    TEST_RANDOM_4K,         /**< Professional: Random 4K I/O (Write) */
-    TEST_PROFILER,          /**< Professional: Filesystem Profiler (Metadata) */
-    TEST_SEQUENTIAL_READ,   /**< Professional: Pure Sequential I/O (Read) */
-    TEST_RANDOM_4K_READ,    /**< Professional: Random 4K I/O (Read) */
-    TEST_MIXED_RW_70_30,    /**< Professional: Mixed Read/Write 70/30 */
-    TEST_COUNT              /**< Total number of test types */
+    TEST_SPRINTER = 0,     /**< Small files / Metadata performance */
+    TEST_HEAVY_LIFTER,     /**< Large file / Big chunk transfer */
+    TEST_LEGACY,           /**< Large file / Small chunk transfer (Simulates older apps) */
+    TEST_DAILY_GRIND,      /**< Pseudo-random mix of operations */
+    TEST_SEQUENTIAL_WRITE, /**< Professional: Pure Sequential I/O (Write) */
+    TEST_RANDOM_WRITE,     /**< Professional: Random I/O (Write) */
+    TEST_PROFILER,         /**< Professional: Filesystem Profiler (Metadata) */
+    TEST_SEQUENTIAL_READ,  /**< Professional: Pure Sequential I/O (Read) */
+    TEST_RANDOM_READ,      /**< Professional: Random I/O (Read) */
+    TEST_MIXED_RW_70_30,   /**< Professional: Mixed Read/Write 70/30 */
+    TEST_COUNT             /**< Total number of test types */
 } BenchTestType;
 
 /* Performance sample for graphing */
@@ -81,6 +81,7 @@ typedef struct
 
     /* App version tracking */
     char app_version[16];
+    char device[64]; /* Volume/Device name for visualization */
 
     /* Additional metadata for CSV and details view */
     uint32 passes;
@@ -165,7 +166,8 @@ void CleanupEngine(void);
  * @return TRUE if the benchmark completed successfully, FALSE on error or abort.
  */
 BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, uint32 block_size, BOOL use_trimmed_mean,
-                  BOOL flush_cache, ProgressCallback progress_cb, BenchResult *out_result, BenchSampleData *out_samples);
+                  BOOL flush_cache, ProgressCallback progress_cb, BenchResult *out_result,
+                  BenchSampleData *out_samples);
 
 /**
  * @brief Identify the filesystem of a given path.

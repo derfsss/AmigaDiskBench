@@ -90,6 +90,11 @@ void RefreshHistory(void)
                                 id, timestamp, type, disk, fs, mbs_str, iops_str, device, unit_str, ver, passes, bs_str,
                                 trimmed, min_str, max_str, dur_str, bytes_str, vendor, product, firmware, serial);
 
+            if (fields < 8) {
+                LOG_DEBUG("RefreshHistory: Skipping invalid line (fields=%d): '%s'", fields, line);
+                continue;
+            }
+
             /* Shift data if first field is not a unique ID (legacy format) */
             /* Note: Legacy shifting logic remains but might need adjustment if we see old files.
                For now, assuming new writes will have ID. */
@@ -123,6 +128,7 @@ void RefreshHistory(void)
                 snprintf(res->timestamp, sizeof(res->timestamp), "%s", timestamp);
                 snprintf(res->volume_name, sizeof(res->volume_name), "%s", disk);
                 snprintf(res->fs_type, sizeof(res->fs_type), "%s", fs);
+                snprintf(res->device, sizeof(res->device), "%s", disk); /* Store Volume Name */
                 res->mb_per_sec = atof(mbs_str);
                 res->iops = strtoul(iops_str, NULL, 10);
                 snprintf(res->device_name, sizeof(res->device_name), "%s", device);

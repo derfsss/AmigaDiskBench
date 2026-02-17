@@ -65,6 +65,7 @@ void DispatchNextJob(void)
     if (IsListEmpty(&ui.benchmark_queue)) {
         LOG_DEBUG("BenchmarkQueue: Queue empty");
         ui.worker_busy = FALSE;
+        UpdateTrafficLabel(FALSE);
         return;
     }
 
@@ -93,6 +94,9 @@ void DispatchNextJob(void)
             if (ui.traffic_light) {
                 IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
             }
+
+            LOG_DEBUG("DispatchNextJob: Calling UpdateTrafficLabel(TRUE)");
+            UpdateTrafficLabel(TRUE);
 
             LOG_DEBUG("DispatchNextJob: Sending message to worker port %p", ui.worker_port);
             IExec->PutMsg(ui.worker_port, &job->msg);

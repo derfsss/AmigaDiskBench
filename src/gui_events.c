@@ -149,7 +149,8 @@ void HandleWorkerReply(struct Message *m)
                 if (ui.fuel_gauge && ui.total_jobs > 0) {
                     uint32 percent = (ui.completed_jobs * 100) / ui.total_jobs;
                     char buf[32];
-                    snprintf(buf, sizeof(buf), "%lu/%lu", ui.completed_jobs, ui.total_jobs);
+                    snprintf(buf, sizeof(buf), "%lu/%lu", (unsigned long)ui.completed_jobs,
+                             (unsigned long)ui.total_jobs);
                     IIntuition->SetGadgetAttrs((struct Gadget *)ui.fuel_gauge, ui.window, NULL, FUELGAUGE_Level,
                                                percent, FUELGAUGE_VarArgs, (uint32)buf, TAG_DONE);
                 }
@@ -314,9 +315,20 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         case GID_TABS: {
             uint32 t = 0;
             IIntuition->GetAttr(CLICKTAB_Current, ui.tabs, &t);
+
+            /* Auto-Refresh History when switching to Visualization Tab (Index 2) */
+            if (t == 2UL) {
+                RefreshHistory();
+                /* NOTE: RefreshHistory() usually triggers a UI update, but since we are in
+                   HandleEvents, the Visualization update is triggered separately by
+                   HandleVizEvents() or explicitly in some paths.
+                   RefreshHistory() updates the ListBrowser nodes which CollectFilteredResults() reads. */
+            }
+
+            /* Update Page visibility */
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.page_obj, ui.window, NULL, PAGE_Current, t, TAG_DONE);
             /* Refresh Bulk Tab Info when switching tabs (Tab 3 is Bulk) */
-            if (t == 3) {
+            if (t == 3UL) {
                 UpdateBulkTabInfo();
             }
             break;
@@ -324,6 +336,12 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         case GID_TEST_CHOOSER:
             IIntuition->GetAttr(CHOOSER_Selected, ui.test_chooser, &ui.current_test_type);
             LOG_DEBUG("GUI: Test Type changed to %u", ui.current_test_type);
+
+            /* Disable Block Size chooser for Fixed-Behavior tests */
+            BOOL disable_blocks = (ui.current_test_type == TEST_DAILY_GRIND || ui.current_test_type == TEST_PROFILER);
+
+            SetGadgetState(GID_BLOCK_SIZE, disable_blocks);
+
             UpdateBulkTabInfo();
             break;
         case GID_NUM_PASSES:
@@ -331,6 +349,20 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             LOG_DEBUG("GUI: Passes changed to %u", ui.current_passes);
             UpdateBulkTabInfo();
             break;
+        /* Visualization Tab Filters */
+        case GID_VIZ_FILTER_VOLUME:
+            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_volume, &ui.viz_filter_volume_idx);
+            UpdateVisualization();
+            break;
+        case GID_VIZ_FILTER_TEST:
+            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_test, &ui.viz_filter_test_idx);
+            UpdateVisualization();
+            break;
+        case GID_VIZ_FILTER_METRIC: /* Reused as Date Range Filter */
+            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_metric, &ui.viz_date_range_idx);
+            UpdateVisualization();
+            break;
+
         case GID_BLOCK_SIZE: {
             struct Node *bn = NULL;
             IIntuition->GetAttr(CHOOSER_SelectedNode, ui.block_chooser, (uint32 *)&bn);
@@ -354,21 +386,6 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         case GID_BULK_ALL_TESTS:
         case GID_BULK_ALL_BLOCKS:
             UpdateBulkTabInfo();
-            break;
-        case GID_FLUSH_CACHE:
-            ui.flush_cache = code;
-            break;
-        case GID_VIZ_FILTER_VOLUME:
-            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_volume, &ui.viz_filter_volume_idx);
-            UpdateVisualization();
-            break;
-        case GID_VIZ_FILTER_TEST:
-            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_test, &ui.viz_filter_test_idx);
-            UpdateVisualization();
-            break;
-        case GID_VIZ_FILTER_METRIC:
-            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_metric, &ui.viz_filter_metric_idx);
-            UpdateVisualization();
             break;
         case GID_REFRESH_HISTORY:
             RefreshHistory();
@@ -399,14 +416,16 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
                     ASL_FileRequest, ASLFR_TitleText, (uint32) "Export History to CSV", ASLFR_DoSaveMode, TRUE,
                     ASLFR_InitialFile, (uint32) "AmigaDiskBench_History.csv", TAG_DONE);
                 if (req) {
-                    if (ui.IAsl->AslRequestTags(req, ASLFR_Window, (uint32)ui.window, TAG_DONE)) {
-                        char path[512];
-                        snprintf(path, sizeof(path), "%s", req->fr_Drawer);
-                        IDOS->AddPart(path, req->fr_File, sizeof(path));
-                        ExportHistoryToCSV(path);
+                    if (ui.IAsl->AslRequest(req, NULL)) {
+                        char filepath[512];
+                        snprintf(filepath, sizeof(filepath), "%s%s", req->fr_Drawer, req->fr_File);
+                        ExportHistoryToCSV(filepath);
+                        ShowMessage("Export Successful", "History has been exported to CSV.", "OK");
                     }
                     ui.IAsl->FreeAslRequest(req);
                 }
+            } else {
+                ShowMessage("Error", "Could not open asl.library", "OK");
             }
             break;
         }

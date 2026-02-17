@@ -43,19 +43,52 @@ BOOL SaveResultToCSV(const char *filename, BenchResult *result)
     }
 
     if (file) {
-        /* Map test type enum to CSV string via centralised lookup */
-        const char *typeName = TestTypeToString(result->type);
-
         char line[1024];
-        snprintf(line, sizeof(line), "%s,%s,%s,%s,%s,%.2f,%u,%s,%u,%s,%u,%u,%d,%.2f,%.2f,%.2f,%llu,%s,%s,%s,%s\n",
-                 result->result_id, result->timestamp, typeName, result->volume_name, result->fs_type,
-                 result->mb_per_sec, (unsigned int)result->iops, result->device_name, (unsigned int)result->device_unit,
-                 result->app_version, (unsigned int)result->passes, (unsigned int)result->block_size,
-                 (int)result->use_trimmed_mean, result->min_mbps, result->max_mbps, result->total_duration,
-                 (unsigned long long)result->cumulative_bytes, result->vendor, result->product, result->firmware_rev,
-                 result->serial_number);
-        IDOS->FPuts(file, line);
+        char *ptr = line;
+        size_t remaining = sizeof(line);
+        int written;
 
+        /* Helper macro to append to buffer */
+#define APPEND_CSV(fmt, ...)                                                                                           \
+    do {                                                                                                               \
+        written = snprintf(ptr, remaining, fmt, __VA_ARGS__);                                                          \
+        if (written > 0 && written < (int)remaining) {                                                                 \
+            ptr += written;                                                                                            \
+            remaining -= written;                                                                                      \
+        }                                                                                                              \
+    } while (0)
+
+        /* Construct CSV line incrementally to avoid massive varargs crash */
+        /* and to make debugging easier if a specific field is problematic */
+
+        // 1. ID, Timestamp, Type, Volume, FS
+        APPEND_CSV("%s,%s,%s,%s,%s", result->result_id, result->timestamp, TestTypeToString(result->type),
+                   result->volume_name, result->fs_type);
+
+        // 2. Metrics (MB/s, IOPS)
+        // Fixed: IOPS is uint32 (%u)
+        APPEND_CSV(",%.2f,%lu", result->mb_per_sec, (unsigned long)result->iops);
+
+        // 3. Device Info (Name, Unit, Version)
+        APPEND_CSV(",%s,%u,%s", result->device_name, (unsigned int)result->device_unit, result->app_version);
+
+        // 4. Test Settings (Passes, BlockSize, Trimmed)
+        APPEND_CSV(",%u,%u,%d", (unsigned int)result->passes, (unsigned int)result->block_size,
+                   (int)result->use_trimmed_mean);
+
+        // 5. Detailed Stats (Min, Max, Duration)
+        APPEND_CSV(",%.2f,%.2f,%.2f", result->min_mbps, result->max_mbps, result->total_duration);
+
+        // 6. Cumulative Bytes (uint64) - Potential trouble spot
+        APPEND_CSV(",%llu", (unsigned long long)result->cumulative_bytes);
+
+        // 7. Hardware Details (Vendor, Product, Firmware, Serial)
+        // Ensure pointers are valid (though arrays should be)
+        APPEND_CSV(",%s,%s,%s,%s\n", result->vendor, result->product, result->firmware_rev, result->serial_number);
+
+#undef APPEND_CSV
+
+        IDOS->FPuts(file, line);
         IDOS->FClose(file);
         return TRUE;
     }

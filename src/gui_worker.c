@@ -161,7 +161,7 @@ void LaunchBenchmarkJob(void)
         if (ui.total_jobs > 0) {
             percent = (ui.completed_jobs * 100) / ui.total_jobs;
         }
-        snprintf(buf, sizeof(buf), "%lu/%lu", ui.completed_jobs, ui.total_jobs);
+        snprintf(buf, sizeof(buf), "%lu/%lu", (unsigned long)ui.completed_jobs, (unsigned long)ui.total_jobs);
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.fuel_gauge, ui.window, NULL, FUELGAUGE_Level, percent,
                                    FUELGAUGE_VarArgs, (uint32)buf, TAG_DONE);
     }

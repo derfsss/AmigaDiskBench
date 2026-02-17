@@ -151,8 +151,12 @@ void LaunchBulkJobs(void)
 
                 /* Nested Loops for Permutations: Tests -> Blocks */
                 for (int t = 0; t < num_tests; t++) {
-                    for (int b = 0; b < num_blocks; b++) {
+                    /* FORCE specific tests to only run ONCE (ignoring Block Size loop) */
+                    BOOL force_single_run = (tests[t] == TEST_DAILY_GRIND || tests[t] == TEST_PROFILER);
 
+                    int effective_num_blocks = force_single_run ? 1 : num_blocks;
+
+                    for (int b = 0; b < effective_num_blocks; b++) {
                         BenchJob *job = IExec->AllocVecTags(sizeof(BenchJob), AVT_Type, MEMF_SHARED, AVT_ClearWithValue,
                                                             0, TAG_DONE);
                         if (job) {
@@ -161,12 +165,13 @@ void LaunchBulkJobs(void)
                             snprintf(job->target_path, sizeof(job->target_path), "%s", ddata->bare_name);
                             job->target_path[sizeof(job->target_path) - 1] = '\0';
                             job->num_passes = ui.current_passes;
-                            job->block_size = blocks[b];
+                            job->block_size =
+                                force_single_run ? 0 : blocks[b]; /* 0 or default will be handled by Setup */
                             job->use_trimmed_mean = ui.use_trimmed_mean;
                             job->flush_cache = ui.flush_cache;
                             job->msg.mn_ReplyPort = ui.worker_reply_port;
 
-                            LOG_DEBUG("Bulk: Queueing job for %s (Test=%d, BS=%u)", ddata->bare_name, tests[t],
+                            LOG_DEBUG("Bulk: Queueing job for '%s' (Test=%d, BS=%u)", ddata->bare_name, tests[t],
                                       blocks[b]);
                             EnqueueBenchmarkJob(job);
                             job_count++;
@@ -198,7 +203,7 @@ void LaunchBulkJobs(void)
             if (ui.total_jobs > 0) {
                 percent = (ui.completed_jobs * 100) / ui.total_jobs;
             }
-            snprintf(buf, sizeof(buf), "%lu/%lu", ui.completed_jobs, ui.total_jobs);
+            snprintf(buf, sizeof(buf), "%lu/%lu", (unsigned long)ui.completed_jobs, (unsigned long)ui.total_jobs);
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.fuel_gauge, ui.window, NULL, FUELGAUGE_Level, percent,
                                        FUELGAUGE_VarArgs, (uint32)buf, TAG_DONE);
         }

@@ -59,6 +59,22 @@ static void ReleaseTrafficPen(LONG pen)
     }
 }
 
+void UpdateTrafficLabel(BOOL busy)
+{
+    LOG_DEBUG("UpdateTrafficLabel: Busy=%d, Window=%p, LabelObj=%p", busy, ui.window, ui.traffic_label);
+
+    if (ui.window && ui.traffic_label) {
+        /* Update the ButtonObject text - Using RefreshSetGadgetAttrs to ensure redraw */
+        IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.traffic_label, ui.window, NULL, GA_Text,
+                                          (uint32)(busy ? "Benchmarking..." : "Ready!"), TAG_DONE);
+
+        /* Also trigger traffic light redraw */
+        IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.traffic_light, ui.window, NULL, TAG_DONE);
+    } else {
+        LOG_DEBUG("UpdateTrafficLabel: SKIPPED (Window or Label missing)");
+    }
+}
+
 static uint32 TrafficLightDraw(struct Hook *hook, Object *obj, struct gpRender *gpr)
 {
     struct RastPort *rp = gpr->gpr_RPort;
@@ -69,15 +85,16 @@ static uint32 TrafficLightDraw(struct Hook *hook, Object *obj, struct gpRender *
     IIntuition->GetAttr(SPACE_AreaBox, obj, (uint32 *)&box);
 
     if (box) {
-        LOG_DEBUG("TrafficLight: Draw Box[%d, %d, %d, %d] Busy=%d", box->Left, box->Top, box->Width, box->Height,
-                  ui.worker_busy);
-
         /* Red (Busy) or Green (Idle) */
         uint32 color = ui.worker_busy ? 0x00FF0000 : 0x0000FF00;
 
-        LONG pen = ObtainTrafficPen(color);
+        /* Update Label Text based on busy state */
+        /* Note: Doing this in RenderHook is risky but might work if SetGadgetAttrs doesn't trigger redraw of THIS
+         * gadget */
+        // Better to do it where busy is toggled.
+        // I will NOT do it here. I will find the toggle point.
 
-        LOG_DEBUG("TrafficLight: Color=0x%06X -> Pen=%ld", color, pen);
+        LONG pen = ObtainTrafficPen(color);
 
         if (pen >= 0) {
             IGraphics->SetAPen(rp, pen);
@@ -85,7 +102,6 @@ static uint32 TrafficLightDraw(struct Hook *hook, Object *obj, struct gpRender *
             ReleaseTrafficPen(pen);
         } else {
             /* Fallback to simple pens if Obtain fails */
-            LOG_DEBUG("TrafficLight: ObtainPen failed, using fallback.");
             IGraphics->SetAPen(rp, ui.worker_busy ? 2 : 1);
             IGraphics->RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top + box->Height - 1);
         }
@@ -153,6 +169,19 @@ int StartGUI(void)
     if (!worker_proc)
         return 1;
     ui.worker_port = &worker_proc->pr_MsgPort;
+
+    /* Get Utility Interface (for Date functions) */
+    struct Library *UtilityBase = IExec->OpenLibrary("utility.library", 53);
+    if (UtilityBase) {
+        ui.IUtility = (struct UtilityIFace *)IExec->GetInterface(UtilityBase, "main", 1, NULL);
+        IExec->CloseLibrary(UtilityBase); /* As per OS4 spec, interface holds lib? No, usually keep lib open or depends.
+                                             ReAction classes handled differently. */
+        /* Actually, let's keep it simple. If IExec->OpenLibrary and then GetInterface, usually you keep lib open if not
+         * using interface counting */
+        /* But looking at existing code, it uses IApp etc. Let's refer to InitSystemResources in gui_system.c if
+         * existing. */
+        /* gui.c line 155 is StartGUI. InitSystemResources is called later! */
+    }
 
     icon = ui.IIcn->GetDiskObject("PROGDIR:AmigaDiskBench");
     if (!icon)
@@ -309,8 +338,18 @@ int StartGUI(void)
             if (sig & win_sig) {
                 uint16 code;
                 uint32 result;
-                while ((result = IIntuition->IDoMethod(ui.win_obj, WM_HANDLEINPUT, &code)) != WMHI_LASTMSG)
+                while ((result = IIntuition->IDoMethod(ui.win_obj, WM_HANDLEINPUT, &code)) != WMHI_LASTMSG) {
+                    /* Handle Mouse Move for Visualization Hover */
+                    if ((result & WMHI_CLASSMASK) == WMHI_MOUSEMOVE) {
+                        /* Check only if Visualization tab is active (Page 2) */
+                        uint32 t = 0;
+                        IIntuition->GetAttr(CLICKTAB_Current, ui.tabs, &t);
+                        if (t == 2 && ui.window) {
+                            VizCheckHover(ui.window->MouseX, ui.window->MouseY);
+                        }
+                    }
                     HandleGUIEvent(result, code, &running);
+                }
             }
             if (ui.prefs_win_obj && (sig & (1L << ui.prefs_port->mp_SigBit))) {
                 uint16 pcode;

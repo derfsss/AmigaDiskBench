@@ -25,6 +25,8 @@
 
 const char *FormatPresetBlockSize(uint32 bytes)
 {
+    if (bytes == 0)
+        return "Mixed";
     if (bytes == 4096)
         return "4K";
     if (bytes == 16384)

@@ -54,6 +54,7 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
         /* buffer for inquiry data */
         uint8 *inq = IExec->AllocVecTags(256, AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
         if (inq) {
+            memset(inq, 0, 256); /* Ensure buffer is clear even if AVT_ClearWithValue is flaking */
             struct SCSICmd cmd;
             uint8 cdb[6];
 
@@ -409,7 +410,7 @@ void GetHardwareInfo(const char *path, BenchResult *result)
 
     /* 3. Add to Cache */
     struct DeviceCacheNode *new_node =
-        IExec->AllocVecTags(sizeof(struct DeviceCacheNode), AVT_Type, MEMF_SHARED, TAG_DONE);
+        IExec->AllocVecTags(sizeof(struct DeviceCacheNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
     if (new_node) {
         snprintf(new_node->path_key, sizeof(new_node->path_key), "%s", path);
         new_node->path_key[sizeof(new_node->path_key) - 1] = '\0';
@@ -428,6 +429,7 @@ void GetHardwareInfo(const char *path, BenchResult *result)
         snprintf(new_node->info.serial_number, sizeof(new_node->info.serial_number), "%s", result->serial_number);
         new_node->info.serial_number[sizeof(new_node->info.serial_number) - 1] = '\0';
 
+        snprintf(new_node->info.firmware_rev, sizeof(new_node->info.firmware_rev), "%s", result->firmware_rev);
         new_node->info.firmware_rev[sizeof(new_node->info.firmware_rev) - 1] = '\0';
 
         new_node->next = hardware_cache;

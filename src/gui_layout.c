@@ -22,6 +22,7 @@
  */
 
 #include "gui_internal.h"
+#include <classes/window.h>
 
 static struct ColumnInfo bench_cols[] = {{20, "", CIF_FIXED}, /* Checkbox */
                                          {100, "Date", CIF_SORTABLE | CIF_DRAGGABLE},
@@ -73,22 +74,22 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     /* Drive Selector */
         LAYOUT_AddChild,
     (ui.target_chooser = ChooserObject, GA_ID, GID_VOL_CHOOSER, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.drive_list, End),
+     (uint32)&ui.drive_list, GA_HintInfo, "Select the target drive for benchmarking.", End),
     CHILD_Label, LabelObject, LABEL_Text, GetString(4, "Drive:"), End, CHILD_WeightedHeight, 0,
     /* Test Type Selector */
         LAYOUT_AddChild,
     (ui.test_chooser = ChooserObject, GA_ID, GID_TEST_CHOOSER, GA_RelVerify, TRUE, CHOOSER_Selected, 0, CHOOSER_Labels,
-     (uint32)&ui.test_labels, End),
+     (uint32)&ui.test_labels, GA_HintInfo, "Select the specific benchmark test to run.", End),
     CHILD_Label, LabelObject, LABEL_Text, GetString(5, "Test Type:"), End, CHILD_WeightedHeight, 0,
     /* Passes */
         LAYOUT_AddChild,
     (ui.pass_gad = IntegerObject, GA_ID, GID_NUM_PASSES, GA_RelVerify, TRUE, INTEGER_Minimum, 3, INTEGER_Maximum, 20,
-     INTEGER_Number, 3, End),
+     INTEGER_Number, 3, GA_HintInfo, "Number of times to repeat the test (3-20).", End),
     CHILD_Label, LabelObject, LABEL_Text, GetString(6, "Passes:"), End, CHILD_WeightedHeight, 0,
     /* Block Size */
         LAYOUT_AddChild,
     (ui.block_chooser = ChooserObject, GA_ID, GID_BLOCK_SIZE, GA_RelVerify, TRUE, CHOOSER_Selected, 0, CHOOSER_Labels,
-     (uint32)&ui.block_list, End),
+     (uint32)&ui.block_list, GA_HintInfo, "Select the data block size for the test.", End),
     CHILD_Label, LabelObject, LABEL_Text, GetString(7, "Block Size:"), End, CHILD_WeightedHeight, 0, End,
     CHILD_WeightedHeight, 0, /* End Group "Benchmark Control" */
 
@@ -107,15 +108,18 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     /* Benchmark Actions Group */
         LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Benchmark Actions", LAYOUT_BevelStyle, BVS_GROUP,
     LAYOUT_ShrinkWrap, TRUE, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild,
-    (ui.run_button = ButtonObject, GA_ID, GID_RUN_ALL, GA_RelVerify, TRUE, GA_Text, GetString(8, "Run Benchmark"), End),
-    LAYOUT_AddChild, ButtonObject, GA_ID, GID_REFRESH_DRIVES, GA_RelVerify, TRUE, GA_Text, "Refresh Drives", End, End,
-    CHILD_WeightedHeight, 0, End, /* End Group "Benchmark Actions" */
-        CHILD_WeightedHeight, 0,  /* Fix: Prevent group from expanding vertically in main page */
+    (ui.run_button = ButtonObject, GA_ID, GID_RUN_ALL, GA_RelVerify, TRUE, GA_Text, GetString(8, "Run Benchmark"),
+     GA_HintInfo, "Start the selected benchmark test.", End),
+    LAYOUT_AddChild, ButtonObject, GA_ID, GID_REFRESH_DRIVES, GA_RelVerify, TRUE, GA_Text, "Refresh Drives",
+    GA_HintInfo, "Reload the list of available drives.", End, End, CHILD_WeightedHeight, 0,
+    End,                         /* End Group "Benchmark Actions" */
+        CHILD_WeightedHeight, 0, /* Fix: Prevent group from expanding vertically in main page */
         /* Benchmark List */
         LAYOUT_AddChild,
     (ui.bench_list = ListBrowserObject, GA_ID, GID_CURRENT_RESULTS, GA_RelVerify, TRUE, LISTBROWSER_ColumnInfo,
      (uint32)current_run_cols, LISTBROWSER_ColumnTitles, TRUE, LISTBROWSER_Labels, (uint32)&ui.bench_labels,
-     LISTBROWSER_AutoFit, TRUE, LISTBROWSER_ShowSelected, TRUE, LISTBROWSER_HorizontalProp, TRUE, End),
+     LISTBROWSER_AutoFit, TRUE, LISTBROWSER_ShowSelected, TRUE, LISTBROWSER_HorizontalProp, TRUE, GA_HintInfo,
+     "Double-click an item to view detailed benchmark results.", End),
     CHILD_WeightedHeight, 100, End;
 
     /* Refactored Page 1 (History) using standard ReAction macros */
@@ -123,14 +127,18 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     (ui.history_list = ListBrowserObject, GA_ID, GID_HISTORY_LIST, GA_RelVerify, TRUE, LISTBROWSER_ColumnInfo,
      (uint32)bench_cols, LISTBROWSER_ColumnTitles, TRUE, LISTBROWSER_Labels, (uint32)&ui.history_labels,
      LISTBROWSER_AutoFit, TRUE, LISTBROWSER_ShowSelected, TRUE, LISTBROWSER_HorizontalProp, TRUE,
-     LISTBROWSER_MultiSelect, TRUE, End),
+     LISTBROWSER_MultiSelect, TRUE, GA_HintInfo, "Double-click an item to view detailed benchmark results.", End),
     CHILD_WeightedHeight, 100, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, ButtonObject, GA_ID,
-    GID_REFRESH_HISTORY, GA_Text, GetString(9, "Refresh History"), End, LAYOUT_AddChild, ButtonObject, GA_ID,
-    GID_VIEW_REPORT, GA_Text, GetString(10, "Global Report"), End, LAYOUT_AddChild,
-    (ui.compare_button = ButtonObject, GA_ID, GID_HISTORY_COMPARE, GA_Text, "Compare Selected", GA_Disabled, TRUE, End),
-    LAYOUT_AddChild, ButtonObject, GA_ID, GID_HISTORY_DELETE, GA_Text, "Delete Selected", End, LAYOUT_AddChild,
-    ButtonObject, GA_ID, GID_HISTORY_CLEAR_ALL, GA_Text, "Clear All", End, LAYOUT_AddChild, ButtonObject, GA_ID,
-    GID_HISTORY_EXPORT, GA_Text, "Export", End, End, CHILD_WeightedHeight, 0, End;
+    GID_REFRESH_HISTORY, GA_Text, GetString(9, "Refresh History"), GA_HintInfo, "Reload the history from disk.", End,
+    LAYOUT_AddChild, ButtonObject, GA_ID, GID_VIEW_REPORT, GA_Text, GetString(10, "Global Report"), GA_HintInfo,
+    "View a summarized report of all tests.", End, LAYOUT_AddChild,
+    (ui.compare_button = ButtonObject, GA_ID, GID_HISTORY_COMPARE, GA_Text, "Compare Selected", GA_Disabled, TRUE,
+     GA_HintInfo, "Select exactly two items to compare.", End),
+    LAYOUT_AddChild, ButtonObject, GA_ID, GID_HISTORY_DELETE, GA_Text, "Delete Selected", GA_HintInfo,
+    "Delete the selected history items.", End, LAYOUT_AddChild, ButtonObject, GA_ID, GID_HISTORY_CLEAR_ALL, GA_Text,
+    "Clear All", GA_HintInfo, "Delete ALL history items (cannot be undone).", End, LAYOUT_AddChild, ButtonObject, GA_ID,
+    GID_HISTORY_EXPORT, GA_Text, "Export", GA_HintInfo, "Export history to a CSV file.", End, End, CHILD_WeightedHeight,
+    0, End;
 
     /* Page 2 (Visualization) - History Trend Graph */
     page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE,
@@ -140,25 +148,32 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
 
     LAYOUT_AddChild,
     (ui.viz_filter_volume = ChooserObject, GA_ID, GID_VIZ_FILTER_VOLUME, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_volume_labels, End),
+     (uint32)&ui.viz_volume_labels, GA_HintInfo, "Filter the graph data by Volume.", End),
     CHILD_Label, LabelObject, LABEL_Text, "Volume:", End,
 
     LAYOUT_AddChild,
     (ui.viz_filter_test = ChooserObject, GA_ID, GID_VIZ_FILTER_TEST, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_test_labels, End),
+     (uint32)&ui.viz_test_labels, GA_HintInfo, "Filter the graph data by Test Type.", End),
     CHILD_Label, LabelObject, LABEL_Text, "Test:", End,
 
     LAYOUT_AddChild,
     (ui.viz_filter_metric = ChooserObject, GA_ID, GID_VIZ_FILTER_METRIC, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_metric_labels, End),
-    CHILD_Label, LabelObject, LABEL_Text, "Metric:", End, End, CHILD_WeightedHeight, 0,
+     (uint32)&ui.viz_metric_labels, // Re-used for Date Range labels
+     GA_HintInfo, "Filter the graph data by Date Range.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Date:", End, End, CHILD_WeightedHeight, 0,
+
+    /* Details Label (Hover Info) */
+        LAYOUT_AddChild,
+    (ui.viz_details_label = ButtonObject, GA_ID, GID_VIZ_DETAILS_LABEL, GA_ReadOnly, TRUE, GA_Text,
+     "Hover over points for details...", End),
+    CHILD_WeightedHeight, 0, CHILD_WeightedHeight, 0,
 
     /* Graph Canvas */
         LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Performance Trend", LAYOUT_BevelStyle, BVS_GROUP,
 
     LAYOUT_AddChild,
     (ui.viz_canvas = SpaceObject, GA_ID, GID_VIZ_CANVAS, SPACE_MinWidth, 400, SPACE_MinHeight, 250, SPACE_BevelStyle,
-     BVS_FIELD, SPACE_Transparent, TRUE, SpaceEnd),
+     BVS_FIELD, SpaceEnd),
     CHILD_WeightedHeight, 100, End, CHILD_WeightedHeight, 100, End;
 
     /* Page 3 (Bulk Testing) */
@@ -179,9 +194,11 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
      "Run All Test Types (Sprinter..Profiler)", CHECKBOX_Checked, FALSE, End),
     LAYOUT_AddChild,
     (ui.bulk_all_blocks_check = CheckBoxObject, GA_ID, GID_BULK_ALL_BLOCKS, GA_RelVerify, TRUE, GA_Text,
-     "Run All Block Sizes (4K..1M)", CHECKBOX_Checked, FALSE, End),
+     "Run All Block Sizes (4K..1M)", CHECKBOX_Checked, FALSE, GA_HintInfo, "If checked, adds jobs for all block sizes.",
+     End),
     End, CHILD_WeightedHeight, 0, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild, ButtonObject, GA_ID, GID_BULK_RUN,
-    GA_Text, "Run Bulk Benchmark on Selected", End, End, CHILD_WeightedHeight, 0, End;
+    GA_Text, "Run Bulk Benchmark on Selected", GA_HintInfo, "Execute the queued benchmark jobs.", End, End,
+    CHILD_WeightedHeight, 0, End;
 
     static struct NewMenu menu_data[] = {
         {NM_TITLE, (STRPTR) "Project", NULL, 0, 0, NULL},
@@ -214,13 +231,20 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
 
            /* Bottom Bar with Traffic Light */
         LAYOUT_AddChild, HLayoutObject, LAYOUT_BevelStyle, BVS_GROUP, LAYOUT_SpaceInner, TRUE, LAYOUT_AddChild,
-           SpaceObject, End, /* Spacer to push light to right */
+           SpaceObject, End, /* Spacer to push stuff to right */
         LAYOUT_AddChild,
+           (ui.traffic_label = ButtonObject, GA_ID, GID_TRAFFIC_LABEL, GA_Text, "Ready!", GA_ReadOnly, TRUE,
+            BUTTON_BevelStyle, BVS_NONE, BUTTON_Transparent, TRUE, End),
+           CHILD_WeightedWidth, 0, CHILD_MinWidth, 100, LAYOUT_AddChild,
            (ui.traffic_light = SpaceObject, GA_ID, GID_TRAFFIC_LIGHT, SPACE_MinWidth, 20, SPACE_MinHeight, 20, End),
-           CHILD_WeightedHeight, 0, CHILD_WeightedWidth, 0, End, CHILD_WeightedHeight, 0, End;
+           CHILD_WeightedWidth, 0, End, CHILD_WeightedHeight, 0, End;
+
+    LOG_DEBUG("CreateMainLayout: Traffic Label assigned to %p", ui.traffic_label);
 
     Object *win_obj = WindowObject, WA_Title, APP_VER_TITLE, WA_SizeGadget, TRUE, WA_CloseGadget, TRUE, WA_DepthGadget,
-           TRUE, WA_DragBar, TRUE, WA_Activate, TRUE, WA_InnerWidth, 600, WA_InnerHeight, 500, WINDOW_Application,
+           TRUE, WA_DragBar, TRUE, WA_Activate, TRUE, WINDOW_GadgetHelp, TRUE, WA_ReportMouse, TRUE, WA_IDCMP,
+           IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_RAWKEY,
+           /* Report mouse moves for graph hover */ WA_InnerWidth, 600, WA_InnerHeight, 500, WINDOW_Application,
            (uint32)ui.app_id, WINDOW_SharedPort, (uint32)ui.gui_port, WINDOW_IconifyGadget, TRUE, WINDOW_Iconifiable,
            TRUE, WINDOW_Icon, (uint32)icon, WINDOW_IconNoDispose, TRUE, WINDOW_NewMenu, (uint32)menu_data,
            WINDOW_ParentGroup, root_layout, /* Changed from main_content to root_layout */

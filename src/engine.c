@@ -153,6 +153,8 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     if (colon)
         *colon = '\0';
 
+    // LOG_DEBUG("RunBenchmark: target='%s' -> volume_name='%s'", target_path, out_result->volume_name);
+
     /* Capture timestamp */
     time_t rawtime;
     struct tm *timeinfo;

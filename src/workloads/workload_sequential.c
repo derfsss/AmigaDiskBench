@@ -82,9 +82,9 @@ static void GetDefaultSettings_Sequential(uint32 *block_size, uint32 *passes)
     *passes = 3;
 }
 
-const BenchWorkload Workload_Sequential = {.type = TEST_SEQUENTIAL,
-                                           .name = "Sequential I/O",
-                                           .description = "Sustained throughput: 256MB file, 1MB chunks",
+const BenchWorkload Workload_Sequential = {.type = TEST_SEQUENTIAL_WRITE,
+                                           .name = "Sequential Write",
+                                           .description = "Sustained throughput: 256MB file",
                                            .Setup = Setup_Sequential,
                                            .Run = Run_Sequential,
                                            .Cleanup = Cleanup_Sequential,

@@ -136,6 +136,7 @@ typedef struct
 
     /* Visualization Tab - Trend Graph */
     Object *viz_canvas;            /* SpaceObject for custom graph rendering */
+    Object *viz_details_label;     /* Label for hover info */
     Object *viz_filter_volume;     /* Chooser: filter by volume */
     Object *viz_filter_test;       /* Chooser: filter by test type */
     Object *viz_filter_metric;     /* Chooser: MB/s or IOPS */
@@ -144,7 +145,7 @@ typedef struct
     struct List viz_metric_labels; /* Chooser labels for metric filter */
     uint32 viz_filter_volume_idx;
     uint32 viz_filter_test_idx;
-    uint32 viz_filter_metric_idx;
+    uint32 viz_date_range_idx; // Replaces metric_idx
 
     /* Job Tracking */
     uint32 total_jobs;
@@ -175,6 +176,7 @@ typedef struct
     struct PopupMenuIFace *IPopupMenu;
     struct PrefsObjectsIFace *IPrefsObjects;
     struct GraphicsIFace *IGraphics;
+    struct UtilityIFace *IUtility;
 
     /* Application State */
     BOOL PageAvailable;
@@ -204,6 +206,7 @@ typedef struct
 
     /* Visual Indicators */
     Object *traffic_light;
+    Object *traffic_label;
     struct Hook traffic_light_hook;
 } GUIState;
 
@@ -265,7 +268,9 @@ enum
     GID_VIZ_CANVAS,
     GID_VIZ_FILTER_VOLUME,
     GID_VIZ_FILTER_TEST,
-    GID_VIZ_FILTER_METRIC,
+    GID_VIZ_FILTER_METRIC, // Kept for ID compatibility, reused as Date Range
+    GID_VIZ_DETAILS_LABEL, // New: Label above graph for hover info
+    // GID_VIZ_CANVAS removed (duplicate)
     GID_BULK_LIST,
     GID_BULK_RUN,
     GID_BULK_INFO,
@@ -276,6 +281,7 @@ enum
     GID_HISTORY_CLEAR_ALL,
     GID_HISTORY_EXPORT,
     GID_TRAFFIC_LIGHT,
+    GID_TRAFFIC_LABEL, // New: Label left of traffic light
     GID_FUEL_GAUGE,
     GID_COMPARE_CLOSE = 5000
 };
@@ -342,5 +348,21 @@ const char *FormatByteSize(uint64 bytes);
  * @param filename The destination filename.
  */
 void ExportToAnsiText(const char *filename);
+
+/* Visualization */
+void VizCheckHover(int mx, int my);
+void UpdateVisualization(void);
+void UpdateTrafficLabel(BOOL busy);
+
+/* Visualization Date Range Options */
+typedef enum
+{
+    VIZ_DATE_TODAY = 0,
+    VIZ_DATE_WEEK,
+    VIZ_DATE_MONTH,
+    VIZ_DATE_YEAR,
+    VIZ_DATE_ALL,
+    NUM_VIZ_DATE_RANGES
+} VizDateRange;
 
 #endif /* GUI_H */

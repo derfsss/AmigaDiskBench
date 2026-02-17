@@ -19,11 +19,11 @@ static const struct
     {TEST_HEAVY_LIFTER, "HeavyLifter", "HeavyLifter", "Heavy"},
     {TEST_LEGACY, "Legacy", "Legacy", "Legacy"},
     {TEST_DAILY_GRIND, "DailyGrind", "DailyGrind", "Daily"},
-    {TEST_SEQUENTIAL, "Sequential", "Sequential", "Sequential"},
-    {TEST_RANDOM_4K, "Random4K", "Random 4K", "Random"},
-    {TEST_PROFILER, "Profiler", "Profiler", "Profiler"},
+    {TEST_SEQUENTIAL_WRITE, "Sequential", "Sequential Write", "Sequential"},
+    {TEST_RANDOM_WRITE, "Random4K", "Random Write", "Random"},
+    {TEST_PROFILER, "Profiler", "Filesystem Profiler", "Profiler"},
     {TEST_SEQUENTIAL_READ, "SequentialRead", "Sequential Read", "SequentialRead"},
-    {TEST_RANDOM_4K_READ, "Random4KRead", "Random 4K Read", "Random4KRead"},
+    {TEST_RANDOM_READ, "Random4KRead", "Random Read", "RandomRead"},
     {TEST_MIXED_RW_70_30, "MixedRW70/30", "Mixed R/W 70/30", "Mixed"},
 };
 
@@ -35,6 +35,7 @@ const char *TestTypeToString(BenchTestType type)
         if (test_type_table[i].type == type)
             return test_type_table[i].csv_name;
     }
+    LOG_DEBUG("[ERROR] TestTypeToString: Unknown type %d", type);
     return "Unknown";
 }
 
