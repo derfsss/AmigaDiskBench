@@ -377,6 +377,10 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_metric, &ui.viz_date_range_idx);
             UpdateVisualization();
             break;
+        case GID_VIZ_FILTER_VERSION:
+            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_version, &ui.viz_filter_version_idx);
+            UpdateVisualization();
+            break;
         case GID_VIZ_CHART_TYPE:
             IIntuition->GetAttr(CHOOSER_Selected, ui.viz_chart_type, &ui.viz_chart_type_idx);
             UpdateVisualization();

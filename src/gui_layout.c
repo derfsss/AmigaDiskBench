@@ -148,32 +148,36 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     /* Page 2 (Visualization) - History Trend Graph */
     page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE,
 
-    /* Filter Controls */
-        LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Filters", LAYOUT_BevelStyle, BVS_GROUP, LAYOUT_AddChild,
-    HLayoutObject, LAYOUT_AddChild,
+    /* Filter Controls - 2x3 Grid Layout (Row 1: Volume, Test, Date; Row 2: Version, Chart, Color By) */
+        LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Filters", LAYOUT_BevelStyle, BVS_GROUP,
+    /* Row 1: Volume, Test, Date */
+        LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild,
     (ui.viz_filter_volume = ChooserObject, GA_ID, GID_VIZ_FILTER_VOLUME, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_volume_labels, GA_HintInfo, "Filter the graph data by Volume.", End),
-    CHILD_Label, LabelObject, LABEL_Text, "Volume:", End,
-
+     (uint32)&ui.viz_volume_labels, GA_HintInfo, "Filter by Volume.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Volume:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33,
     LAYOUT_AddChild,
     (ui.viz_filter_test = ChooserObject, GA_ID, GID_VIZ_FILTER_TEST, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_test_labels, GA_HintInfo, "Filter the graph data by Test Type.", End),
-    CHILD_Label, LabelObject, LABEL_Text, "Test:", End,
-
+     (uint32)&ui.viz_test_labels, GA_HintInfo, "Filter by Test Type.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Test:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33,
     LAYOUT_AddChild,
     (ui.viz_filter_metric = ChooserObject, GA_ID, GID_VIZ_FILTER_METRIC, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_metric_labels, // Re-used for Date Range labels
-     CHOOSER_Selected, ui.viz_date_range_idx, GA_HintInfo, "Filter the graph data by Date Range.", End),
-    CHILD_Label, LabelObject, LABEL_Text, "Date:", End, End, CHILD_WeightedHeight, 0,
-
-    /* New: Chart Type and Color Mode */
+     (uint32)&ui.viz_metric_labels, CHOOSER_Selected, ui.viz_date_range_idx, GA_HintInfo, "Filter by Date Range.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Date:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33, End,
+    CHILD_WeightedHeight, 0,
+    /* Row 2: Version, Chart, Color By */
         LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild,
+    (ui.viz_filter_version = ChooserObject, GA_ID, GID_VIZ_FILTER_VERSION, GA_RelVerify, TRUE, CHOOSER_Labels,
+     (uint32)&ui.viz_version_labels, GA_HintInfo, "Filter by App Version.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Version:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33,
+    LAYOUT_AddChild,
     (ui.viz_chart_type = ChooserObject, GA_ID, GID_VIZ_CHART_TYPE, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_chart_type_labels, GA_HintInfo, "Select the type of chart to display.", End),
-    CHILD_Label, LabelObject, LABEL_Text, "Chart:", End, LAYOUT_AddChild,
+     (uint32)&ui.viz_chart_type_labels, GA_HintInfo, "Select Chart Type.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Chart:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33,
+    LAYOUT_AddChild,
     (ui.viz_color_by = ChooserObject, GA_ID, GID_VIZ_COLOR_BY, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_color_by_labels, GA_HintInfo, "Choose how to color the data points.", End),
-    CHILD_Label, LabelObject, LABEL_Text, "Color By:", End, End, CHILD_WeightedHeight, 0, End, CHILD_WeightedHeight, 0,
+     (uint32)&ui.viz_color_by_labels, GA_HintInfo, "Color Data By.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Color By:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33, End,
+    CHILD_WeightedHeight, 0, End, CHILD_WeightedHeight, 0,
 
     /* Details Label (Hover Info) */
         LAYOUT_AddChild,

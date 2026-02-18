@@ -273,6 +273,7 @@ void ShowGlobalReport(void);
 void UpdateVisualization(void);
 void InitVizFilterLabels(void);
 void RefreshVizVolumeFilter(void);
+void RefreshVizVersionFilter(void);
 void CleanupVizFilterLabels(void);
 uint32 VizRenderHook(struct Hook *hook, Object *space_obj, struct gpRender *gpr);
 

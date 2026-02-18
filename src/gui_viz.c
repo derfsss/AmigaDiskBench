@@ -134,11 +134,27 @@ static VizSeries *GetSeries(VizData *vd, const char *label)
  * @param vd Output structure to be populated with filtered and grouped data.
  * @return Number of data series generated.
  */
+/**
+ * @brief Comparison function for qsort to sort results by test type.
+ * Used for "Workload" charts to group bars by operation (Read/Write, Seq/Rand).
+ */
+static int compare_by_test_type(const void *a, const void *b)
+{
+    BenchResult *resA = *(BenchResult **)a;
+    BenchResult *resB = *(BenchResult **)b;
+    if (resA->type < resB->type)
+        return -1;
+    if (resA->type > resB->type)
+        return 1;
+    return 0;
+}
+
 static uint32 CollectVizData(VizData *vd)
 {
     memset(vd, 0, sizeof(VizData));
     uint32 filter_test = ui.viz_filter_test_idx;
     uint32 filter_vol = ui.viz_filter_volume_idx;
+    uint32 filter_ver = ui.viz_filter_version_idx;
     VizDateRange filter_date = (VizDateRange)ui.viz_date_range_idx;
     uint32 color_by = ui.viz_color_by_idx;
 
@@ -169,6 +185,22 @@ static uint32 CollectVizData(VizData *vd)
                         idx++;
                     }
                     if (filter_name && strcmp(res->volume_name, filter_name) != 0)
+                        match = FALSE;
+                }
+
+                if (filter_ver > 0 && match) {
+                    struct Node *ver_node = IExec->GetHead(&ui.viz_version_labels);
+                    uint32 idx = 0;
+                    const char *filter_name = NULL;
+                    while (ver_node) {
+                        if (idx == filter_ver) {
+                            IChooser->GetChooserNodeAttrs(ver_node, CNA_Text, &filter_name, TAG_DONE);
+                            break;
+                        }
+                        ver_node = IExec->GetSucc(ver_node);
+                        idx++;
+                    }
+                    if (filter_name && strcmp(res->app_version, filter_name) != 0)
                         match = FALSE;
                 }
 
@@ -206,7 +238,9 @@ static uint32 CollectVizData(VizData *vd)
         if (ui.viz_chart_type_idx == 1) { /* Trend (Time) */
             // History is usually sorted by time, but benchmarking might be random.
             // For now assume chronological order is fine or implement sort by timestamp if needed.
-        } else { /* Scaling (Block Size) or Bars */
+        } else if (ui.viz_chart_type_idx == 3) { /* Workload (Test Type) */
+            qsort(vd->series[i].results, vd->series[i].count, sizeof(BenchResult *), compare_by_test_type);
+        } else { /* Scaling (Block Size) or others */
             qsort(vd->series[i].results, vd->series[i].count, sizeof(BenchResult *), compare_by_block_size);
         }
     }
@@ -267,6 +301,7 @@ void InitVizFilterLabels(void)
     IExec->NewList(&ui.viz_volume_labels);
     IExec->NewList(&ui.viz_test_labels);
     IExec->NewList(&ui.viz_metric_labels);
+    IExec->NewList(&ui.viz_version_labels);
     IExec->NewList(&ui.viz_chart_type_labels);
     IExec->NewList(&ui.viz_color_by_labels);
 
@@ -286,6 +321,11 @@ void InitVizFilterLabels(void)
         if (n)
             IExec->AddTail(&ui.viz_test_labels, n);
     }
+
+    /* Version filter: "All Versions" */
+    n = IChooser->AllocChooserNode(CNA_Text, "All Versions", CNA_CopyText, TRUE, TAG_DONE);
+    if (n)
+        IExec->AddTail(&ui.viz_version_labels, n);
 
     /* Date Range Filter Options (Today, Last Week, etc.) */
     const char *date_opts[] = {"Today", "Last Week", "Last Month", "Last Year", "All Time"};
@@ -314,9 +354,10 @@ void InitVizFilterLabels(void)
 
     ui.viz_filter_volume_idx = 0;
     ui.viz_filter_test_idx = 0;
-    ui.viz_date_range_idx = 4; // Default to All Time
-    ui.viz_chart_type_idx = 0; // Default to Scaling
-    ui.viz_color_by_idx = 0;   // Default to Drive
+    ui.viz_date_range_idx = 4;     // Default to All Time
+    ui.viz_filter_version_idx = 0; // Default to All Versions
+    ui.viz_chart_type_idx = 0;     // Default to Scaling
+    ui.viz_color_by_idx = 0;       // Default to Drive
 }
 
 /**
@@ -425,11 +466,77 @@ void CleanupVizFilterLabels(void)
     }
     IExec->NewList(&ui.viz_chart_type_labels);
 
-    node = IExec->GetHead(&ui.viz_color_by_labels);
+    IExec->NewList(&ui.viz_color_by_labels);
+
+    node = IExec->GetHead(&ui.viz_version_labels);
     while (node) {
         next = IExec->GetSucc(node);
         IChooser->FreeChooserNode(node);
         node = next;
     }
-    IExec->NewList(&ui.viz_color_by_labels);
+    IExec->NewList(&ui.viz_version_labels);
+}
+
+/**
+ * RefreshVizVersionFilter
+ *
+ * Scans history to find unique app version strings and rebuilds the version filter Chooser.
+ * Called after RefreshHistory to keep the filter list current.
+ */
+void RefreshVizVersionFilter(void)
+{
+    if (!ui.viz_filter_version || !ui.window)
+        return;
+
+    /* Detach labels from chooser */
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_version, ui.window, NULL, CHOOSER_Labels, (ULONG)-1,
+                               TAG_DONE);
+
+    /* Free existing nodes */
+    struct Node *node, *next;
+    node = IExec->GetHead(&ui.viz_version_labels);
+    while (node) {
+        next = IExec->GetSucc(node);
+        IChooser->FreeChooserNode(node);
+        node = next;
+    }
+    IExec->NewList(&ui.viz_version_labels);
+
+    /* Re-add "All Versions" */
+    struct Node *n;
+    n = IChooser->AllocChooserNode(CNA_Text, "All Versions", CNA_CopyText, TRUE, TAG_DONE);
+    if (n)
+        IExec->AddTail(&ui.viz_version_labels, n);
+
+    /* Collect unique version strings from history */
+    char seen_versions[50][16];
+    int seen_count = 0;
+
+    struct Node *hnode = IExec->GetHead(&ui.history_labels);
+    while (hnode && seen_count < 50) {
+        BenchResult *res = NULL;
+        IListBrowser->GetListBrowserNodeAttrs(hnode, LBNA_UserData, &res, TAG_DONE);
+        if (res && res->app_version[0]) {
+            BOOL found = FALSE;
+            for (int i = 0; i < seen_count; i++) {
+                if (strcmp(seen_versions[i], res->app_version) == 0) {
+                    found = TRUE;
+                    break;
+                }
+            }
+            if (!found) {
+                snprintf(seen_versions[seen_count], sizeof(seen_versions[seen_count]), "%s", res->app_version);
+                seen_count++;
+                n = IChooser->AllocChooserNode(CNA_Text, res->app_version, CNA_CopyText, TRUE, TAG_DONE);
+                if (n)
+                    IExec->AddTail(&ui.viz_version_labels, n);
+            }
+        }
+        hnode = IExec->GetSucc(hnode);
+    }
+
+    /* Reattach labels and reset selection */
+    ui.viz_filter_version_idx = 0;
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_version, ui.window, NULL, CHOOSER_Labels,
+                               (uint32)&ui.viz_version_labels, CHOOSER_Selected, 0, TAG_DONE);
 }

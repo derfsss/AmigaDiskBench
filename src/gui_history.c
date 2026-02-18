@@ -228,6 +228,7 @@ void RefreshHistory(void)
                                    &ui.history_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
         IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
         RefreshVizVolumeFilter();
+        RefreshVizVersionFilter();
         UpdateVisualization();
     } else {
         LOG_DEBUG("RefreshHistory: Skiping UI update, win=%p, list=%p", ui.window, ui.history_list);
@@ -398,6 +399,7 @@ void DeleteSelectedHistoryItems(void)
         /* Rewrite CSV */
         SaveHistoryToCSV(ui.csv_path);
         RefreshVizVolumeFilter();
+        RefreshVizVersionFilter();
         UpdateVisualization();
     }
 
@@ -475,6 +477,7 @@ void ClearHistory(void)
 
     /* 4. Update Visualization (now truly empty) */
     RefreshVizVolumeFilter();
+    RefreshVizVersionFilter();
     UpdateVisualization();
 
     /* 5. Reattach lists (empty) */

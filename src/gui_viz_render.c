@@ -10,7 +10,7 @@
 
 /* Graph layout constants - margins in pixels */
 #define MARGIN_LEFT 60
-#define MARGIN_RIGHT 16
+#define MARGIN_RIGHT 50 /* Increased to accommodate IOPS labels */
 #define MARGIN_TOP 24
 #define MARGIN_BOTTOM 60 /* Increased for multi-line legend */
 #define TICK_LEN 4
@@ -378,8 +378,8 @@ static void DrawSecondaryYAxis(struct RastPort *rp, int px, int py, int pw, int 
         IGraphics->TextExtent(rp, label, strlen(label), &te);
         DrawSmallText(rp, px + pw + 4, ly + 4, label);
     }
-    /* Y2-Axis Title */
-    DrawSmallText(rp, px + pw - 24, py - 4, "IOPS");
+    /* Y2-Axis Title - Aligned with MB/s label (py - 12) */
+    DrawSmallText(rp, px + pw - 24, py - 12, "IOPS");
 }
 
 /**
@@ -411,29 +411,40 @@ static void RenderHybridChart(struct RastPort *rp, struct IBox *box, VizData *vd
         int bar_pw = pw / (total_bars > 0 ? total_bars : 1);
         if (bar_pw > 40)
             bar_pw = 40;
-        int cur_x = px + (pw - (total_bars * bar_pw)) / 2;
-        int last_x = -1;
 
-        for (uint32 i = 0; i < vd->series[0].count; i++) {
-            BenchResult *res = vd->series[0].results[i];
-            int dx = cur_x + bar_pw / 2;
-            int dy = py + ph - (int)(((float)res->iops / (vd->global_max_y2 > 0 ? vd->global_max_y2 : 1)) * (float)ph);
+        /* Reset cur_x to start for line plotting */
+        int start_x = px + (pw - (total_bars * bar_pw)) / 2;
+        int cur_x = start_x;
 
-            if (last_x != -1)
-                IGraphics->Draw(rp, dx, dy);
-            IGraphics->Move(rp, dx, dy);
-            IGraphics->RectFill(rp, dx - 2, dy - 2, dx + 2, dy + 2);
+        for (uint32 s = 0; s < vd->series_count; s++) {
+            LONG line_pen = ObtainColorPen(rp, series_colors[s % NUM_SERIES_COLORS]); /* Use series color for line */
+            IGraphics->SetAPen(rp, line_pen);
 
-            /* Store IOPS point for hover (overwrite bar point for better accuracy on line) */
-            if (plotted_count < MAX_GRAPH_POINTS) {
-                plotted_points[plotted_count].x = dx;
-                plotted_points[plotted_count].y = dy;
-                plotted_points[plotted_count].res = res;
-                plotted_count++;
+            int last_x = -1;
+
+            for (uint32 i = 0; i < vd->series[s].count; i++) {
+                BenchResult *res = vd->series[s].results[i];
+                int dx = cur_x + bar_pw / 2;
+                int dy =
+                    py + ph - (int)(((float)res->iops / (vd->global_max_y2 > 0 ? vd->global_max_y2 : 1)) * (float)ph);
+
+                if (last_x != -1)
+                    IGraphics->Draw(rp, dx, dy);
+                IGraphics->Move(rp, dx, dy);
+                IGraphics->RectFill(rp, dx - 2, dy - 2, dx + 2, dy + 2);
+
+                /* Store IOPS point for hover (overwrite bar point for better accuracy on line) */
+                if (plotted_count < MAX_GRAPH_POINTS) {
+                    plotted_points[plotted_count].x = dx;
+                    plotted_points[plotted_count].y = dy;
+                    plotted_points[plotted_count].res = res;
+                    plotted_count++;
+                }
+
+                last_x = dx;
+                cur_x += bar_pw;
             }
-
-            last_x = dx;
-            cur_x += bar_pw;
+            ReleaseColorPen(rp, line_pen);
         }
         ReleaseColorPen(rp, line_pen);
         ReleaseColorPen(rp, text_pen);

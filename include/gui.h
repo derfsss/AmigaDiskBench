@@ -135,21 +135,24 @@ typedef struct
     Object *history_popup;
 
     /* Visualization Tab - Trend Graph */
-    Object *viz_canvas;        /* SpaceObject for custom graph rendering */
-    Object *viz_details_label; /* Label for hover info */
-    Object *viz_filter_volume; /* Chooser: filter by volume */
-    Object *viz_filter_test;   /* Chooser: filter by test type */
-    Object *viz_filter_metric; /* Chooser: MB/s or IOPS */
+    Object *viz_canvas;         /* SpaceObject for custom graph rendering */
+    Object *viz_details_label;  /* Label for hover info */
+    Object *viz_filter_volume;  /* Chooser: filter by volume */
+    Object *viz_filter_test;    /* Chooser: filter by test type */
+    Object *viz_filter_metric;  /* Chooser: MB/s or IOPS */
+    Object *viz_filter_version; /* Chooser: filter by app version */
     Object *viz_chart_type;
     Object *viz_color_by;
     struct List viz_volume_labels; /* Chooser labels for volume filter */
     struct List viz_test_labels;   /* Chooser labels for test type filter */
     struct List viz_metric_labels; /* Chooser labels for metric filter */
+    struct List viz_version_labels;
     struct List viz_chart_type_labels;
     struct List viz_color_by_labels;
     uint32 viz_filter_volume_idx;
     uint32 viz_filter_test_idx;
     uint32 viz_date_range_idx; // Replaces metric_idx
+    uint32 viz_filter_version_idx;
     uint32 viz_chart_type_idx;
     uint32 viz_color_by_idx;
 
@@ -285,6 +288,7 @@ enum
     GID_VIZ_FILTER_VOLUME,
     GID_VIZ_FILTER_TEST,
     GID_VIZ_FILTER_METRIC, // Kept for ID compatibility, reused as Date Range
+    GID_VIZ_FILTER_VERSION,
     GID_VIZ_CHART_TYPE,
     GID_VIZ_COLOR_BY,
     GID_VIZ_DETAILS_LABEL, // New: Label above graph for hover info
