@@ -264,6 +264,11 @@ int StartGUI(void)
         RefreshDriveList();
         LoadPrefs();
         UpdateBulkTabInfo();
+
+        /* Initial Block Size State configuration */
+        if (ui.current_test_type == TEST_DAILY_GRIND || ui.current_test_type == TEST_PROFILER) {
+            SetGadgetState(GID_BLOCK_SIZE, TRUE);
+        }
         RefreshHistory();
         RefreshVizVolumeFilter();
 

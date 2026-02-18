@@ -90,18 +90,9 @@ void OpenDetailsWindow(BenchResult *res)
              "  Difference: %+.1f%% %s\n\n"
              " Application:\n"
              "  Version:    %s\n",
-             res->timestamp,
-             (res->type == TEST_SPRINTER)           ? "Sprinter"
-             : (res->type == TEST_HEAVY_LIFTER)     ? "HeavyLifter"
-             : (res->type == TEST_LEGACY)           ? "Legacy"
-             : (res->type == TEST_DAILY_GRIND)      ? "DailyGrind"
-             : (res->type == TEST_SEQUENTIAL_WRITE) ? "Sequential Write"
-             : (res->type == TEST_RANDOM_WRITE)     ? "Random Write"
-             : (res->type == TEST_PROFILER)         ? "FullProfiler"
-                                                    : "Unknown",
-             res->volume_name, res->result_id, res->fs_type, (unsigned int)res->passes,
-             res->use_trimmed_mean ? "Yes" : "No", FormatPresetBlockSize(res->block_size), res->mb_per_sec,
-             res->min_mbps, res->max_mbps, (unsigned int)res->iops, res->total_duration,
+             res->timestamp, TestTypeToDisplayName(res->type), res->volume_name, res->result_id, res->fs_type,
+             (unsigned int)res->passes, res->use_trimmed_mean ? "Yes" : "No", FormatPresetBlockSize(res->block_size),
+             res->mb_per_sec, res->min_mbps, res->max_mbps, (unsigned int)res->iops, res->total_duration,
              (double)res->cumulative_bytes / 1048576.0, res->max_mbps - res->min_mbps, res->device_name,
              (unsigned int)res->device_unit, res->vendor, res->product, res->firmware_rev, res->serial_number,
              (res->prev_mbps > 0) ? res->prev_timestamp : "None found", res->prev_mbps, res->diff_per,
