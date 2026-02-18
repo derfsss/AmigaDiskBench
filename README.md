@@ -26,7 +26,7 @@
   - **CSV Persistence**: Results are automatically saved to a standardized CSV format (`AmigaDiskBench_History.csv`).
   - **Smart Sync**: Changing the CSV path automatically keeps your session context clean.
 
-- **Advanced Analysis & Visualization (New in v2.2.13)**:
+- **Advanced Analysis & Visualization (New in v2.2.13.1022)**:
   - **Multi-Type Visualizations**: Choose between **Scaling Profiles**, **Trend Lines**, **Battle Bar Charts**, and **Hybrid Diagnostic Views**.
   - **Flexible Grouping**: Group and color data by **Drive**, **Test Type**, or **Block Size** to analyze complex datasets in a single view.
   - **16-Color Palette**: Professional high-contrast palette for clear differentiation of multiple data series.

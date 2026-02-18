@@ -11,7 +11,7 @@
 /* Graph layout constants - margins in pixels */
 #define MARGIN_LEFT 60
 #define MARGIN_RIGHT 16
-#define MARGIN_TOP 16
+#define MARGIN_TOP 24
 #define MARGIN_BOTTOM 60 /* Increased for multi-line legend */
 #define TICK_LEN 4
 #define MAX_GRAPH_POINTS 400
@@ -131,7 +131,33 @@ static void DrawGridAndAxes(struct RastPort *rp, int px, int py, int pw, int ph,
     }
 
     /* Y-Axis Title */
-    DrawSmallText(rp, px - MARGIN_LEFT + 4, py - 4, "MB/s");
+    /* Moved up to py - 12 (with Margin Top 24) to avoid overlap with top label */
+    DrawSmallText(rp, px - MARGIN_LEFT + 4, py - 12, "MB/s");
+
+    /* X-Axis Title */
+    const char *x_title = "Index";
+    switch (ui.viz_chart_type_idx) {
+    case 0:
+        x_title = "Block Size";
+        break;
+    case 1:
+        x_title = "Time";
+        break;
+    case 2:
+        x_title = "Volume";
+        break;
+    case 3:
+        x_title = "Workload";
+        break;
+    case 4:
+        x_title = "Block Size";
+        break;
+    }
+    struct TextExtent te;
+    IGraphics->TextExtent(rp, x_title, strlen(x_title), &te);
+    /* Draw title at bottom-right, below the X-axis labels area */
+    /* Positioned at py + ph + 24 to ensure it clears the axis labels */
+    DrawSmallText(rp, px + pw - te.te_Width, py + ph + 24, x_title);
 }
 
 /**
@@ -142,19 +168,21 @@ static void DrawXAxisLabels(struct RastPort *rp, int px, int py, int pw, int ph,
 {
     IGraphics->SetAPen(rp, text_pen);
     int label_y = py + ph + 12;
+    struct TextExtent te; // Fix: Declare te variable here
 
     if (vd->series_count > 0 && vd->series[0].count > 0) {
         /* Draw First, Middle, and Last labels if space permits */
         uint32 count = vd->series[0].count;
+        // LOG_DEBUG("DrawXAxisLabels: Count=%lu, PX=%d, PY=%d, PW=%d, LabelY=%d", count, px, py, pw, label_y);
 
         /* First */
         const char *label = FormatPresetBlockSize(vd->series[0].results[0]->block_size);
+        // LOG_DEBUG("DrawXAxisLabels: First Label='%s'", label);
         DrawSmallText(rp, px, label_y, label);
 
         /* Last */
         if (count > 1) {
             label = FormatPresetBlockSize(vd->series[0].results[count - 1]->block_size);
-            struct TextExtent te;
             IGraphics->TextExtent(rp, label, strlen(label), &te);
             DrawSmallText(rp, px + pw - te.te_Width, label_y, label);
         }
@@ -162,7 +190,6 @@ static void DrawXAxisLabels(struct RastPort *rp, int px, int py, int pw, int ph,
         /* Middle */
         if (count > 2) {
             label = FormatPresetBlockSize(vd->series[0].results[count / 2]->block_size);
-            struct TextExtent te;
             IGraphics->TextExtent(rp, label, strlen(label), &te);
             DrawSmallText(rp, px + pw / 2 - te.te_Width / 2, label_y, label);
         }
@@ -181,7 +208,7 @@ static void RenderLegend(struct RastPort *rp, struct IBox *box, VizData *vd, int
                          LONG text_pen)
 {
     int cur_x = px;
-    int cur_y = py + ph + 28; /* Start below the X-axis labels */
+    int cur_y = py + ph + 38; /* Start below the X-axis title */
     int max_x = px + pw;
     int row_h = 10;
 
@@ -293,6 +320,16 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
         bar_pw = 40;
     int cur_x = px + (pw - (total_bars * bar_pw)) / 2;
 
+    // LOG_DEBUG("RenderBarChart: TotalBars=%d, BarPW=%d, StartX=%d, PW=%d", total_bars, bar_pw, cur_x, pw);
+
+    /* Dynamic padding to prevent invalid rects on small bars */
+    /* Standard padding is 2px, but for bars < 10px we reduce it to 1px, and for < 6px we remove it entirely */
+    int pad = 2;
+    if (bar_pw < 6)
+        pad = 0;
+    else if (bar_pw < 10)
+        pad = 1;
+
     for (uint32 s = 0; s < vd->series_count; s++) {
         LONG spen = ObtainColorPen(rp, series_colors[s % NUM_SERIES_COLORS]);
         IGraphics->SetAPen(rp, spen);
@@ -300,7 +337,8 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
             BenchResult *res = vd->series[s].results[i];
             float v = res->mb_per_sec;
             int h = (int)((v / (vd->global_max_y1 > 0 ? vd->global_max_y1 : 1)) * (float)ph);
-            IGraphics->RectFill(rp, cur_x + 2, py + ph - h, cur_x + bar_pw - 2, py + ph);
+
+            IGraphics->RectFill(rp, cur_x + pad, py + ph - h, cur_x + bar_pw - pad, py + ph);
 
             if (plotted_count < MAX_GRAPH_POINTS) {
                 plotted_points[plotted_count].x = cur_x + bar_pw / 2;
@@ -421,13 +459,16 @@ void RenderGraph(struct RastPort *rp, struct IBox *box, VizData *vd)
     IGraphics->RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top + box->Height - 1);
 
     if (vd->series_count == 0) {
+        LOG_DEBUG("RenderGraph: No Data Matching Filters");
         IGraphics->SetAPen(rp, text_pen);
-        const char *msg = "No Data Matching Filters";
+        const char *msg = "No Data Filtering...";
         struct TextExtent te;
         IGraphics->TextExtent(rp, msg, strlen(msg), &te);
         IGraphics->Move(rp, box->Left + (box->Width - te.te_Width) / 2, box->Top + (box->Height - te.te_Height) / 2);
         IGraphics->Text(rp, msg, strlen(msg));
     } else {
+        LOG_DEBUG("RenderGraph: Rendering %lu series. MaxY=%.2f. Type=%ld", vd->series_count, vd->global_max_y1,
+                  ui.viz_chart_type_idx);
         switch (ui.viz_chart_type_idx) {
         case 2:
         case 3:
