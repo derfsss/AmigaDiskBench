@@ -1,93 +1,105 @@
 # AmigaDiskBench
 
-**AmigaDiskBench** is a modern, high-performance disk benchmarking utility specifically designed for **AmigaOS 4.1 Final Edition**. It provides a robust, ReAction-based GUI to measure and analyze the performance of various storage devices, filesystems, and hardware configurations.
+**AmigaDiskBench** is a modern, high-performance disk benchmarking utility specifically designed for **AmigaOS 4.1 Final Edition**. It provides a robust, ReAction-based GUI to measure, analyze, and visualize the performance of various storage devices, filesystems, and hardware configurations.
 
 ![AmigaDiskBench Icon](AmigaDiskBench.info)
 
 ## Key Features
 
-- **Comprehensive Benchmark Profiles**:
-  - **Sprinter**: Small file I/O and metadata performance.
-  - **Heavy Lifter**: Large file sequential throughput with big chunks.
-  - **Legacy**: Large file performance with standard 512-byte blocks.
-  - **Daily Grind**: A pseudo-random mix of operations representing real-world usage.
-  - **Sequential Read/Write**: Professional-grade pure sequential throughput tests.
-  - **Random 4K Read/Write**: High-stress IOPS testing for SSDs and fast media.
-  - **Mixed 70/30**: Real-world read/write mix simulation.
-  - **Profiler**: Filesystem metadata performance analysis.
+### 1. Benchmark Profiles
+Choose from a variety of tailored test scenarios:
+- **Sprinter**: Fast, small file I/O and metadata performance test.
+- **Marathon**: Sustained long-duration test to check for thermal throttling or buffer issues.
+- **Heavy Lifter**: Large file sequential throughput with varying chunk sizes.
+- **Daily Grind**: A pseudo-random mix of operations simulating real-world OS usage.
+- **Profiler**: Detailed filesystem metadata performance analysis.
+- **Standard Tests**: Sequential Read/Write, Random 4K Read/Write, and Mixed 70/30.
 
-- **Precision & Reliability**:
-  - **Microsecond Precision**: Uses `timer.device` for high-accuracy timing.
-  - **Trimmed Mean**: Optional outlier filtering to remove OS background noise from results.
-  - **Cache Flushing**: Automatic buffer flushing attempts to ensure measuring disk speed, not RAM speed.
+### 2. Advanced Visualization (Updated v2.2.14)
+Analyze your data with a powerful, interactive graphing engine:
+- **Chart Types**:
+  - **Scaling**: Visualize performance vs. Block Size.
+  - **Trend**: Track performance stability over time.
+  - **Workload**: Compare different Test Types (Read vs Write, Seq vs Rand).
+  - **Hybrid**: Professional diagnostic view overlaying **Throughput (MB/s)** bars with **IOPS** lines to identify bottlenecks.
+  - **Battle**: Head-to-head comparison of multiple drives.
+- **Filtering**: Drill down into data by **Volume**, **Test Type**, **Date Range**, and **App Version**.
+- **Grouping**: Color-code results by **Drive**, **Test Type**, or **Block Size**.
+- **Interactive**: Hover over data points for precise values.
 
-- **Data Management**:
-  - **Current Session vs. History**: Separate tabs for active benchmarking and historical analysis.
-  - **CSV Persistence**: Results are automatically saved to a standardized CSV format (`AmigaDiskBench_History.csv`).
-  - **Smart Sync**: Changing the CSV path automatically keeps your session context clean.
+### 3. Drive Health Monitoring (New!)
+Keep an eye on your hardware's physical status:
+- **S.M.A.R.T. Analysis**: Reads raw attribute data directly from the drive.
+- **Health Indicators**: Real-time display of **Temperature**, **Power-On Hours**, and overall **Health Status**.
+- **Assessment**: Automatic interpretation of critical attributes (Reallocated Sectors, Spin Retry Count, etc.).
 
-- **Advanced Analysis & Visualization (New in v2.2.13.1022)**:
-  - **Multi-Type Visualizations**: Choose between **Scaling Profiles**, **Trend Lines**, **Battle Bar Charts**, and **Hybrid Diagnostic Views**.
-  - **Flexible Grouping**: Group and color data by **Drive**, **Test Type**, or **Block Size** to analyze complex datasets in a single view.
-  - **16-Color Palette**: Professional high-contrast palette for clear differentiation of multiple data series.
-  - **Smart Legends**: Automatically wrapping legend labels to ensure fit within the window.
-  - **Hover Interaction**: Real-time display of detailed point metadata on mouse-over.
-  - **Side-by-Side Comparison**: Compare any two results with a dedicated diff-view engine.
-  - **Global Aggregate Reports**: Statistical summaries of all benchmarking activity.
+### 4. Bulk Testing
+Automate your benchmarking workflow:
+- **Queue Jobs**: Select multiple drives and add them to a batch queue.
+- **Automation**: Options to "Run All Test Types" and "Run All Block Sizes" (4K to 1M) automatically.
+- **Progress Tracking**: dedicated "Fuel Gauge" to track overall batch progress.
+
+### 5. History & Data Management
+- **Persistent Storage**: All results are automatically saved to `AmigaDiskBench_History.csv`.
+- **Comparison**: Select any two results to generate a delta report (Speedup/Slowdown %).
+- **Export**: Export specific datasets to CSV for external analysis (Excel, Sheets).
+- **Reports**: Generate global summary reports of all text activities.
+
+## Requirements
+
+*   **AmigaOS 4.1 Final Edition** (or newer).
+*   Reasonably fast storage device for meaningful results (SSD/NVMe recommended).
 
 ## Installation
 
-No special installation is required. Just extract the archive to a location of your choice.
-Requires **AmigaOS 4.1 Final Edition** or newer.
+No special installation is required.
+1.  Extract the archive to a location of your choice (e.g., `Work:Utilities/AmigaDiskBench`).
+2.  Launch `AmigaDiskBench` from the icon.
 
 ## How to Use
 
-### Running a Benchmark
-1.  **Select a Target**: Use the "Benchmark Control" tab to select a volume or partition.
-2.  **Configure Tests**: Choose a Test Type, Block Size, and number of Passes (3-5 recommended).
-3.  **Run**: Click the "Run Benchmark" button.
-    *   *Tip*: Using the "Bulk" tab allows you to queue multiple drives and test types for automated testing.
+### Basic Benchmarking
+1.  Go to the **Benchmark** tab.
+2.  Select a **Target Drive** and **Test Type**.
+3.  Set the **Block Size** and **Passes** (default is 3).
+4.  Click **Run Benchmark**.
 
-### Visualization & Analysis
-Switch to the **Visualization** tab to perform deep-dives into your benchmark data:
-1.  **Select Chart Type**: 
-    - *Scaling Line*: Best for seeing how performance changes with block size.
-    - *Trend Line*: Best for tracking drive stability over long sessions.
-    - *Battle Bars*: Best for comparing multiple physcial drives head-to-head.
-    - *Hybrid*: Professional view overlaying **Throughput (MB/s)** and **IOPS** for a comprehensive performance profile.
-2.  **Filter Data**: Narrow down results by Volume, Test Type, or Date Range (Today/Month/Year).
-3.  **Color By**: Change the grouping logic to visualize comparisons between different hardware or access patterns.
-4.  **Analyze**: Hover over any data point to see the exact value and metadata in the status bar.
+### Using Visualization
+1.  Switch to the **Visualization** tab.
+2.  Use the top filters to isolate the data you want (e.g., "System", "Random 4K Read").
+3.  Select a **Chart Type** (e.g., "Hybrid").
+4.  Select a **Color By** mode (e.g., "Test Type" to see Read vs Write colors).
+5.  Hover over the graph to see exact MB/s and IOPS values.
 
-### History & Data Maintenance
-*   **Persistent Storage**: All results are saved to CSV. 
-*   **Comparison**: Select any two results in the ListBrowser and click "Compare" for a detailed delta report.
-*   **Cleanup**: Specific results can be deleted individually, or the entire database cleared via the History menu.
+### Checking Drive Health
+1.  Switch to the **Drive Health** tab.
+2.  Select a drive from the dropdown.
+3.  Click **Refresh Health Data**.
+4.  Review the S.M.A.R.T. attributes list and the status summary at the top.
 
 ## Building from Source
 
-AmigaDiskBench is cross-compiled using a Docker-based toolchain (GCC 11).
+AmigaDiskBench is open source and can be cross-compiled using a Docker-based toolchain (GCC 11).
 
 ### Prerequisites
-*   **WSL2** (Windows users) or **Linux/macOS**
-*   **Docker** (Ensure the daemon is running)
+*   **WSL2** (Windows) or **Linux/macOS**.
+*   **Docker** installed and running.
+*   **Walkero's Amiga GCC 11 Image** (`walkero/amigagccondocker:os4-gcc11`).
 
 ### Build Command
 From the project root:
 
 ```bash
-# Preferred method (works with or without Docker Desktop)
-wsl build_wsl.md (See .agent/workflows/build_wsl.md for sequence)
-```
-
-Direct Docker command:
-```bash
 docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make all
 ```
 
-## Licensing
+This will produce the `AmigaDiskBench` executable in the `dist` folder.
 
-AmigaDiskBench is free software: you can redistribute it and/or modify it under the terms of the **MIT License**.
+## Authors
 
----
-**Copyright (C) 2026 Team Derfs**
+*   **Team Derfs** - *Core Development*
+*   **Rich** - *Lead Developer*
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

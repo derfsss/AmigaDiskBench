@@ -21,6 +21,7 @@ stats/
 plan/
 tmp/
 releases/
+docs/plans/
 
 # Agent specific
 AGENT_HANDOVER.md
