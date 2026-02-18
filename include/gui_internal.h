@@ -91,6 +91,8 @@ struct DriveNodeData
 };
 typedef struct DriveNodeData DriveNodeData;
 
+#define MAX_SERIES 16
+
 /**
  * @brief Represents a single data series for rendering in the graph.
  *
