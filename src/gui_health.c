@@ -47,7 +47,7 @@ void UpdateHealthUI(const char *volume)
         if (GetSmartData(device, unit, &ui.current_health)) {
             RefreshHealthTab();
         } else {
-            static char err_buf[128];
+            static char err_buf[256];
             if (!ui.current_health.driver_supported) {
                 snprintf(err_buf, sizeof(err_buf), "Driver (%s) does not support S.M.A.R.T. PT", device);
             } else {
