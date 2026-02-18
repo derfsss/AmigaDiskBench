@@ -137,7 +137,8 @@ static void DrawGridAndAxes(struct RastPort *rp, int px, int py, int pw, int ph,
 /**
  * @brief Renders X-axis labels (Block Sizes or Category names).
  */
-static void DrawXAxisLabels(struct RastPort *rp, int px, int py, int pw, int ph, VizData *vd, LONG text_pen)
+static void DrawXAxisLabels(struct RastPort *rp, int px, int py, int pw, int ph, VizData *vd, BOOL is_trend,
+                            LONG text_pen)
 {
     IGraphics->SetAPen(rp, text_pen);
     int label_y = py + ph + 12;

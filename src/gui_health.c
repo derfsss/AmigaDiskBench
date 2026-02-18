@@ -17,43 +17,54 @@ void UpdateHealthUI(const char *volume)
     if (!volume || !ui.window)
         return;
 
-    char device[64];
+    char device[128];
     uint32 unit;
 
-    /* Resolve volume to physical device */
+    /* 1. Reset UI immediately to clear stale data from previous drive */
+    IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_status_label, ui.window, NULL, GA_Text,
+                                      (uint32) "Querying drive health...", TAG_DONE);
+    IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_temp_label, ui.window, NULL, GA_Text,
+                                      (uint32) "Temp: ...", TAG_DONE);
+    IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_power_label, ui.window, NULL, GA_Text,
+                                      (uint32) "Power-on: ...", TAG_DONE);
+
+    /* Clear the listbrowser */
+    IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_list, ui.window, NULL, LISTBROWSER_Labels, (uint32)-1,
+                                      TAG_DONE);
+    struct Node *n, *nxt;
+    for (n = IExec->GetHead(&ui.health_labels); n; n = nxt) {
+        nxt = IExec->GetSucc(n);
+        IListBrowser->FreeListBrowserNode(n);
+    }
+    IExec->NewList(&ui.health_labels);
+    IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_list, ui.window, NULL, LISTBROWSER_Labels,
+                                      (uint32)&ui.health_labels, TAG_DONE);
+
+    /* 2. Resolve volume and query S.M.A.R.T. */
     if (GetDeviceFromVolume(volume, device, sizeof(device), &unit)) {
         LOG_DEBUG("UpdateHealthUI: Querying %s unit %u for S.M.A.R.T.", device, (unsigned int)unit);
 
-        /* For now, we fetch synchronously to keep implementation simple,
-           but usually S.M.A.R.T. queries are fast.
-           In a future update, this can be moved to the worker thread. */
         if (GetSmartData(device, unit, &ui.current_health)) {
             RefreshHealthTab();
         } else {
-            const char *err_msg = "S.M.A.R.T. Not Supported or Query Failed";
+            static char err_buf[128];
             if (!ui.current_health.driver_supported) {
-                err_msg = "Driver (a1ide.device?) does not support S.M.A.R.T. PT";
+                snprintf(err_buf, sizeof(err_buf), "Driver (%s) does not support S.M.A.R.T. PT", device);
+            } else {
+                snprintf(err_buf, sizeof(err_buf), "S.M.A.R.T. not supported by %s (Unit %u)", device,
+                         (unsigned int)unit);
             }
 
             IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_status_label, ui.window, NULL, GA_Text,
-                                              (uint32)err_msg, TAG_DONE);
-            /* Clear list and other labels */
-            IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_list, ui.window, NULL, LISTBROWSER_Labels,
-                                              (uint32)-1, TAG_DONE);
+                                              (uint32)err_buf, TAG_DONE);
             IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_temp_label, ui.window, NULL, GA_Text,
                                               (uint32) "Temp: N/A", TAG_DONE);
             IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_power_label, ui.window, NULL, GA_Text,
                                               (uint32) "Power-on: N/A", TAG_DONE);
-
-            struct Node *n, *nxt;
-            for (n = IExec->GetHead(&ui.health_labels); n; n = nxt) {
-                nxt = IExec->GetSucc(n);
-                IListBrowser->FreeListBrowserNode(n);
-            }
-            IExec->NewList(&ui.health_labels);
-            IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_list, ui.window, NULL, LISTBROWSER_Labels,
-                                              (uint32)&ui.health_labels, TAG_DONE);
         }
+    } else {
+        IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_status_label, ui.window, NULL, GA_Text,
+                                          (uint32) "Could not resolve volume to device.", TAG_DONE);
     }
 }
 
