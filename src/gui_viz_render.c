@@ -225,7 +225,7 @@ static void RenderLineChart(struct RastPort *rp, struct IBox *box, VizData *vd, 
     LONG text_pen = ObtainColorPen(rp, 0x00CCCCDD);
 
     DrawGridAndAxes(rp, px, py, pw, ph, vd->global_max_y1, grid_pen, axis_pen, text_pen);
-    DrawXAxisLabels(rp, px, py, pw, ph, vd, text_pen);
+    DrawXAxisLabels(rp, px, py, pw, ph, vd, is_trend, text_pen);
 
     /* Plot Series */
     for (uint32 s = 0; s < vd->series_count; s++) {
