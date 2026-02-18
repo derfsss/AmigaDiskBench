@@ -101,6 +101,73 @@ static void DrawSmallText(struct RastPort *rp, int x, int y, const char *text)
     IGraphics->Text(rp, text, strlen(text));
 }
 
+/**
+ * @brief Renders the grid, axes, and Y-axis labels.
+ */
+static void DrawGridAndAxes(struct RastPort *rp, int px, int py, int pw, int ph, float max_y, LONG grid_pen,
+                            LONG axis_pen, LONG text_pen)
+{
+    /* Grid & Axis */
+    IGraphics->SetAPen(rp, grid_pen);
+    for (int i = 0; i <= 4; i++) {
+        int ly = py + ph - (int)((float)(i * ph) / 4.0f);
+        DrawDashedHLine(rp, px, px + pw - 1, ly, 4);
+    }
+    IGraphics->SetAPen(rp, axis_pen);
+    IGraphics->Move(rp, px, py);
+    IGraphics->Draw(rp, px, py + ph);
+    IGraphics->Draw(rp, px + pw, py + ph);
+
+    /* Y Labels (MB/s) */
+    IGraphics->SetAPen(rp, text_pen);
+    for (int i = 0; i <= 4; i++) {
+        float val = (max_y * (float)i / 4.0f);
+        int ly = py + ph - (int)((float)(i * ph) / 4.0f);
+        char label[32];
+        snprintf(label, sizeof(label), "%.1f", val);
+        struct TextExtent te;
+        IGraphics->TextExtent(rp, label, strlen(label), &te);
+        DrawSmallText(rp, px - te.te_Width - 4, ly + 4, label);
+    }
+
+    /* Y-Axis Title */
+    DrawSmallText(rp, px - MARGIN_LEFT + 4, py - 4, "MB/s");
+}
+
+/**
+ * @brief Renders X-axis labels (Block Sizes or Category names).
+ */
+static void DrawXAxisLabels(struct RastPort *rp, int px, int py, int pw, int ph, VizData *vd, LONG text_pen)
+{
+    IGraphics->SetAPen(rp, text_pen);
+    int label_y = py + ph + 12;
+
+    if (vd->series_count > 0 && vd->series[0].count > 0) {
+        /* Draw First, Middle, and Last labels if space permits */
+        uint32 count = vd->series[0].count;
+
+        /* First */
+        const char *label = FormatPresetBlockSize(vd->series[0].results[0]->block_size);
+        DrawSmallText(rp, px, label_y, label);
+
+        /* Last */
+        if (count > 1) {
+            label = FormatPresetBlockSize(vd->series[0].results[count - 1]->block_size);
+            struct TextExtent te;
+            IGraphics->TextExtent(rp, label, strlen(label), &te);
+            DrawSmallText(rp, px + pw - te.te_Width, label_y, label);
+        }
+
+        /* Middle */
+        if (count > 2) {
+            label = FormatPresetBlockSize(vd->series[0].results[count / 2]->block_size);
+            struct TextExtent te;
+            IGraphics->TextExtent(rp, label, strlen(label), &te);
+            DrawSmallText(rp, px + pw / 2 - te.te_Width / 2, label_y, label);
+        }
+    }
+}
+
 /* --- Legend with Wrapping --- */
 
 /**
@@ -113,7 +180,7 @@ static void RenderLegend(struct RastPort *rp, struct IBox *box, VizData *vd, int
                          LONG text_pen)
 {
     int cur_x = px;
-    int cur_y = py + ph + 24; /* Start below the X-axis labels */
+    int cur_y = py + ph + 28; /* Start below the X-axis labels */
     int max_x = px + pw;
     int row_h = 10;
 
@@ -157,28 +224,8 @@ static void RenderLineChart(struct RastPort *rp, struct IBox *box, VizData *vd, 
     LONG axis_pen = ObtainColorPen(rp, 0x00AAAACC);
     LONG text_pen = ObtainColorPen(rp, 0x00CCCCDD);
 
-    /* Grid & Axis */
-    IGraphics->SetAPen(rp, grid_pen);
-    for (int i = 0; i <= 4; i++) {
-        int ly = py + ph - (int)((float)(i * ph) / 4.0f);
-        DrawDashedHLine(rp, px, px + pw - 1, ly, 4);
-    }
-    IGraphics->SetAPen(rp, axis_pen);
-    IGraphics->Move(rp, px, py);
-    IGraphics->Draw(rp, px, py + ph);
-    IGraphics->Draw(rp, px + pw, py + ph);
-
-    /* Y Labels (MB/s) */
-    IGraphics->SetAPen(rp, text_pen);
-    for (int i = 0; i <= 4; i++) {
-        float val = (vd->global_max_y1 * (float)i / 4.0f);
-        int ly = py + ph - (int)((float)(i * ph) / 4.0f);
-        char label[32];
-        snprintf(label, sizeof(label), "%.1f", val);
-        struct TextExtent te;
-        IGraphics->TextExtent(rp, label, strlen(label), &te);
-        DrawSmallText(rp, px - te.te_Width - 4, ly + 4, label);
-    }
+    DrawGridAndAxes(rp, px, py, pw, ph, vd->global_max_y1, grid_pen, axis_pen, text_pen);
+    DrawXAxisLabels(rp, px, py, pw, ph, vd, text_pen);
 
     /* Plot Series */
     for (uint32 s = 0; s < vd->series_count; s++) {
@@ -233,13 +280,17 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
     int pw = box->Width - MARGIN_LEFT - MARGIN_RIGHT;
     int ph = box->Height - MARGIN_TOP - MARGIN_BOTTOM;
 
+    LONG grid_pen = ObtainColorPen(rp, 0x00444466);
+    LONG axis_pen = ObtainColorPen(rp, 0x00AAAACC);
     LONG text_pen = ObtainColorPen(rp, 0x00CCCCDD);
-    IGraphics->SetAPen(rp, text_pen);
 
-    int bar_pw = pw / (vd->total_points > 0 ? vd->total_points : 1);
+    DrawGridAndAxes(rp, px, py, pw, ph, vd->global_max_y1, grid_pen, axis_pen, text_pen);
+
+    int total_bars = vd->total_points;
+    int bar_pw = pw / (total_bars > 0 ? total_bars : 1);
     if (bar_pw > 40)
         bar_pw = 40;
-    int cur_x = px + 10;
+    int cur_x = px + (pw - (total_bars * bar_pw)) / 2;
 
     for (uint32 s = 0; s < vd->series_count; s++) {
         LONG spen = ObtainColorPen(rp, series_colors[s % NUM_SERIES_COLORS]);
@@ -248,7 +299,7 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
             BenchResult *res = vd->series[s].results[i];
             float v = res->mb_per_sec;
             int h = (int)((v / (vd->global_max_y1 > 0 ? vd->global_max_y1 : 1)) * (float)ph);
-            IGraphics->RectFill(rp, cur_x, py + ph - h, cur_x + bar_pw - 4, py + ph);
+            IGraphics->RectFill(rp, cur_x + 2, py + ph - h, cur_x + bar_pw - 2, py + ph);
 
             if (plotted_count < MAX_GRAPH_POINTS) {
                 plotted_points[plotted_count].x = cur_x + bar_pw / 2;
@@ -262,7 +313,34 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
     }
 
     RenderLegend(rp, box, vd, px, py, pw, ph, text_pen);
+    ReleaseColorPen(rp, grid_pen);
+    ReleaseColorPen(rp, axis_pen);
     ReleaseColorPen(rp, text_pen);
+}
+
+/**
+ * @brief Renders a secondary Y-axis on the right side (for IOPS in Hybrid mode).
+ */
+static void DrawSecondaryYAxis(struct RastPort *rp, int px, int py, int pw, int ph, float max_y, LONG text_pen)
+{
+    IGraphics->SetAPen(rp, text_pen);
+    for (int i = 0; i <= 4; i++) {
+        float val = (max_y * (float)i / 4.0f);
+        int ly = py + ph - (int)((float)(i * ph) / 4.0f);
+        char label[32];
+
+        /* Format IOPS as thousands if needed */
+        if (val >= 1000.0f)
+            snprintf(label, sizeof(label), "%.1fk", val / 1000.0f);
+        else
+            snprintf(label, sizeof(label), "%.0f", val);
+
+        struct TextExtent te;
+        IGraphics->TextExtent(rp, label, strlen(label), &te);
+        DrawSmallText(rp, px + pw + 4, ly + 4, label);
+    }
+    /* Y2-Axis Title */
+    DrawSmallText(rp, px + pw - 24, py - 4, "IOPS");
 }
 
 /**
@@ -273,8 +351,10 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
  */
 static void RenderHybridChart(struct RastPort *rp, struct IBox *box, VizData *vd)
 {
+    /* 1. Render the MB/s Background (Bars) */
     RenderBarChart(rp, box, vd, FALSE);
 
+    /* 2. Overlay the IOPS Line on top of the bars */
     if (vd->series_count > 0) {
         int px = box->Left + MARGIN_LEFT;
         int py = box->Top + MARGIN_TOP;
@@ -282,27 +362,42 @@ static void RenderHybridChart(struct RastPort *rp, struct IBox *box, VizData *vd
         int ph = box->Height - MARGIN_TOP - MARGIN_BOTTOM;
 
         LONG line_pen = ObtainColorPen(rp, 0x00FFFFFF);
+        LONG text_pen = ObtainColorPen(rp, 0x00CCCCDD);
+
+        DrawSecondaryYAxis(rp, px, py, pw, ph, vd->global_max_y2, text_pen);
+
         IGraphics->SetAPen(rp, line_pen);
 
-        int bar_pw = pw / (vd->total_points > 0 ? vd->total_points : 1);
+        int total_bars = vd->total_points;
+        int bar_pw = pw / (total_bars > 0 ? total_bars : 1);
         if (bar_pw > 40)
             bar_pw = 40;
-        int cur_x = px + 10;
+        int cur_x = px + (pw - (total_bars * bar_pw)) / 2;
         int last_x = -1;
 
         for (uint32 i = 0; i < vd->series[0].count; i++) {
             BenchResult *res = vd->series[0].results[i];
-            int dx = cur_x + (bar_pw - 4) / 2;
+            int dx = cur_x + bar_pw / 2;
             int dy = py + ph - (int)(((float)res->iops / (vd->global_max_y2 > 0 ? vd->global_max_y2 : 1)) * (float)ph);
 
             if (last_x != -1)
                 IGraphics->Draw(rp, dx, dy);
             IGraphics->Move(rp, dx, dy);
             IGraphics->RectFill(rp, dx - 2, dy - 2, dx + 2, dy + 2);
+
+            /* Store IOPS point for hover (overwrite bar point for better accuracy on line) */
+            if (plotted_count < MAX_GRAPH_POINTS) {
+                plotted_points[plotted_count].x = dx;
+                plotted_points[plotted_count].y = dy;
+                plotted_points[plotted_count].res = res;
+                plotted_count++;
+            }
+
             last_x = dx;
             cur_x += bar_pw;
         }
         ReleaseColorPen(rp, line_pen);
+        ReleaseColorPen(rp, text_pen);
     }
 }
 
@@ -353,16 +448,17 @@ void RenderGraph(struct RastPort *rp, struct IBox *box, VizData *vd)
 /**
  * @brief Checks if the mouse cursor is hovering over a plotted data point.
  *
- * If a hit is detected (within a 10px radius), the Details Label in the UI
+ * If a hit is detected (within a 15px radius), the Details Label in the UI
  * is updated with the benchmark metadata for that specific point.
  */
 void VizCheckHover(int mx, int my)
 {
     BenchResult *hit = NULL;
+    /* Increased radius for easier hit detection on Amiga screens */
     for (uint32 i = 0; i < plotted_count; i++) {
-        if (abs(plotted_points[i].x - mx) < 10 && abs(plotted_points[i].y - my) < 10) {
+        if (abs(plotted_points[i].x - mx) < 15 && abs(plotted_points[i].y - my) < 15) {
             hit = plotted_points[i].res;
-            break;
+            /* If multiple points are in range, we pick the one closest to the mouse */
         }
     }
 
