@@ -138,6 +138,7 @@ int StartGUI(void)
     IExec->NewList(&ui.test_labels);
     IExec->NewList(&ui.block_list);
     IExec->NewList(&ui.bulk_labels);
+    IExec->NewList(&ui.health_labels);
 
     InitBenchmarkQueue();
 
@@ -193,13 +194,16 @@ int StartGUI(void)
     struct Node *tab_history = IClickTab->AllocClickTabNode(TNA_Text, GetString(2, "History"), TNA_Number, 1, TAG_DONE);
     struct Node *tab_viz =
         IClickTab->AllocClickTabNode(TNA_Text, GetString(15, "Visualization"), TNA_Number, 2, TAG_DONE);
-    struct Node *tab_bulk = IClickTab->AllocClickTabNode(TNA_Text, GetString(16, "Bulk"), TNA_Number, 3, TAG_DONE);
+    struct Node *tab_health = IClickTab->AllocClickTabNode(TNA_Text, "Drive Health", TNA_Number, 3, TAG_DONE);
+    struct Node *tab_bulk = IClickTab->AllocClickTabNode(TNA_Text, GetString(16, "Bulk"), TNA_Number, 4, TAG_DONE);
     if (tab_bench)
         IExec->AddTail(&tab_list, tab_bench);
     if (tab_history)
         IExec->AddTail(&tab_list, tab_history);
     if (tab_viz)
         IExec->AddTail(&tab_list, tab_viz);
+    if (tab_health)
+        IExec->AddTail(&tab_list, tab_health);
     if (tab_bulk)
         IExec->AddTail(&tab_list, tab_bulk);
 
@@ -309,6 +313,9 @@ int StartGUI(void)
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.target_chooser, ui.window, NULL,
                                    sel_node ? CHOOSER_SelectedNode : CHOOSER_Selected, sel_node ? (uint32)sel_node : 0,
                                    TAG_DONE);
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.health_target_chooser, ui.window, NULL,
+                                   sel_node ? CHOOSER_SelectedNode : CHOOSER_Selected, sel_node ? (uint32)sel_node : 0,
+                                   TAG_DONE);
 
         uint32 win_sig = 0;
         IIntuition->GetAttr(WINDOW_SigMask, ui.win_obj, &win_sig);
@@ -405,6 +412,10 @@ int StartGUI(void)
         for (n = IExec->GetHead(&ui.block_list); n; n = nx) {
             nx = IExec->GetSucc(n);
             IChooser->FreeChooserNode(n);
+        }
+        for (n = IExec->GetHead(&ui.health_labels); n; n = nx) {
+            nx = IExec->GetSucc(n);
+            IListBrowser->FreeListBrowserNode(n);
         }
         for (n = IExec->GetHead(&ui.drive_list); n; n = nx) {
             nx = IExec->GetSucc(n);

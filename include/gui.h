@@ -208,6 +208,16 @@ typedef struct
     Object *traffic_light;
     Object *traffic_label;
     struct Hook traffic_light_hook;
+
+    /* Health Tab Gadgets */
+    Object *health_list;
+    Object *health_status_label;
+    Object *health_temp_label;
+    Object *health_power_label;
+    Object *health_refresh_btn;
+    Object *health_target_chooser;
+    struct List health_labels;
+    SmartData current_health;
 } GUIState;
 
 #include "benchmark_queue.h"
@@ -283,6 +293,10 @@ enum
     GID_TRAFFIC_LIGHT,
     GID_TRAFFIC_LABEL, // New: Label left of traffic light
     GID_FUEL_GAUGE,
+    GID_HEALTH_LIST,
+    GID_HEALTH_REFRESH,
+    GID_HEALTH_STATUS,
+    GID_HEALTH_DRIVE,
     GID_COMPARE_CLOSE = 5000
 };
 
@@ -353,6 +367,10 @@ void ExportToAnsiText(const char *filename);
 void VizCheckHover(int mx, int my);
 void UpdateVisualization(void);
 void UpdateTrafficLabel(BOOL busy);
+
+/* Health UI */
+void UpdateHealthUI(const char *volume);
+void RefreshHealthTab(void);
 
 /* Visualization Date Range Options */
 typedef enum

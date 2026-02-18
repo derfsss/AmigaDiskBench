@@ -224,6 +224,51 @@ typedef struct
     uint32 total_benchmarks;
 } GlobalReport;
 
+/* S.M.A.R.T. Health monitoring structures */
+typedef enum
+{
+    SMART_STATUS_UNKNOWN = 0,
+    SMART_STATUS_OK,
+    SMART_STATUS_WARNING,
+    SMART_STATUS_CRITICAL
+} SmartStatus;
+
+typedef struct
+{
+    uint8 id;
+    char name[64];
+    uint8 value;
+    uint8 worst;
+    uint8 threshold;
+    uint64 raw_value;
+    SmartStatus status;
+} SmartAttribute;
+
+#define MAX_SMART_ATTRIBUTES 32
+
+typedef struct
+{
+    SmartStatus overall_status;
+    char health_summary[128];
+    uint32 temperature;
+    uint32 power_on_hours;
+    uint32 reallocated_sectors;
+    SmartAttribute attributes[MAX_SMART_ATTRIBUTES];
+    uint32 attribute_count;
+    BOOL supported;
+    BOOL driver_supported;
+} SmartData;
+
+/**
+ * @brief Retrieve S.M.A.R.T. health data for a physical device.
+ *
+ * @param device_name The device name (e.g., ahci.device).
+ * @param unit The unit number.
+ * @param out_data Pointer to SmartData structure to populate.
+ * @return TRUE if data was retrieved, FALSE otherwise.
+ */
+BOOL GetSmartData(const char *device_name, uint32 unit, SmartData *out_data);
+
 /**
  * @brief Generate a global summary report from the CSV history.
  *

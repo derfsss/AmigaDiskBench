@@ -59,6 +59,8 @@
 #include <proto/texteditor.h>
 #include <proto/utility.h>
 
+#include <proto/utility.h>
+
 /* Specific Class headers for tags and constants (e.g. WM_OPEN, CNA_Text) */
 #include <classes/window.h>
 #include <gadgets/button.h>

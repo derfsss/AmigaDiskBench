@@ -21,4 +21,7 @@ stats/
 plan/
 tmp/
 releases/
+
+# Agent specific
 AGENT_HANDOVER.md
+KNOWLEDGE_TRANSFER.md

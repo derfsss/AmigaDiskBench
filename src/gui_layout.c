@@ -53,6 +53,11 @@ static struct ColumnInfo bulk_cols[] = {{20, "", CIF_FIXED}, /* Checkbox */
                                         {1, "", CIF_FIXED},
                                         {-1, NULL, 0}};
 
+static struct ColumnInfo health_cols[] = {{30, "ID", CIF_SORTABLE},     {180, "Attribute Name", CIF_SORTABLE},
+                                          {60, "Value", CIF_SORTABLE},  {60, "Worst", CIF_SORTABLE},
+                                          {60, "Thresh", CIF_SORTABLE}, {120, "Raw Value", CIF_SORTABLE},
+                                          {80, "Status", CIF_SORTABLE}, {-1, NULL, 0}};
+
 /**
  * @brief Creates the main application window layout.
  *
@@ -66,7 +71,7 @@ static struct ColumnInfo bulk_cols[] = {{20, "", CIF_FIXED}, /* Checkbox */
 Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
 {
     /* Helper macro to maintain readability for the deep nesting */
-    Object *page0, *page1, *page2, *page3;
+    Object *page0, *page1, *page2, *page3, *page4;
 
     /* Refactored Page 0 (Benchmark) using standard ReAction macros */
     page0 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_Label,
@@ -200,6 +205,34 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     GA_Text, "Run Bulk Benchmark on Selected", GA_HintInfo, "Execute the queued benchmark jobs.", End, End,
     CHILD_WeightedHeight, 0, End;
 
+    /* Page 4 (Drive Health) */
+    page4 = VLayoutObject, LAYOUT_SpaceOuter, TRUE,
+    /* Health Summary Header */
+        LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Drive Health Summary", LAYOUT_BevelStyle, BVS_GROUP,
+    /* Drive Selector for Health */
+        LAYOUT_AddChild,
+    (ui.health_target_chooser = ChooserObject, GA_ID, GID_HEALTH_DRIVE, GA_RelVerify, TRUE, CHOOSER_Labels,
+     (uint32)&ui.drive_list, GA_HintInfo, "Select the drive to query for health information.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Drive:", End, CHILD_WeightedHeight, 0,
+
+    LAYOUT_AddChild,
+    (ui.health_status_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "Select a drive...", BUTTON_Justification,
+     BCJ_CENTER, End),
+    CHILD_WeightedHeight, 0, LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild,
+    (ui.health_temp_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "Temp: N/A", End), LAYOUT_AddChild,
+    (ui.health_power_label = ButtonObject, GA_ReadOnly, TRUE, GA_Text, "Power-on: N/A", End), End, CHILD_WeightedHeight,
+    0, LAYOUT_AddChild,
+    (ui.health_refresh_btn = ButtonObject, GA_ID, GID_HEALTH_REFRESH, GA_Text, "Refresh Health Data", GA_RelVerify,
+     TRUE, End),
+    CHILD_WeightedHeight, 0, End, CHILD_WeightedHeight, 0,
+    /* S.M.A.R.T. Attributes List */
+        LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "S.M.A.R.T. Attributes", LAYOUT_BevelStyle, BVS_GROUP,
+    LAYOUT_AddChild,
+    (ui.health_list = ListBrowserObject, GA_ID, GID_HEALTH_LIST, LISTBROWSER_ColumnInfo, (uint32)health_cols,
+     LISTBROWSER_ColumnTitles, TRUE, LISTBROWSER_Labels, (uint32)&ui.health_labels, LISTBROWSER_AutoFit, TRUE,
+     LISTBROWSER_HorizontalProp, TRUE, End),
+    CHILD_WeightedHeight, 100, End, End;
+
     static struct NewMenu menu_data[] = {
         {NM_TITLE, (STRPTR) "Project", NULL, 0, 0, NULL},
         {NM_ITEM, (STRPTR) "About...", (STRPTR) "A", 0, 0, (APTR)MID_ABOUT},
@@ -211,16 +244,18 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
         {NM_END, NULL, NULL, 0, 0, NULL}};
 
     Object *main_content = NULL;
-    if (ui.PageAvailable && page0 && page1 && page2 && page3 && tab_list) {
-        ui.page_obj = IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page0, PAGE_Add, (uint32)page1,
-                                            PAGE_Add, (uint32)page2, PAGE_Add, (uint32)page3, TAG_DONE);
+    if (ui.PageAvailable && page0 && page1 && page2 && page3 && page4 && tab_list) {
+        ui.page_obj =
+            IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page0, PAGE_Add, (uint32)page1, PAGE_Add,
+                                  (uint32)page2, PAGE_Add, (uint32)page4, /* Health before Bulk? Or same as tabs? */
+                                  PAGE_Add, (uint32)page3, TAG_DONE);
         ui.tabs = ClickTabObject, GA_ID, GID_TABS, GA_RelVerify, TRUE, CLICKTAB_Labels, (uint32)tab_list,
         CLICKTAB_PageGroup, (uint32)ui.page_obj, End;
         main_content = ui.tabs;
     } else {
         LOG_DEBUG("CreateMainLayout: Using vertical fallback layout (components missing)");
         main_content = VLayoutObject, LAYOUT_AddChild, page0, LAYOUT_AddChild, page1, LAYOUT_AddChild, page2,
-        LAYOUT_AddChild, page3, End;
+        LAYOUT_AddChild, page4, LAYOUT_AddChild, page3, End;
         ui.tabs = NULL;
         ui.page_obj = NULL;
     }

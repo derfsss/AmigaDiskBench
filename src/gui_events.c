@@ -328,8 +328,22 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
 
             /* Update Page visibility */
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.page_obj, ui.window, NULL, PAGE_Current, t, TAG_DONE);
-            /* Refresh Bulk Tab Info when switching tabs (Tab 3 is Bulk) */
+
+            /* Handle Health Tab Switch (Index 3) */
             if (t == 3UL) {
+                struct Node *vn = NULL;
+                IIntuition->GetAttr(CHOOSER_SelectedNode, ui.health_target_chooser, (uint32 *)&vn);
+                if (vn) {
+                    DriveNodeData *dd = NULL;
+                    IChooser->GetChooserNodeAttrs(vn, CNA_UserData, &dd, TAG_DONE);
+                    if (dd && dd->bare_name) {
+                        UpdateHealthUI(dd->bare_name);
+                    }
+                }
+            }
+
+            /* Refresh Bulk Tab Info when switching tabs (Tab 4 is Bulk) */
+            if (t == 4UL) {
                 UpdateBulkTabInfo();
             }
             break;
@@ -384,6 +398,30 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         case GID_BULK_RUN:
             LaunchBulkJobs();
             break;
+        case GID_HEALTH_REFRESH: {
+            struct Node *vn = NULL;
+            IIntuition->GetAttr(CHOOSER_SelectedNode, ui.health_target_chooser, (uint32 *)&vn);
+            if (vn) {
+                DriveNodeData *dd = NULL;
+                IChooser->GetChooserNodeAttrs(vn, CNA_UserData, &dd, TAG_DONE);
+                if (dd && dd->bare_name) {
+                    UpdateHealthUI(dd->bare_name);
+                }
+            }
+            break;
+        }
+        case GID_HEALTH_DRIVE: {
+            struct Node *vn = NULL;
+            IIntuition->GetAttr(CHOOSER_SelectedNode, ui.health_target_chooser, (uint32 *)&vn);
+            if (vn) {
+                DriveNodeData *dd = NULL;
+                IChooser->GetChooserNodeAttrs(vn, CNA_UserData, &dd, TAG_DONE);
+                if (dd && dd->bare_name) {
+                    UpdateHealthUI(dd->bare_name);
+                }
+            }
+            break;
+        }
         case GID_BULK_ALL_TESTS:
         case GID_BULK_ALL_BLOCKS:
             UpdateBulkTabInfo();
