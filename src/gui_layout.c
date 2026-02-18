@@ -159,7 +159,7 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     LAYOUT_AddChild,
     (ui.viz_filter_metric = ChooserObject, GA_ID, GID_VIZ_FILTER_METRIC, GA_RelVerify, TRUE, CHOOSER_Labels,
      (uint32)&ui.viz_metric_labels, // Re-used for Date Range labels
-     GA_HintInfo, "Filter the graph data by Date Range.", End),
+     CHOOSER_Selected, ui.viz_date_range_idx, GA_HintInfo, "Filter the graph data by Date Range.", End),
     CHILD_Label, LabelObject, LABEL_Text, "Date:", End, End, CHILD_WeightedHeight, 0,
 
     /* Details Label (Hover Info) */

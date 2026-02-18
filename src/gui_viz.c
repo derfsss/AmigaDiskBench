@@ -338,7 +338,7 @@ void InitVizFilterLabels(void)
 
     ui.viz_filter_volume_idx = 0;
     ui.viz_filter_test_idx = 0;
-    ui.viz_date_range_idx = 0; // Default to Today
+    ui.viz_date_range_idx = 4; // Default to All Time
 }
 
 /**

@@ -62,6 +62,7 @@ void RefreshHistory(void)
         LOG_DEBUG("RefreshHistory: Opened CSV file");
         char line[1024];
         BOOL first = TRUE;
+        BOOL needs_sanitization = FALSE;
         while (IDOS->FGets(file, line, sizeof(line))) {
             if (first) {
                 first = FALSE;
@@ -148,6 +149,18 @@ void RefreshHistory(void)
 
                 res->type = StringToTestType(type);
 
+                /* Sanitization: Force Block Size to 0 (Mixed) for fixed-behavior tests */
+                if (res->type == TEST_DAILY_GRIND || res->type == TEST_PROFILER) {
+                    if (res->block_size != 0) {
+                        LOG_DEBUG("Sanitizing record %s: test type %d had block size %u, forcing to 0", res->result_id,
+                                  res->type, (unsigned int)res->block_size);
+                        res->block_size = 0;
+                        needs_sanitization = TRUE;
+                        /* Re-format bs_str for the UI node creation below if it was wrong */
+                        snprintf(bs_str, sizeof(bs_str), "0");
+                    }
+                }
+
                 /* Calculate Comparison with previous results in the history list */
                 BenchResult prev;
                 if (FindMatchInList(&ui.history_labels, res, &prev, FALSE)) {
@@ -190,6 +203,11 @@ void RefreshHistory(void)
         }
         IDOS->FClose(file);
         LOG_DEBUG("RefreshHistory: Loaded %d records", count);
+
+        if (needs_sanitization) {
+            LOG_DEBUG("RefreshHistory: Sanitization applied, rewriting CSV...");
+            SaveHistoryToCSV(ui.csv_path);
+        }
     } else {
         /* Create empty history file with full header if it doesn't exist */
         file = IDOS->FOpen(ui.csv_path, MODE_NEWFILE, 0);

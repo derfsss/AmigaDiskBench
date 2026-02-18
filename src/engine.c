@@ -128,6 +128,11 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     LOG_DEBUG("RunBenchmark: Type=%d, Passes=%u, BS=%u, Trimmed=%d, Flush=%d", type, (unsigned int)passes,
               (unsigned int)block_size, (int)use_trimmed_mean, (int)flush_cache);
 
+    /* Force Block Size to 0 (Mixed) for fixed-behavior tests */
+    if (type == TEST_DAILY_GRIND || type == TEST_PROFILER) {
+        block_size = 0;
+    }
+
     if (flush_cache) {
         FlushDiskCache(target_path);
     }

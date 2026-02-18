@@ -23,6 +23,7 @@
 
 #include "engine_internal.h" /* For GetFileSystemName, GetDeviceFromVolume */
 #include "gui_internal.h"
+#include <time.h>
 
 /**
  * @brief Updates the info label on the Bulk tab based on current settings.
@@ -412,9 +413,19 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             break;
         case GID_HISTORY_EXPORT: {
             if (ui.IAsl) {
+                char default_filename[64];
+                time_t rawtime;
+                struct tm *timeinfo;
+
+                time(&rawtime);
+                timeinfo = localtime(&rawtime);
+
+                /* Format: bench_history_YYYY-MM-DD-HH-MI-SS.csv */
+                strftime(default_filename, sizeof(default_filename), "bench_history_%Y-%m-%d-%H-%M-%S.csv", timeinfo);
+
                 struct FileRequester *req = ui.IAsl->AllocAslRequestTags(
                     ASL_FileRequest, ASLFR_TitleText, (uint32) "Export History to CSV", ASLFR_DoSaveMode, TRUE,
-                    ASLFR_InitialFile, (uint32) "AmigaDiskBench_History.csv", TAG_DONE);
+                    ASLFR_InitialFile, (uint32)default_filename, TAG_DONE);
                 if (req) {
                     if (ui.IAsl->AslRequest(req, NULL)) {
                         char filepath[512];

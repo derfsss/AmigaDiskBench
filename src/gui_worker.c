@@ -178,6 +178,11 @@ void LaunchBenchmarkJob(void)
         }
     }
 
+    /* Force Block Size to 0 (Mixed) for fixed-behavior tests */
+    if (test_type_idx == TEST_DAILY_GRIND || test_type_idx == TEST_PROFILER) {
+        block_val = 0;
+    }
+
     LOG_DEBUG("LaunchJob: path='%s', test=%u, passes=%u, block_val=%u, trimmed=%d", path, (unsigned int)test_type_idx,
               passes, block_val, (int)ui.use_trimmed_mean);
 
