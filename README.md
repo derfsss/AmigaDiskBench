@@ -26,11 +26,14 @@
   - **CSV Persistence**: Results are automatically saved to a standardized CSV format (`AmigaDiskBench_History.csv`).
   - **Smart Sync**: Changing the CSV path automatically keeps your session context clean.
 
-- **Analysis Tools**:
-  - **Comparison Mode**: Compare any two results side-by-side (Session or History).
-  - **Global Report**: Aggregate statistics (Avg/Max) across all run tests.
-  - **Visualizations**: Interactive trend graphs to track performance over time.
-  - **Hardware ID**: Automatic detection of device names (e.g., `a1ide.device`), units, and filesystem types.
+- **Advanced Analysis & Visualization (New in v2.2.13)**:
+  - **Multi-Type Visualizations**: Choose between **Scaling Profiles**, **Trend Lines**, **Battle Bar Charts**, and **Hybrid Diagnostic Views**.
+  - **Flexible Grouping**: Group and color data by **Drive**, **Test Type**, or **Block Size** to analyze complex datasets in a single view.
+  - **16-Color Palette**: Professional high-contrast palette for clear differentiation of multiple data series.
+  - **Smart Legends**: Automatically wrapping legend labels to ensure fit within the window.
+  - **Hover Interaction**: Real-time display of detailed point metadata on mouse-over.
+  - **Side-by-Side Comparison**: Compare any two results with a dedicated diff-view engine.
+  - **Global Aggregate Reports**: Statistical summaries of all benchmarking activity.
 
 ## Installation
 
@@ -43,44 +46,48 @@ Requires **AmigaOS 4.1 Final Edition** or newer.
 1.  **Select a Target**: Use the "Benchmark Control" tab to select a volume or partition.
 2.  **Configure Tests**: Choose a Test Type, Block Size, and number of Passes (3-5 recommended).
 3.  **Run**: Click the "Run Benchmark" button.
-    *   *Tip*: Toggle the "Bulk" tab to run multiple tests in sequence.
+    *   *Tip*: Using the "Bulk" tab allows you to queue multiple drives and test types for automated testing.
 
-### Analyzing Results
-*   **Benchmark Tab**: Displays results from your *current session*.
-*   **History Tab**: Displays all historical results saved to your CSV file.
-    *   **Compare**: Check the boxes next to any two results and click "Compare Selected".
-    *   **Details**: Double-click any result to see detailed hardware info and raw metrics.
-    *   **Delete/Clear**: Remove specific entries or wipe the entire history.
-*   **Visualization Tab**: View performance trends filtered by Volume and Test Type.
+### Visualization & Analysis
+Switch to the **Visualization** tab to perform deep-dives into your benchmark data:
+1.  **Select Chart Type**: 
+    - *Scaling Line*: Best for seeing how performance changes with block size.
+    - *Trend Line*: Best for tracking drive stability over long sessions.
+    - *Battle Bars*: Best for comparing multiple physcial drives head-to-head.
+    - *Hybrid*: Professional view overlaying **Throughput (MB/s)** and **IOPS** for a comprehensive performance profile.
+2.  **Filter Data**: Narrow down results by Volume, Test Type, or Date Range (Today/Month/Year).
+3.  **Color By**: Change the grouping logic to visualize comparisons between different hardware or access patterns.
+4.  **Analyze**: Hover over any data point to see the exact value and metadata in the status bar.
 
-### Preferences
-Access the Preferences menu to:
-*   Set default test parameters (Passes, Block Size).
-*   Toggle "Trimmed Mean" calculation.
-*   Change the location of the history CSV file.
+### History & Data Maintenance
+*   **Persistent Storage**: All results are saved to CSV. 
+*   **Comparison**: Select any two results in the ListBrowser and click "Compare" for a detailed delta report.
+*   **Cleanup**: Specific results can be deleted individually, or the entire database cleared via the History menu.
 
 ## Building from Source
 
 AmigaDiskBench is cross-compiled using a Docker-based toolchain (GCC 11).
 
 ### Prerequisites
-*   **Docker Desktop** (Windows/Mac/Linux)
-*   **WSL2** (Windows users)
+*   **WSL2** (Windows users) or **Linux/macOS**
+*   **Docker** (Ensure the daemon is running)
 
 ### Build Command
 From the project root:
 
 ```bash
-docker run --rm -v $(pwd):/work -w /work walkero/amigagccondocker:os4-gcc11 make clean all
+# Preferred method (works with or without Docker Desktop)
+wsl build_wsl.md (See .agent/workflows/build_wsl.md for sequence)
 ```
 
-This will compile the `AmigaDiskBench` binary into the `build/` directory.
+Direct Docker command:
+```bash
+docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make all
+```
 
 ## Licensing
 
 AmigaDiskBench is free software: you can redistribute it and/or modify it under the terms of the **MIT License**.
-
-See the [LICENSE](LICENSE) file for the full text.
 
 ---
 **Copyright (C) 2026 Team Derfs**

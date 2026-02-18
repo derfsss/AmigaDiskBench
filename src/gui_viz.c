@@ -28,9 +28,6 @@
 /* Maximum results to plot on the graph */
 #define MAX_PLOT_RESULTS 200
 
-/* Forward declaration of render function from gui_viz_render.c */
-extern void RenderTrendGraph(struct RastPort *rp, struct IBox *box, BenchResult **results, uint32 count);
-
 /* Parse "YYYY-MM-DD HH:MM:SS" into year, month, day */
 static void ParseDate(const char *timestamp, int *y, int *m, int *d)
 {
@@ -43,7 +40,12 @@ static void ParseDate(const char *timestamp, int *y, int *m, int *d)
     }
 }
 
-/* Check if date matches range */
+/**
+ * @brief Checks if a benchmark result's timestamp falls within the selected date range.
+ *
+ * Supports filtering by Today, Last Week, Last Month, Last Year, or All Time.
+ * Uses system time via DateStamp to calculate the range.
+ */
 static BOOL IsDateInRange(const char *timestamp, VizDateRange range)
 {
     if (range == VIZ_DATE_ALL)
@@ -52,50 +54,14 @@ static BOOL IsDateInRange(const char *timestamp, VizDateRange range)
     int ty, tm, td;
     ParseDate(timestamp, &ty, &tm, &td);
 
-    /* For a real app, we'd get current date from OS.
-       For this demo/sim, we'll assume "Today" is the date of the newest result,
-       or just basic logic. Since we don't have easy "Current Date" without DOS calls
-       that might be complex to mock if no results exist, let's use a simple heuristic.
-       Actually, let's use IDOS->DateStamp() -> Amiga2Date() if possible, or just
-       compare against the *newest* result in the list as the "anchor" date?
-       Better: Use real system date. */
-
     struct DateStamp ds;
     IDOS->DateStamp(&ds);
-    struct DateTime dt;
-    memset(&dt, 0, sizeof(dt));
-    dt.dat_Stamp = ds;
-    dt.dat_Format = FORMAT_DOS;
-    char date_buf[16];
-    dt.dat_StrDate = date_buf;
-    dt.dat_StrTime = NULL;
-    IDOS->DateToStr(&dt); // "DD-MMM-YY" or similar depending on locale...
-                          // Actually parsing system date might be annoying with locale.
 
-    // Simpler: Let's just assume we want to filter relative to the HEAD of the list?
-    // No, user expects "Today" to be system today.
-    // Let's implement a simple loose filter for now or add a TODO.
-    // Wait, the timestamp format is fixed YYYY-MM-DD.
-
-    // Let's get system time properly.
-    // We can use a simpler approach: Just compare strings?
-    // No.
-    // Let's assume for now we mock "Today" as "2026-02-16" (User's current date)
-    // or properly fetch it.
-    // Since this is C on Amiga, let's try to get it.
-
-    // Actually, to avoid OS complexity in this snippet, let's pass:
-    // "Today" = matches current system date string prefix.
-
-    // Re-implementation with best effort system date:
     struct ClockData cd;
     if (ui.IUtility) {
         uint32 seconds = (ds.ds_Days * 86400) + (ds.ds_Minute * 60) + (ds.ds_Tick / 50);
-
-        // Amiga2Date takes seconds and fills ClockData
         ui.IUtility->Amiga2Date(seconds, &cd);
     } else {
-        // Fallback
         return TRUE;
     }
 
@@ -107,11 +73,7 @@ static BOOL IsDateInRange(const char *timestamp, VizDateRange range)
         return (ty == cy && tm == cm && td == cd_day);
     }
 
-    // Simple approximations for others
     if (range == VIZ_DATE_WEEK) {
-        // Within last 7 days. Simple linear check ignoring strict leap years etc for brevity
-        // Conversion to absolute days would be better.
-        // For prototype: match Month/Year and day within 7.
         if (ty == cy && tm == cm) {
             if (abs(cd_day - td) <= 7)
                 return TRUE;
@@ -130,21 +92,12 @@ static BOOL IsDateInRange(const char *timestamp, VizDateRange range)
 }
 
 /**
- * CollectFilteredResults
- *
- * Scans history_labels list and collects results matching current filter settings.
- * Results are sorted chronologically (oldest first) for trend display.
- *
- * @param out_results Output array of BenchResult pointers (caller-provided).
- * @param max_count Maximum number of results to collect.
- * @return Number of results collected.
+ * @brief Comparison function for qsort to sort results by block size.
  */
-/* Compare function for qsort (Block Size ascending) */
 static int compare_by_block_size(const void *a, const void *b)
 {
     BenchResult *resA = *(BenchResult **)a;
     BenchResult *resB = *(BenchResult **)b;
-
     if (resA->block_size < resB->block_size)
         return -1;
     if (resA->block_size > resB->block_size)
@@ -152,107 +105,113 @@ static int compare_by_block_size(const void *a, const void *b)
     return 0;
 }
 
-static uint32 CollectFilteredResults(BenchResult **out_results, uint32 max_count)
+/**
+ * @brief Internal helper to find/create a data series for a given categorical label.
+ */
+static VizSeries *GetSeries(VizData *vd, const char *label)
 {
-    /* ... (code omitted for brevity, logic remains same until sort) ... */
+    for (uint32 i = 0; i < vd->series_count; i++) {
+        if (strcmp(vd->series[i].label, label) == 0)
+            return &vd->series[i];
+    }
+    if (vd->series_count < MAX_SERIES) {
+        VizSeries *s = &vd->series[vd->series_count++];
+        snprintf(s->label, sizeof(s->label), "%s", label);
+        s->count = 0;
+        s->max_val = 0.0f;
+        return s;
+    }
+    return NULL;
+}
 
-    /* [RE-IMPLEMENTATION OF LOGIC ABOVE TO ENSURE CONTEXT MATCH - SIMPLIFIED FOR REPLACEMENT] */
-    uint32 count = 0;
+/**
+ * @brief Collects and filters benchmark results from the history and session lists.
+ *
+ * This is the core data engine for the visualization tab. It applies all active
+ * filters (Drive, Test, Date) and groups the resulting data into series based
+ * on the "Color By" selection.
+ *
+ * @param vd Output structure to be populated with filtered and grouped data.
+ * @return Number of data series generated.
+ */
+static uint32 CollectVizData(VizData *vd)
+{
+    memset(vd, 0, sizeof(VizData));
     uint32 filter_test = ui.viz_filter_test_idx;
     uint32 filter_vol = ui.viz_filter_volume_idx;
     VizDateRange filter_date = (VizDateRange)ui.viz_date_range_idx;
+    uint32 color_by = ui.viz_color_by_idx;
 
-    /* Scan history list */
-    struct Node *node = IExec->GetHead(&ui.history_labels);
-    while (node && count < max_count) {
-        BenchResult *res = NULL;
-        IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &res, TAG_DONE);
-
-        if (res) {
-            BOOL match = TRUE;
-            if (!IsDateInRange(res->timestamp, filter_date))
-                match = FALSE;
-
-            if (filter_test > 0) {
-                if ((uint32)res->type != (filter_test - 1))
+    struct List *lists[] = {&ui.history_labels, &ui.bench_labels};
+    for (int l = 0; l < 2; l++) {
+        struct Node *node = IExec->GetHead(lists[l]);
+        while (node) {
+            BenchResult *res = NULL;
+            IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &res, TAG_DONE);
+            if (res) {
+                BOOL match = TRUE;
+                if (l == 0 && !IsDateInRange(res->timestamp, filter_date))
                     match = FALSE;
-            }
 
-            if (filter_vol > 0 && match) {
-                struct Node *vol_node = IExec->GetHead(&ui.viz_volume_labels);
-                uint32 idx = 0;
-                const char *filter_name = NULL;
-                while (vol_node) {
-                    if (idx == filter_vol) {
-                        IChooser->GetChooserNodeAttrs(vol_node, CNA_Text, &filter_name, TAG_DONE);
-                        break;
+                if (filter_test > 0 && (uint32)res->type != (filter_test - 1))
+                    match = FALSE;
+
+                if (filter_vol > 0 && match) {
+                    struct Node *vol_node = IExec->GetHead(&ui.viz_volume_labels);
+                    uint32 idx = 0;
+                    const char *filter_name = NULL;
+                    while (vol_node) {
+                        if (idx == filter_vol) {
+                            IChooser->GetChooserNodeAttrs(vol_node, CNA_Text, &filter_name, TAG_DONE);
+                            break;
+                        }
+                        vol_node = IExec->GetSucc(vol_node);
+                        idx++;
                     }
-                    vol_node = IExec->GetSucc(vol_node);
-                    idx++;
+                    if (filter_name && strcmp(res->volume_name, filter_name) != 0)
+                        match = FALSE;
                 }
-                if (filter_name && strcmp(res->volume_name, filter_name) != 0)
-                    match = FALSE;
-            }
 
-            if (match)
-                out_results[count++] = res;
-        }
-        node = IExec->GetSucc(node);
-    }
+                if (match) {
+                    /* Determine series label */
+                    char label[64];
+                    if (color_by == 0) /* Drive */
+                        snprintf(label, sizeof(label), "%s", res->volume_name);
+                    else if (color_by == 1) /* Test Type */
+                        snprintf(label, sizeof(label), "%s", TestTypeToDisplayName(res->type));
+                    else if (color_by == 2) /* Block Size */
+                        snprintf(label, sizeof(label), "%s", FormatPresetBlockSize(res->block_size));
+                    else
+                        snprintf(label, sizeof(label), "Default");
 
-    /* Scan bench_labels */
-    node = IExec->GetHead(&ui.bench_labels);
-    while (node && count < max_count) {
-        BenchResult *res = NULL;
-        IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &res, TAG_DONE);
-
-        if (res) {
-            BOOL duplicate = FALSE;
-            for (uint32 i = 0; i < count; i++) {
-                if (strcmp(out_results[i]->result_id, res->result_id) == 0) {
-                    duplicate = TRUE;
-                    break;
-                }
-            }
-            if (duplicate) {
-                node = IExec->GetSucc(node);
-                continue;
-            }
-
-            BOOL match = TRUE;
-            if (filter_test > 0) {
-                if ((uint32)res->type != (filter_test - 1))
-                    match = FALSE;
-            }
-
-            if (filter_vol > 0 && match) {
-                struct Node *vol_node = IExec->GetHead(&ui.viz_volume_labels);
-                uint32 idx = 0;
-                const char *filter_name = NULL;
-                while (vol_node) {
-                    if (idx == filter_vol) {
-                        IChooser->GetChooserNodeAttrs(vol_node, CNA_Text, &filter_name, TAG_DONE);
-                        break;
+                    VizSeries *s = GetSeries(vd, label);
+                    if (s && s->count < 200) {
+                        s->results[s->count++] = res;
+                        vd->total_points++;
+                        if (res->mb_per_sec > s->max_val)
+                            s->max_val = res->mb_per_sec;
+                        if (res->mb_per_sec > vd->global_max_y1)
+                            vd->global_max_y1 = res->mb_per_sec;
+                        if ((float)res->iops > vd->global_max_y2)
+                            vd->global_max_y2 = (float)res->iops;
                     }
-                    vol_node = IExec->GetSucc(vol_node);
-                    idx++;
                 }
-                if (filter_name && strcmp(res->volume_name, filter_name) != 0)
-                    match = FALSE;
             }
-
-            if (match)
-                out_results[count++] = res;
+            node = IExec->GetSucc(node);
         }
-        node = IExec->GetSucc(node);
     }
 
-    /* Sort by Block Size (ascending) for X-Axis */
-    if (count > 1) {
-        qsort(out_results, count, sizeof(BenchResult *), compare_by_block_size);
+    /* Sort results within each series based on chart type (X-axis) */
+    for (uint32 i = 0; i < vd->series_count; i++) {
+        if (ui.viz_chart_type_idx == 1) { /* Trend (Time) */
+            // History is usually sorted by time, but benchmarking might be random.
+            // For now assume chronological order is fine or implement sort by timestamp if needed.
+        } else { /* Scaling (Block Size) or Bars */
+            qsort(vd->series[i].results, vd->series[i].count, sizeof(BenchResult *), compare_by_block_size);
+        }
     }
 
-    return count;
+    return vd->series_count;
 }
 
 /**
@@ -265,19 +224,17 @@ void UpdateVisualization(void)
     if (!ui.viz_canvas || !ui.window)
         return;
 
-    LOG_DEBUG("Updating Visualization (Trend Graph)...");
+    LOG_DEBUG("Updating Visualization (Chart Type %u)...", ui.viz_chart_type_idx);
 
     /* Force SpaceObject to redraw via RefreshGList */
     IIntuition->RefreshGList((struct Gadget *)ui.viz_canvas, ui.window, NULL, 1);
-
-    LOG_DEBUG("Visualization redraw triggered.");
 }
 
 /**
  * VizRenderHook
  *
  * SPACE_RenderHook callback. Called by space.gadget during GM_RENDER.
- * Renders the trend graph directly into the SpaceObject's RastPort.
+ * Renders the graph directly into the SpaceObject's RastPort.
  */
 uint32 VizRenderHook(struct Hook *hook, Object *space_obj, struct gpRender *gpr)
 {
@@ -292,9 +249,9 @@ uint32 VizRenderHook(struct Hook *hook, Object *space_obj, struct gpRender *gpr)
     IIntuition->GetAttr(SPACE_AreaBox, space_obj, (uint32 *)&box);
 
     if (box) {
-        BenchResult *results[MAX_PLOT_RESULTS];
-        uint32 count = CollectFilteredResults(results, MAX_PLOT_RESULTS);
-        RenderTrendGraph(rp, box, results, count);
+        VizData vd;
+        CollectVizData(&vd);
+        RenderGraph(rp, box, &vd);
     }
     return 0;
 }
@@ -310,6 +267,8 @@ void InitVizFilterLabels(void)
     IExec->NewList(&ui.viz_volume_labels);
     IExec->NewList(&ui.viz_test_labels);
     IExec->NewList(&ui.viz_metric_labels);
+    IExec->NewList(&ui.viz_chart_type_labels);
+    IExec->NewList(&ui.viz_color_by_labels);
 
     /* Volume filter: "All Volumes" + populate from history on refresh */
     struct Node *n;
@@ -336,9 +295,28 @@ void InitVizFilterLabels(void)
             IExec->AddTail(&ui.viz_metric_labels, n); // Using existing list for Date Range
     }
 
+    /* Chart Type Labels */
+    const char *chart_types[] = {"Scaling (Line)", "Trend (Time Line)", "Battle (Drive Bar)", "Workload (Test Bar)",
+                                 "Hybrid (MB/s+IOPS)"};
+    for (int i = 0; i < 5; i++) {
+        n = IChooser->AllocChooserNode(CNA_Text, chart_types[i], CNA_CopyText, TRUE, TAG_DONE);
+        if (n)
+            IExec->AddTail(&ui.viz_chart_type_labels, n);
+    }
+
+    /* Color By Labels */
+    const char *color_by_opts[] = {"Drive", "Test Type", "Block Size"};
+    for (int i = 0; i < 3; i++) {
+        n = IChooser->AllocChooserNode(CNA_Text, color_by_opts[i], CNA_CopyText, TRUE, TAG_DONE);
+        if (n)
+            IExec->AddTail(&ui.viz_color_by_labels, n);
+    }
+
     ui.viz_filter_volume_idx = 0;
     ui.viz_filter_test_idx = 0;
     ui.viz_date_range_idx = 4; // Default to All Time
+    ui.viz_chart_type_idx = 0; // Default to Scaling
+    ui.viz_color_by_idx = 0;   // Default to Drive
 }
 
 /**
@@ -438,4 +416,20 @@ void CleanupVizFilterLabels(void)
         node = next;
     }
     IExec->NewList(&ui.viz_metric_labels);
+
+    node = IExec->GetHead(&ui.viz_chart_type_labels);
+    while (node) {
+        next = IExec->GetSucc(node);
+        IChooser->FreeChooserNode(node);
+        node = next;
+    }
+    IExec->NewList(&ui.viz_chart_type_labels);
+
+    node = IExec->GetHead(&ui.viz_color_by_labels);
+    while (node) {
+        next = IExec->GetSucc(node);
+        IChooser->FreeChooserNode(node);
+        node = next;
+    }
+    IExec->NewList(&ui.viz_color_by_labels);
 }

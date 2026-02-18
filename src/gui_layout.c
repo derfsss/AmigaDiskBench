@@ -149,9 +149,8 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE,
 
     /* Filter Controls */
-        LAYOUT_AddChild, HLayoutObject, LAYOUT_Label, "Filters", LAYOUT_BevelStyle, BVS_GROUP,
-
-    LAYOUT_AddChild,
+        LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Filters", LAYOUT_BevelStyle, BVS_GROUP, LAYOUT_AddChild,
+    HLayoutObject, LAYOUT_AddChild,
     (ui.viz_filter_volume = ChooserObject, GA_ID, GID_VIZ_FILTER_VOLUME, GA_RelVerify, TRUE, CHOOSER_Labels,
      (uint32)&ui.viz_volume_labels, GA_HintInfo, "Filter the graph data by Volume.", End),
     CHILD_Label, LabelObject, LABEL_Text, "Volume:", End,
@@ -167,11 +166,20 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
      CHOOSER_Selected, ui.viz_date_range_idx, GA_HintInfo, "Filter the graph data by Date Range.", End),
     CHILD_Label, LabelObject, LABEL_Text, "Date:", End, End, CHILD_WeightedHeight, 0,
 
+    /* New: Chart Type and Color Mode */
+        LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild,
+    (ui.viz_chart_type = ChooserObject, GA_ID, GID_VIZ_CHART_TYPE, GA_RelVerify, TRUE, CHOOSER_Labels,
+     (uint32)&ui.viz_chart_type_labels, GA_HintInfo, "Select the type of chart to display.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Chart:", End, LAYOUT_AddChild,
+    (ui.viz_color_by = ChooserObject, GA_ID, GID_VIZ_COLOR_BY, GA_RelVerify, TRUE, CHOOSER_Labels,
+     (uint32)&ui.viz_color_by_labels, GA_HintInfo, "Choose how to color the data points.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Color By:", End, End, CHILD_WeightedHeight, 0, End, CHILD_WeightedHeight, 0,
+
     /* Details Label (Hover Info) */
         LAYOUT_AddChild,
     (ui.viz_details_label = ButtonObject, GA_ID, GID_VIZ_DETAILS_LABEL, GA_ReadOnly, TRUE, GA_Text,
      "Hover over points for details...", End),
-    CHILD_WeightedHeight, 0, CHILD_WeightedHeight, 0,
+    CHILD_WeightedHeight, 0,
 
     /* Graph Canvas */
         LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Performance Trend", LAYOUT_BevelStyle, BVS_GROUP,

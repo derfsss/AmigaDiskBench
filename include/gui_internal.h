@@ -91,6 +91,35 @@ struct DriveNodeData
 };
 typedef struct DriveNodeData DriveNodeData;
 
+/**
+ * @brief Represents a single data series for rendering in the graph.
+ *
+ * A series groups a set of benchmark results sharing a common attribute
+ * (e.g., same Drive, Test Type, or Block Size) defined by the "Color By" setting.
+ */
+typedef struct
+{
+    char label[64];            /**< Human-readable label for the legend entry */
+    uint32 color_argb;         /**< ARGB color assigned based on series index and palette */
+    BenchResult *results[200]; /**< Pointers to filtered results belonging to this series */
+    uint32 count;              /**< Number of results in the results array */
+    float max_val;             /**< Maximum MB/s value found in this series (used for scaling) */
+} VizSeries;
+
+/**
+ * @brief Container for all data required to render a multi-series graph.
+ *
+ * This structure is populated by CollectVizData() and consumed by RenderGraph().
+ */
+typedef struct
+{
+    VizSeries series[MAX_SERIES]; /**< Array of data series (up to 16) */
+    uint32 series_count;          /**< Number of active series in the array */
+    float global_max_y1;          /**< Global maximum for Primary Y-Axis (MB/s) */
+    float global_max_y2;          /**< Global maximum for Secondary Y-Axis (IOPS, for Hybrid) */
+    uint32 total_points;          /**< Grand total sum of result points across all series */
+} VizData;
+
 /* Global UI state provided by gui.c */
 extern GUIState ui;
 
@@ -246,7 +275,7 @@ void CleanupVizFilterLabels(void);
 uint32 VizRenderHook(struct Hook *hook, Object *space_obj, struct gpRender *gpr);
 
 /* [gui_viz_render.c] - Graph Rendering */
-void RenderTrendGraph(struct RastPort *rp, struct IBox *box, BenchResult **results, uint32 count);
+void RenderGraph(struct RastPort *rp, struct IBox *box, VizData *vd);
 
 /* [gui_bulk.c] - Bulk Testing */
 void RefreshBulkList(void);
