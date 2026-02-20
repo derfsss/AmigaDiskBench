@@ -58,6 +58,7 @@ AmigaDiskBench is a modern, ReAction-based disk benchmarking utility for AmigaOS
 ## Known Quirks & Gotchas
 - **AllocListBrowserNode**: In the current SDK (54.16), explicitly passing the `IListBrowser` pointer as the first argument to `AllocListBrowserNode` can cause type-mismatch warnings or errors depending on how the prototypes are resolved. Stick to the format: `AllocListBrowserNode(column_count, TAGS...)`.
 - **PowerPC Alignment**: Be extremely careful with `snprintf` and mixed-type varargs (e.g., mixing `double` and `uint32`). Large or complex `snprintf` calls have caused stack corruption/misalignment issues. Use incremental string construction if possible.
+- **64-bit Formatting**: The AmigaOS 4 SDK may not define standard `stdint.h` format macros like `PRIu64` correctly. Use `%llu` and cast variables to `unsigned long long` or use standard types like `uint64` with `%llu` directly.
 - **Custom Rendering**: The trend graph uses a custom `gpRender` hook. Ensure `WA_IDCMP` includes `IDCMP_MOUSEBUTTONS` for hover detection.
 - **ListBrowser Hierarchy**: To show expansion handles (`+`/`-`), parent nodes MUST have `LBNA_Flags` set to `LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN`. Merely nesting nodes is not enough.
 - **Layout Refresh**: When switching pages in a `page.gadget` layout on the fly, use `IIntuition->IDoMethod(window_obj, WM_RETHINK);` to force a complete re-layout. `RefreshGList` is often insufficient for complex layout changes.

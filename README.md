@@ -131,11 +131,6 @@ docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make -
 
 This will produce the `AmigaDiskBench` executable in the `dist` folder.
 
-## Authors
-
-*   **Team Derfs** - *Core Development*
-*   **Rich** - *Lead Developer*
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
