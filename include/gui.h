@@ -63,6 +63,21 @@ typedef struct
 } BenchJob;
 
 /**
+ * @brief Message status sent from Benchmark Process to GUI.
+ * Updates the GUI on the progress or completion of a job.
+ */
+typedef struct
+{
+    struct Message msg;
+    uint32 msg_type; /**< Message Type (e.g., MSG_TYPE_STATUS) */
+    BOOL finished;
+    BOOL success;
+    BenchResult result;
+    BenchSampleData sample_data; /**< Time-series data for graphing */
+    char status_text[128];
+} BenchStatus;
+
+/**
  * @brief Main GUI State structure.
  * Holds all ReAction objects, system resources, and application state.
  */
@@ -227,24 +242,29 @@ typedef struct
     Object *health_target_chooser;
     struct List health_labels;
     SmartData current_health;
+
+    /* Disk Info Tab Gadgets */
+    Object *diskinfo_tree;
+    Object *diskinfo_pages;
+    Object *diskinfo_brand_label;
+    Object *diskinfo_geometry_label;
+    Object *diskinfo_flags_label;
+    Object *diskinfo_capacity_label;
+    Object *diskinfo_bus_label;
+    Object *diskinfo_media_label;
+    /* Partition Info Page Gadgets */
+    Object *diskinfo_part_vol_label;
+    Object *diskinfo_part_size_label;
+    Object *diskinfo_part_used_label;
+    Object *diskinfo_part_free_label;
+    Object *diskinfo_part_fs_label;
+    Object *diskinfo_part_block_label;
+    struct List diskinfo_labels;
 } GUIState;
 
 #include "benchmark_queue.h"
 
-/**
- * @brief Message status sent from Benchmark Process to GUI.
- * Updates the GUI on the progress or completion of a job.
- */
-typedef struct
-{
-    struct Message msg;
-    uint32 msg_type; /**< Message Type (e.g., MSG_TYPE_STATUS) */
-    BOOL finished;
-    BOOL success;
-    BenchResult result;
-    BenchSampleData sample_data; /**< Time-series data for graphing */
-    char status_text[128];
-} BenchStatus;
+// ... (existing typedefs)
 
 /* Gadget IDs */
 enum
@@ -309,6 +329,20 @@ enum
     GID_HEALTH_REFRESH,
     GID_HEALTH_STATUS,
     GID_HEALTH_DRIVE,
+    GID_DISKINFO_TREE,
+    GID_DISKINFO_PAGES,
+    GID_DISKINFO_BRAND,
+    GID_DISKINFO_GEOMETRY,
+    GID_DISKINFO_FLAGS,
+    GID_DISKINFO_CAPACITY,
+    GID_DISKINFO_BUS,
+    GID_DISKINFO_MEDIA,
+    GID_DISKINFO_PART_VOL,
+    GID_DISKINFO_PART_SIZE,
+    GID_DISKINFO_PART_USED,
+    GID_DISKINFO_PART_FREE,
+    GID_DISKINFO_PART_FS,
+    GID_DISKINFO_PART_BLOCK,
     GID_COMPARE_CLOSE = 5000
 };
 

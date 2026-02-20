@@ -284,6 +284,11 @@ void RenderGraph(struct RastPort *rp, struct IBox *box, VizData *vd);
 void RefreshBulkList(void);
 void LaunchBulkJobs(void);
 
+/* [gui_info.c] - Disk Information Tab */
+Object *CreateDiskInfoPage(void);
+void RefreshDiskInfoTree(void);
+void HandleDiskInfoEvent(uint32 result);
+
 /* [gui_details_window.c] - Details Window management */
 
 /**

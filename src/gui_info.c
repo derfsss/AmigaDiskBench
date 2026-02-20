@@ -66,33 +66,38 @@ static void UpdateDetailsPage(struct InfoNodeData *data)
         LogicalPartition *part = data->part;
         LOG_DEBUG("UpdateDetailsPage: Showing Partition Details for '%s'", part->volume_name);
 
-        char buf[128];
-        char sz[32];
+        static char s_part_vol[128];
+        static char s_part_size[64];
+        static char s_part_used[64];
+        static char s_part_free[64];
+        static char s_part_fs[128];
+        static char s_part_block[64];
 
-        snprintf(buf, sizeof(buf), "%s", part->volume_name[0] ? part->volume_name : "Unmounted");
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_vol_label, ui.window, NULL, GA_Text, buf,
+        snprintf(s_part_vol, sizeof(s_part_vol), "%s", part->volume_name[0] ? part->volume_name : "Unmounted");
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_vol_label, ui.window, NULL, GA_Text, s_part_vol,
                                    TAG_DONE);
 
-        FormatSize(part->size_bytes, sz, sizeof(sz));
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_size_label, ui.window, NULL, GA_Text, sz,
+        FormatSize(part->size_bytes, s_part_size, sizeof(s_part_size));
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_size_label, ui.window, NULL, GA_Text, s_part_size,
                                    TAG_DONE);
 
-        FormatSize(part->used_bytes, sz, sizeof(sz));
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_used_label, ui.window, NULL, GA_Text, sz,
+        FormatSize(part->used_bytes, s_part_used, sizeof(s_part_used));
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_used_label, ui.window, NULL, GA_Text, s_part_used,
                                    TAG_DONE);
 
-        FormatSize(part->free_bytes, sz, sizeof(sz));
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_free_label, ui.window, NULL, GA_Text, sz,
+        FormatSize(part->free_bytes, s_part_free, sizeof(s_part_free));
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_free_label, ui.window, NULL, GA_Text, s_part_free,
                                    TAG_DONE);
 
         // Filesystem Name (Hex ID)
         uint32 fs = part->disk_environment_type;
-        snprintf(buf, sizeof(buf), "%s (0x%08lX)", GetDosTypeString(fs), fs);
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_fs_label, ui.window, NULL, GA_Text, buf, TAG_DONE);
-
-        snprintf(buf, sizeof(buf), "%lu", part->blocks_per_drive);
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_block_label, ui.window, NULL, GA_Text, buf,
+        snprintf(s_part_fs, sizeof(s_part_fs), "%s (0x%08lX)", GetDosTypeString(fs), fs);
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_fs_label, ui.window, NULL, GA_Text, s_part_fs,
                                    TAG_DONE);
+
+        snprintf(s_part_block, sizeof(s_part_block), "%lu", part->blocks_per_drive);
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_block_label, ui.window, NULL, GA_Text,
+                                   s_part_block, TAG_DONE);
 
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_PARTITION,
                                    TAG_DONE);
@@ -104,27 +109,39 @@ static void UpdateDetailsPage(struct InfoNodeData *data)
     PhysicalDrive *drive = data->drive;
     if (drive) {
         LOG_DEBUG("UpdateDetailsPage: Showing Drive Details for '%s'", drive->device_name);
-        char buf[128];
 
-        snprintf(buf, sizeof(buf), "%s %s", drive->vendor, drive->product);
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_brand_label, ui.window, NULL, GA_Text, buf, TAG_DONE);
+        static char s_drive_brand[128];
+        static char s_drive_bus[128];
+        static char s_drive_cap[64];
+        static char s_drive_geom[128];
+        static char s_drive_flags[64];
 
-        snprintf(buf, sizeof(buf), "%s %s", MediaTypeToString(drive->media_type), BusTypeToString(drive->bus_type));
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_bus_label, ui.window, NULL, GA_Text, buf, TAG_DONE);
-
-        char sz[32];
-        FormatSize(drive->capacity_bytes, sz, sizeof(sz));
-        snprintf(buf, sizeof(buf), "%s", sz);
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_capacity_label, ui.window, NULL, GA_Text, buf,
+        if (drive->revision[0] != '\0') {
+            snprintf(s_drive_brand, sizeof(s_drive_brand), "%s %s (Rev: %s)", drive->vendor, drive->product,
+                     drive->revision);
+        } else {
+            snprintf(s_drive_brand, sizeof(s_drive_brand), "%s %s", drive->vendor, drive->product);
+        }
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_brand_label, ui.window, NULL, GA_Text, s_drive_brand,
                                    TAG_DONE);
 
-        snprintf(buf, sizeof(buf), "C:%lu H:%lu S:%lu B:%lu", drive->cylinders, drive->heads, drive->sectors,
-                 drive->block_bytes);
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_geometry_label, ui.window, NULL, GA_Text, buf,
+        snprintf(s_drive_bus, sizeof(s_drive_bus), "%s %s", MediaTypeToString(drive->media_type),
+                 BusTypeToString(drive->bus_type));
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_bus_label, ui.window, NULL, GA_Text, s_drive_bus,
                                    TAG_DONE);
 
-        snprintf(buf, sizeof(buf), "RDB: %s", drive->rdb_found ? "Yes" : "No");
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_flags_label, ui.window, NULL, GA_Text, buf, TAG_DONE);
+        FormatSize(drive->capacity_bytes, s_drive_cap, sizeof(s_drive_cap));
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_capacity_label, ui.window, NULL, GA_Text, s_drive_cap,
+                                   TAG_DONE);
+
+        snprintf(s_drive_geom, sizeof(s_drive_geom), "C:%lu H:%lu S:%lu B:%lu", drive->cylinders, drive->heads,
+                 drive->sectors, drive->block_bytes);
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_geometry_label, ui.window, NULL, GA_Text, s_drive_geom,
+                                   TAG_DONE);
+
+        snprintf(s_drive_flags, sizeof(s_drive_flags), "RDB: %s", drive->rdb_found ? "Yes" : "No");
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_flags_label, ui.window, NULL, GA_Text, s_drive_flags,
+                                   TAG_DONE);
 
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_DRIVE,
                                    TAG_DONE);
@@ -154,78 +171,95 @@ void RefreshDiskInfoTree(void)
     }
     current_drives = drives;
 
-    // Create Root Node "Disks"
-    struct InfoNodeData *rootData =
-        IExec->AllocVecTags(sizeof(struct InfoNodeData), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
-    if (rootData) {
-        struct Node *rootNode =
-            IListBrowser->AllocListBrowserNode(1, LBNCA_Text, "Disks", LBNA_UserData, rootData, LBNA_Generation, 1,
-                                               LBNA_Flags, LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN, TAG_DONE);
-        if (rootNode) {
-            IExec->AddTail(&drive_tree_list, rootNode);
+    const char *categories[] = {"Fixed Drives", "USB Drives", "Optical Drives"};
 
-            // Loop Drives
-            struct Node *dNode;
-            for (dNode = IExec->GetHead(drives); dNode; dNode = IExec->GetSucc(dNode)) {
-                PhysicalDrive *drive = (PhysicalDrive *)dNode;
+    for (int cat_idx = 0; cat_idx < 3; cat_idx++) {
+        // Check if there are any drives in this category before creating the root node
+        BOOL has_drives = FALSE;
+        struct Node *dNode;
+        for (dNode = IExec->GetHead(drives); dNode; dNode = IExec->GetSucc(dNode)) {
+            PhysicalDrive *drive = (PhysicalDrive *)dNode;
+            int drive_cat = 0; // Fixed
+            if (drive->media_type == MEDIA_TYPE_CDROM) {
+                drive_cat = 2; // Optical
+            } else if (drive->bus_type == BUS_TYPE_USB) {
+                drive_cat = 1; // USB
+            }
+            if (drive_cat == cat_idx) {
+                has_drives = TRUE;
+                break;
+            }
+        }
 
-                struct InfoNodeData *dData = IExec->AllocVecTags(sizeof(struct InfoNodeData), AVT_Type, MEMF_SHARED,
-                                                                 AVT_ClearWithValue, 0, TAG_DONE);
-                char label[128];
-                snprintf(label, sizeof(label), "%s (Unit %lu)", drive->device_name, drive->unit_number);
+        if (!has_drives)
+            continue;
 
-                if (dData) {
-                    dData->drive = drive;
-                    dData->name_buffer = IExec->AllocVecTags(strlen(label) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
-                    if (dData->name_buffer)
-                        strcpy(dData->name_buffer, label);
+        struct InfoNodeData *rootData =
+            IExec->AllocVecTags(sizeof(struct InfoNodeData), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
+        if (rootData) {
+            struct Node *rootNode = IListBrowser->AllocListBrowserNode(
+                1, LBNCA_Text, categories[cat_idx], LBNA_UserData, rootData, LBNA_Generation, 1, LBNA_Flags,
+                LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN, TAG_DONE);
+            if (rootNode) {
+                IExec->AddTail(&drive_tree_list, rootNode);
 
-                    struct Node *lbDriveNode = IListBrowser->AllocListBrowserNode(
-                        1, LBNCA_Text, dData->name_buffer, LBNA_UserData, dData, LBNA_Generation, 2, LBNA_Flags,
-                        LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN, TAG_DONE);
+                // Loop Drives for this category
+                for (dNode = IExec->GetHead(drives); dNode; dNode = IExec->GetSucc(dNode)) {
+                    PhysicalDrive *drive = (PhysicalDrive *)dNode;
+                    int drive_cat = 0; // Fixed
+                    if (drive->media_type == MEDIA_TYPE_CDROM) {
+                        drive_cat = 2; // Optical
+                    } else if (drive->bus_type == BUS_TYPE_USB) {
+                        drive_cat = 1; // USB
+                    }
 
-                    if (lbDriveNode) {
-                        IExec->AddTail(&drive_tree_list, lbDriveNode);
+                    if (drive_cat != cat_idx)
+                        continue;
 
-                        // "Partitions" grouping node
-                        struct InfoNodeData *partGroupData = IExec->AllocVecTags(
-                            sizeof(struct InfoNodeData), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
-                        if (partGroupData) {
-                            partGroupData->drive = drive; // Assign drive to partitions group too so we see drive info
-                            struct Node *lbPartGroupNode = IListBrowser->AllocListBrowserNode(
-                                1, LBNCA_Text, "Partitions", LBNA_UserData, partGroupData, LBNA_Generation, 3,
-                                LBNA_Flags, LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN, TAG_DONE);
+                    struct InfoNodeData *dData = IExec->AllocVecTags(sizeof(struct InfoNodeData), AVT_Type, MEMF_SHARED,
+                                                                     AVT_ClearWithValue, 0, TAG_DONE);
+                    char label[128];
+                    snprintf(label, sizeof(label), "%s (Unit %lu)", drive->device_name, drive->unit_number);
 
-                            if (lbPartGroupNode) {
-                                IExec->AddTail(&drive_tree_list, lbPartGroupNode);
+                    if (dData) {
+                        dData->drive = drive;
+                        dData->name_buffer = IExec->AllocVecTags(strlen(label) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
+                        if (dData->name_buffer)
+                            strcpy(dData->name_buffer, label);
 
-                                // Actual Partitions
-                                struct Node *pNode;
-                                for (pNode = IExec->GetHead((struct List *)&drive->partitions); pNode;
-                                     pNode = IExec->GetSucc(pNode)) {
-                                    LogicalPartition *part = (LogicalPartition *)pNode;
-                                    struct InfoNodeData *pData =
-                                        IExec->AllocVecTags(sizeof(struct InfoNodeData), AVT_Type, MEMF_SHARED,
-                                                            AVT_ClearWithValue, 0, TAG_DONE);
+                        struct Node *lbDriveNode = IListBrowser->AllocListBrowserNode(
+                            1, LBNCA_Text, dData->name_buffer, LBNA_UserData, dData, LBNA_Generation, 2, LBNA_Flags,
+                            LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN, TAG_DONE);
 
-                                    char pLabel[128];
-                                    snprintf(pLabel, sizeof(pLabel), "%s",
-                                             part->volume_name[0] ? part->volume_name : part->dos_device_name);
+                        if (lbDriveNode) {
+                            IExec->AddTail(&drive_tree_list, lbDriveNode);
 
-                                    if (pData) {
-                                        pData->drive = drive;
-                                        pData->part = part;
-                                        pData->name_buffer =
-                                            IExec->AllocVecTags(strlen(pLabel) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
-                                        if (pData->name_buffer)
-                                            strcpy(pData->name_buffer, pLabel);
+                            // Actual Partitions (direct children of the drive)
+                            struct Node *pNode;
+                            for (pNode = IExec->GetHead((struct List *)&drive->partitions); pNode;
+                                 pNode = IExec->GetSucc(pNode)) {
+                                LogicalPartition *part = (LogicalPartition *)pNode;
+                                struct InfoNodeData *pData =
+                                    IExec->AllocVecTags(sizeof(struct InfoNodeData), AVT_Type, MEMF_SHARED,
+                                                        AVT_ClearWithValue, 0, TAG_DONE);
 
-                                        struct Node *lbPartNode = IListBrowser->AllocListBrowserNode(
-                                            1, LBNCA_Text, pData->name_buffer, LBNA_UserData, pData, LBNA_Generation, 4,
-                                            TAG_DONE);
-                                        if (lbPartNode)
-                                            IExec->AddTail(&drive_tree_list, lbPartNode);
-                                    }
+                                char pLabel[128];
+                                snprintf(pLabel, sizeof(pLabel), "%s",
+                                         part->volume_name[0] ? part->volume_name : part->dos_device_name);
+
+                                if (pData) {
+                                    pData->drive = drive; // Assign drive so parent details can be accessed if needed
+                                    pData->part = part;
+                                    pData->name_buffer =
+                                        IExec->AllocVecTags(strlen(pLabel) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
+                                    if (pData->name_buffer)
+                                        strcpy(pData->name_buffer, pLabel);
+
+                                    struct Node *lbPartNode = IListBrowser->AllocListBrowserNode(
+                                        1, LBNCA_Text, pData->name_buffer, LBNA_UserData, pData, LBNA_Generation, 3,
+                                        TAG_DONE);
+                                    if (lbPartNode)
+                                        IExec->AddTail(&drive_tree_list, lbPartNode);
                                 }
                             }
                         }
@@ -273,95 +307,82 @@ Object *CreateDiskInfoPage(void)
 {
     IExec->NewList(&drive_tree_list);
 
-    Object *page_init = VLayoutObject, LAYOUT_AddChild, LabelObject, LABEL_Text, "Select a drive or partition.", End,
-           End;
+    Object *page_init = VLayoutObject, LAYOUT_AddChild, SpaceObject, End, LAYOUT_AddChild, ButtonObject, GA_ReadOnly,
+           TRUE, GA_Text, "Select a drive or partition.", BUTTON_BevelStyle, BVS_NONE, BUTTON_Transparent, TRUE,
+           BUTTON_Justification, BCJ_CENTER, End, LAYOUT_AddChild, SpaceObject, End, End;
 
-    /* Physical Drive Page */
     /* Physical Drive Page */
     Object *page_drive = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_BevelStyle,
            BVS_GROUP, LAYOUT_Label, "Physical Drive Details",
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Model:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
-           (ui.diskinfo_brand_label = ButtonObject, GA_ID, GID_DISKINFO_BRAND, GA_ReadOnly, TRUE, GA_Text, "-", End),
-           CHILD_WeightedWidth, 100, End,
+           LAYOUT_AddChild,
+           (ui.diskinfo_brand_label = ButtonObject, GA_ID, GID_DISKINFO_BRAND, GA_ReadOnly, TRUE, GA_Text, "-",
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Model:", End, CHILD_WeightedHeight, 0,
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Type:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
-           (ui.diskinfo_bus_label = ButtonObject, GA_ID, GID_DISKINFO_BUS, GA_ReadOnly, TRUE, GA_Text, "-", End),
-           CHILD_WeightedWidth, 100, End,
+           LAYOUT_AddChild,
+           (ui.diskinfo_bus_label = ButtonObject, GA_ID, GID_DISKINFO_BUS, GA_ReadOnly, TRUE, GA_Text, "-",
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Type:", End, CHILD_WeightedHeight, 0,
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Capacity:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
+           LAYOUT_AddChild,
            (ui.diskinfo_capacity_label = ButtonObject, GA_ID, GID_DISKINFO_CAPACITY, GA_ReadOnly, TRUE, GA_Text, "-",
-            End),
-           CHILD_WeightedWidth, 100, End,
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Capacity:", End, CHILD_WeightedHeight, 0,
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Geometry:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
+           LAYOUT_AddChild,
            (ui.diskinfo_geometry_label = ButtonObject, GA_ID, GID_DISKINFO_GEOMETRY, GA_ReadOnly, TRUE, GA_Text, "-",
-            End),
-           CHILD_WeightedWidth, 100, End,
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Geometry:", End, CHILD_WeightedHeight, 0,
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "RDB:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
-           (ui.diskinfo_flags_label = ButtonObject, GA_ID, GID_DISKINFO_FLAGS, GA_ReadOnly, TRUE, GA_Text, "-", End),
-           CHILD_WeightedWidth, 100, End, End,
-           // Spacer at the bottom to push content up and prevent vertical stretching
-        LAYOUT_AddChild, VLayoutObject, End, End;
+           LAYOUT_AddChild,
+           (ui.diskinfo_flags_label = ButtonObject, GA_ID, GID_DISKINFO_FLAGS, GA_ReadOnly, TRUE, GA_Text, "-",
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "RDB:", End, CHILD_WeightedHeight, 0,
+
+           End, CHILD_WeightedHeight, 0, // Prevent BevelFrame from growing vertically
+
+        // Spacer at the bottom to push content up
+        LAYOUT_AddChild, SpaceObject, End, CHILD_WeightedHeight, 100, End;
 
     /* Partition Page */
     Object *page_part = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_BevelStyle,
            BVS_GROUP, LAYOUT_Label, "Partition Details",
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Volume:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
+           LAYOUT_AddChild,
            (ui.diskinfo_part_vol_label = ButtonObject, GA_ID, GID_DISKINFO_PART_VOL, GA_ReadOnly, TRUE, GA_Text, "-",
-            End),
-           CHILD_WeightedWidth, 100, End,
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Volume:", End, CHILD_WeightedHeight, 0,
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Size:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
+           LAYOUT_AddChild,
            (ui.diskinfo_part_size_label = ButtonObject, GA_ID, GID_DISKINFO_PART_SIZE, GA_ReadOnly, TRUE, GA_Text, "-",
-            End),
-           CHILD_WeightedWidth, 100, End,
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Size:", End, CHILD_WeightedHeight, 0,
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Used:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
+           LAYOUT_AddChild,
            (ui.diskinfo_part_used_label = ButtonObject, GA_ID, GID_DISKINFO_PART_USED, GA_ReadOnly, TRUE, GA_Text, "-",
-            End),
-           CHILD_WeightedWidth, 100, End,
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Used:", End, CHILD_WeightedHeight, 0,
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Free:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
+           LAYOUT_AddChild,
            (ui.diskinfo_part_free_label = ButtonObject, GA_ID, GID_DISKINFO_PART_FREE, GA_ReadOnly, TRUE, GA_Text, "-",
-            End),
-           CHILD_WeightedWidth, 100, End,
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Free:", End, CHILD_WeightedHeight, 0,
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Filesystem:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
+           LAYOUT_AddChild,
            (ui.diskinfo_part_fs_label = ButtonObject, GA_ID, GID_DISKINFO_PART_FS, GA_ReadOnly, TRUE, GA_Text, "-",
-            End),
-           CHILD_WeightedWidth, 100, End,
+            BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Filesystem:", End, CHILD_WeightedHeight, 0,
 
-           LAYOUT_AddChild, HLayoutObject, LAYOUT_AddImage, LabelObject, LABEL_Text, "Blocks:", LABEL_Justification,
-           LJ_RIGHT, End, CHILD_MinWidth, 110, CHILD_WeightedWidth, 0, CHILD_WeightedHeight, 0, LAYOUT_VertAlignment,
-           LALIGN_CENTER, LAYOUT_AddChild,
+           LAYOUT_AddChild,
            (ui.diskinfo_part_block_label = ButtonObject, GA_ID, GID_DISKINFO_PART_BLOCK, GA_ReadOnly, TRUE, GA_Text,
-            "-", End),
-           CHILD_WeightedWidth, 100, End, End,
-           // Spacer at the bottom
-        LAYOUT_AddChild, VLayoutObject, End, End;
+            "-", BUTTON_Justification, BCJ_LEFT, End),
+           CHILD_Label, LabelObject, LABEL_Text, "Blocks:", End, CHILD_WeightedHeight, 0,
+
+           End, CHILD_WeightedHeight, 0, // Prevent BevelFrame from growing vertically
+
+        // Spacer at the bottom
+        LAYOUT_AddChild, SpaceObject, End, CHILD_WeightedHeight, 100, End;
 
     ui.diskinfo_pages = IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page_init, PAGE_Add,
                                               (uint32)page_drive, PAGE_Add, (uint32)page_part, TAG_DONE);

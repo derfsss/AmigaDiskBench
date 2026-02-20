@@ -380,13 +380,34 @@ void GetHardwareInfo(const char *path, BenchResult *result)
                 }
 
                 if (startup > 0 && startup <= 64) {
-                    /* Small integer is the unit number */
+                    /* Small integer is the unit number - but we don't know the device name! */
                     result->device_unit = startup;
                 } else if (startup > 64) {
-                    /* Message block contains the unit */
+                    /* Message block contains the unit AND the device name */
                     struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)BADDR(startup);
-                    if (fssm)
+                    if (fssm) {
                         result->device_unit = fssm->fssm_Unit;
+
+                        /* Extract device name from BSTR */
+                        if (fssm->fssm_Device) {
+                            /* BSTR to C-String conversion */
+                            /* Note: Do not use IDOS->CopyStringBSTRToC if we want to be safe with older startups
+                               or if we just want a simple extract. Let's use the manual method which is
+                               robust for standard BSTRs found in startup messages. */
+                            UBYTE *bstr = (UBYTE *)BADDR(fssm->fssm_Device);
+                            if (bstr) {
+                                uint32 len = *bstr;
+                                if (len > sizeof(result->device_name) - 1)
+                                    len = sizeof(result->device_name) - 1;
+
+                                memcpy(result->device_name, bstr + 1, len);
+                                result->device_name[len] = '\0';
+
+                                LOG_DEBUG("GetHardwareInfo: Resolved fallback device '%s' unit %d", result->device_name,
+                                          result->device_unit);
+                            }
+                        }
+                    }
                 }
             }
             IDOS->UnLockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_READ);

@@ -26,17 +26,32 @@ AmigaDiskBench is a modern, ReAction-based disk benchmarking utility for AmigaOS
 - `src/engine_diskinfo.c`: Disk enumeration and information retrieval (IDosMethod, etc.).
 - `src/gui_info.c`: Disk Information tab UI (Master-Detail with Tree View).
 
-## Recent Major Changes (v2.2.10)
+## Version History
+
+### v2.2.16: Disk Information & Hardware Scanning
+- **Structure**: Master-Detailed view with hierarchical ListBrowser categorized by Drive Type (Fixed, USB, Optical). Partitions are direct children of the drives.
+- **UI**: Automatic layout adjustment using `WM_RETHINK`; consistent labeling with `CHILD_MinWidth` and strict vertical shrink-wrapping.
+- **Real Scanning**: Replaced dummy data with actual `DosList` iteration (LDF_DEVICES), strictly filtering for storage devices (SCSI, IDE, USB, NVMe) while excluding serial/parallel ports.
+- **SCSI Inquiry**: Enhanced to identify CD/DVD drives by Peripheral Device Type (0x05). Implemented logic to SKIP VPD Page 0x80 queries for CD-ROMs to prevent system freezes.
+- **Stability**: Wrapped `IDOS->Lock` calls with `SetProcWindow((APTR)-1)` to suppress "No Disk" system requesters on empty drives.
+- **Filesystem Display**: Standardized `GetDosTypeString` to format DOS types as `ABC/XX` (Hex).
+- **UI Hotfixes**: Resolved a DSI Exception by migrating string pointers for `GA_Text` attributes from the stack to static memory.
+
+### v2.2.14: Finalizing Release
+- **Build**: Bumped build number to release target.
+- **Configuration**: Disabled debug switch for release builds.
+- **Documentation**: Formatted and updated core code comments.
+
+### v2.2.11: CSV Export & UI Enhancements
+- **Architecture Highlights**: ReAction-based GUI, multi-threaded benchmark engine, CSV history persistence.
+- **Knowledge Transfer**: Refer to [KNOWLEDGE_TRANSFER.md](file:///w:/Code/amiga/antigravity/projects/AmigaDiskBench/KNOWLEDGE_TRANSFER.md) for detailed technical patterns and learnings.
+
+### v2.2.10: Visualization & Usability Update
 - **Visualization Enhancements**: X-axis changed to Block Size; auto-refresh on tab switch.
 - **Bubble Help**: Comprehensive tooltips (`GA_HintInfo`) added to most controls.
 - **Variable Block Sizes**: Random tests now support user-selected block sizes (fixed-4KB behavior removed).
 - **Stability Fixes**: Resolved multiple DSI crashes related to CSV export (alignment/varargs issues) and color allocation.
 - **Visual Indicators**: Added Traffic Light (status) and Fuel Gauge (progress).
-
-### v2.2.16: Disk Information Tab
-- **Structure**: Master-Detailed view with hierarchical ListBrowser ("Disks" > "Drives" > "Partitions").
-- **UI**: Automatic layout adjustment using `WM_RETHINK`; consistent labeling with `CHILD_MinWidth` and `LAYOUT_VertAlignment`.
-- **Backend**: `interactive` device attributes queried via `IDos->DosMethod`.
 
 ## Known Quirks & Gotchas
 - **AllocListBrowserNode**: In the current SDK (54.16), explicitly passing the `IListBrowser` pointer as the first argument to `AllocListBrowserNode` can cause type-mismatch warnings or errors depending on how the prototypes are resolved. Stick to the format: `AllocListBrowserNode(column_count, TAGS...)`.
@@ -50,19 +65,6 @@ AmigaDiskBench is a modern, ReAction-based disk benchmarking utility for AmigaOS
 - **`debug.h`**: Toggle `ENABLE_DEBUG_LOGGING` to enable/disable detailed traces.
 
 ## Future Roadmap
-
-### v2.2.11: CSV Export & UI Enhancements [DONE]
-- **Current Version**: 2.2.11 (build 1016)
-- **Status**: Stable / Development
-- **Last Sync**: 18.02.2026
-- **Architecture Highlights**: ReAction-based GUI, multi-threaded benchmark engine, CSV history persistence.
-- **Knowledge Transfer**: Refer to [KNOWLEDGE_TRANSFER.md](file:///w:/Code/amiga/antigravity/projects/AmigaDiskBench/KNOWLEDGE_TRANSFER.md) for detailed technical patterns and learnings.
-
-### v2.2.16: Real Disk Scanning & CD-ROM Fixes
-- **Real Scanning**: Replaced dummy data with actual `DosList` iteration (LDF_DEVICES), strictly filtering for storage devices (SCSI, IDE, USB, NVMe) while excluding serial/parallel ports.
-- **SCSI Inquiry**: Enhanced to identify CD/DVD drives by Peripheral Device Type (0x05). Implemented logic to SKIP VPD Page 0x80 queries for CD-ROMs to prevent system freezes on unsupported hardware.
-- **Stability**: Wrapped `IDOS->Lock` calls with `SetProcWindow((APTR)-1)` to suppress "No Disk" system requesters on empty drives.
-- **Filesystem Display**: Standardized `GetDosTypeString` to format DOS types as `ABC/XX` (Hex), fixing "SFS." display issues.
 
 ### v2.2.12: S.M.A.R.T. Integration
 - **Retrieval**: Investigate S.M.A.R.T. information retrieval mechanisms for AmigaOS 4.1.

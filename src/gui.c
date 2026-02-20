@@ -191,13 +191,16 @@ int StartGUI(void)
     struct List tab_list;
     IExec->NewList(&tab_list);
     struct Node *tab_bench = IClickTab->AllocClickTabNode(TNA_Text, GetString(1, "Benchmark"), TNA_Number, 0, TAG_DONE);
-    struct Node *tab_history = IClickTab->AllocClickTabNode(TNA_Text, GetString(2, "History"), TNA_Number, 1, TAG_DONE);
+    struct Node *tab_diskinfo = IClickTab->AllocClickTabNode(TNA_Text, "Disk Info", TNA_Number, 1, TAG_DONE);
+    struct Node *tab_history = IClickTab->AllocClickTabNode(TNA_Text, GetString(2, "History"), TNA_Number, 2, TAG_DONE);
     struct Node *tab_viz =
-        IClickTab->AllocClickTabNode(TNA_Text, GetString(15, "Visualization"), TNA_Number, 2, TAG_DONE);
-    struct Node *tab_health = IClickTab->AllocClickTabNode(TNA_Text, "Drive Health", TNA_Number, 3, TAG_DONE);
-    struct Node *tab_bulk = IClickTab->AllocClickTabNode(TNA_Text, GetString(16, "Bulk"), TNA_Number, 4, TAG_DONE);
+        IClickTab->AllocClickTabNode(TNA_Text, GetString(15, "Visualization"), TNA_Number, 3, TAG_DONE);
+    struct Node *tab_health = IClickTab->AllocClickTabNode(TNA_Text, "Drive Health", TNA_Number, 4, TAG_DONE);
+    struct Node *tab_bulk = IClickTab->AllocClickTabNode(TNA_Text, GetString(16, "Bulk"), TNA_Number, 5, TAG_DONE);
     if (tab_bench)
         IExec->AddTail(&tab_list, tab_bench);
+    if (tab_diskinfo)
+        IExec->AddTail(&tab_list, tab_diskinfo);
     if (tab_history)
         IExec->AddTail(&tab_list, tab_history);
     if (tab_viz)
@@ -262,6 +265,7 @@ int StartGUI(void)
         }
 
         RefreshDriveList();
+        RefreshDiskInfoTree(); // Populate Disk Info tab early
         LoadPrefs();
         UpdateBulkTabInfo();
 
@@ -353,10 +357,10 @@ int StartGUI(void)
                 while ((result = IIntuition->IDoMethod(ui.win_obj, WM_HANDLEINPUT, &code)) != WMHI_LASTMSG) {
                     /* Handle Mouse Move for Visualization Hover */
                     if ((result & WMHI_CLASSMASK) == WMHI_MOUSEMOVE) {
-                        /* Check only if Visualization tab is active (Page 2) */
+                        /* Check only if Visualization tab is active (Page 3) */
                         uint32 t = 0;
                         IIntuition->GetAttr(CLICKTAB_Current, ui.tabs, &t);
-                        if (t == 2 && ui.window) {
+                        if (t == 3 && ui.window) {
                             VizCheckHover(ui.window->MouseX, ui.window->MouseY);
                         }
                     }

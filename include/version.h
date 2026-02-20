@@ -30,7 +30,7 @@
 #define VERSION 2
 #define REVISION 2
 #define MINOR 16
-#define BUILD 1034
+#define BUILD 1037
 #define APP_DATE "20.02.2026"
 #define APP_TITLE "AmigaDiskBench"
 #define VERSION_STR STR(VERSION) "." STR(REVISION) "." STR(MINOR) "." STR(BUILD)

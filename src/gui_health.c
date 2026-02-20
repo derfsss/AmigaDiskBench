@@ -47,16 +47,10 @@ void UpdateHealthUI(const char *volume)
         if (GetSmartData(device, unit, &ui.current_health)) {
             RefreshHealthTab();
         } else {
-            static char err_buf[256];
-            if (!ui.current_health.driver_supported) {
-                snprintf(err_buf, sizeof(err_buf), "Driver (%s) does not support S.M.A.R.T. PT", device);
-            } else {
-                snprintf(err_buf, sizeof(err_buf), "S.M.A.R.T. not supported by %s (Unit %u)", device,
-                         (unsigned int)unit);
-            }
-
+            /* Error message is now populated in health_summary by GetSmartData */
             IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_status_label, ui.window, NULL, GA_Text,
-                                              (uint32)err_buf, TAG_DONE);
+                                              (uint32)ui.current_health.health_summary, TAG_DONE);
+
             IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_temp_label, ui.window, NULL, GA_Text,
                                               (uint32) "Temp: N/A", TAG_DONE);
             IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_power_label, ui.window, NULL, GA_Text,

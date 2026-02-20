@@ -317,8 +317,13 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             uint32 t = 0;
             IIntuition->GetAttr(CLICKTAB_Current, ui.tabs, &t);
 
-            /* Auto-Refresh History when switching to Visualization Tab (Index 2) */
-            if (t == 2UL) {
+            /* Auto-Refresh Disk Info when switching to Disk Info Tab (Index 1) */
+            if (t == 1UL) {
+                RefreshDiskInfoTree();
+            }
+
+            /* Auto-Refresh History when switching to Visualization Tab (Index 3) */
+            if (t == 3UL) {
                 RefreshHistory();
                 /* NOTE: RefreshHistory() usually triggers a UI update, but since we are in
                    HandleEvents, the Visualization update is triggered separately by
@@ -329,8 +334,8 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             /* Update Page visibility */
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.page_obj, ui.window, NULL, PAGE_Current, t, TAG_DONE);
 
-            /* Handle Health Tab Switch (Index 3) */
-            if (t == 3UL) {
+            /* Handle Health Tab Switch (Index 4) */
+            if (t == 4UL) {
                 struct Node *vn = NULL;
                 IIntuition->GetAttr(CHOOSER_SelectedNode, ui.health_target_chooser, (uint32 *)&vn);
                 if (vn) {
@@ -342,8 +347,8 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
                 }
             }
 
-            /* Refresh Bulk Tab Info when switching tabs (Tab 4 is Bulk) */
-            if (t == 4UL) {
+            /* Refresh Bulk Tab Info when switching tabs (Tab 5 is Bulk) */
+            if (t == 5UL) {
                 UpdateBulkTabInfo();
             }
             break;
@@ -434,6 +439,9 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             }
             break;
         }
+        case GID_DISKINFO_TREE:
+            HandleDiskInfoEvent(result);
+            break;
         case GID_BULK_ALL_TESTS:
         case GID_BULK_ALL_BLOCKS:
             UpdateBulkTabInfo();

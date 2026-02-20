@@ -27,7 +27,7 @@
 #include <proto/exec.h>
 
 /* Global Debug Switch */
-#define DEBUG_ENABLED 0
+#define DEBUG_ENABLED 1
 
 /* Debug Macro */
 #if DEBUG_ENABLED

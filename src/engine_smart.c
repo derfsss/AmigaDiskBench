@@ -118,6 +118,9 @@ BOOL GetSmartData(const char *device_name, uint32 unit, SmartData *out_data)
             if (IExec->DoIO((struct IORequest *)io) == 0 && cmd.scsi_Actual == 512) {
                 cmd_success = TRUE;
             } else {
+                LOG_DEBUG("GetSmartData: 16-byte PT failed (IOErr=%d, Status=%d). Trying 12-byte fallback...",
+                          io->io_Error, cmd.scsi_Status);
+
                 /* FALLBACK: ATA PASS-THROUGH (12) - Secondary attempt for older drivers like a1ide.device */
                 memset(cdb, 0, sizeof(cdb));
                 cdb[0] = 0xA1;
@@ -134,7 +137,9 @@ BOOL GetSmartData(const char *device_name, uint32 unit, SmartData *out_data)
                 cmd.scsi_CmdLength = 12;
                 if (IExec->DoIO((struct IORequest *)io) == 0 && cmd.scsi_Actual == 512) {
                     cmd_success = TRUE;
-                    LOG_DEBUG("GetSmartData: 16-byte PT failed, but 12-byte PT succeeded.");
+                    LOG_DEBUG("GetSmartData: 12-byte PT succeeded.");
+                } else {
+                    LOG_DEBUG("GetSmartData: 12-byte PT failed (IOErr=%d, Status=%d).", io->io_Error, cmd.scsi_Status);
                 }
             }
 
@@ -192,14 +197,17 @@ BOOL GetSmartData(const char *device_name, uint32 unit, SmartData *out_data)
                 snprintf(out_data->health_summary, sizeof(out_data->health_summary),
                          out_data->overall_status == SMART_STATUS_OK ? "Drive is healthy." : "Drive issues detected!");
             } else {
-                snprintf(out_data->health_summary, sizeof(out_data->health_summary), "S.M.A.R.T. command failed.");
+                snprintf(out_data->health_summary, sizeof(out_data->health_summary),
+                         "S.M.A.R.T. command failed (IOErr=%d). Driver may not support ATA Passthrough.", io->io_Error);
                 out_data->supported = FALSE;
                 out_data->driver_supported = FALSE;
+                LOG_DEBUG("GetSmartData: Command Sequence Failed completely.");
             }
             IExec->CloseDevice((struct IORequest *)io);
         } else {
-            snprintf(out_data->health_summary, sizeof(out_data->health_summary), "Failed to open device %s.",
-                     device_name);
+            LOG_DEBUG("GetSmartData: OpenDevice failed for '%s' unit %d.", device_name, unit);
+            snprintf(out_data->health_summary, sizeof(out_data->health_summary), "Failed to open device '%s' unit %d.",
+                     device_name, (int)unit);
         }
     }
 

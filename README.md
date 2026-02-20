@@ -45,6 +45,13 @@ Automate your benchmarking workflow:
 - **Export**: Export specific datasets to CSV for external analysis (Excel, Sheets).
 - **Reports**: Generate global summary reports of all text activities.
 
+### 6. Detailed Disk Information (New!)
+Inspect the physical and logical structure of your storage:
+- **Tree View**: Hierarchical display of Physical Drives and their Partitions.
+- **Physical Details**: Manufacturer, Model, Serial, Bus Type, Geometry, and Capacity.
+- **Partition Details**: Volume Name, Size, Used/Free Space, Filesystem, and Block size.
+- **Real-Time Updates**: Data refreshes automatically when devices are added or removed.
+
 ## Requirements
 
 *   **AmigaOS 4.1 Final Edition** (or newer).
@@ -90,7 +97,11 @@ AmigaDiskBench is open source and can be cross-compiled using a Docker-based too
 From the project root:
 
 ```bash
-docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make all
+# Clean previous builds (optional but recommended)
+docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make clean
+
+# Build with 4 cores
+docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make -j4
 ```
 
 This will produce the `AmigaDiskBench` executable in the `dist` folder.

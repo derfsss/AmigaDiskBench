@@ -14,7 +14,7 @@ SRC = src/main.c src/engine.c src/engine_info.c src/engine_tests.c src/engine_pe
       src/workloads/workload_profiler.c \
       src/workloads/workload_sequential_read.c src/workloads/workload_random_4k_read.c \
       src/workloads/workload_mixed_rw.c \
-      src/gui.c src/gui_details_window.c src/gui_compare_window.c src/gui_utils.c src/gui_prefs.c src/gui_history.c src/gui_system.c src/gui_worker.c src/gui_report.c src/gui_layout.c src/gui_events.c src/gui_viz.c src/gui_viz_render.c src/gui_bulk.c src/gui_export.c src/gui_health.c src/engine_smart.c src/benchmark_queue.c
+      src/gui.c src/gui_details_window.c src/gui_compare_window.c src/gui_utils.c src/gui_prefs.c src/gui_history.c src/gui_system.c src/gui_worker.c src/gui_report.c src/gui_layout.c src/gui_events.c src/gui_viz.c src/gui_viz_render.c src/gui_bulk.c src/gui_export.c src/gui_health.c src/gui_info.c src/engine_smart.c src/engine_diskinfo.c src/benchmark_queue.c
 OBJ = $(patsubst src/%.c, $(BUILD_DIR)/%.o, $(SRC))
 
 all: $(BUILD_DIR) $(TARGET)

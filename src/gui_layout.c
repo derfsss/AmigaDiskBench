@@ -71,7 +71,7 @@ static struct ColumnInfo health_cols[] = {{30, "ID", CIF_SORTABLE},     {180, "A
 Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
 {
     /* Helper macro to maintain readability for the deep nesting */
-    Object *page0, *page1, *page2, *page3, *page4;
+    Object *page0, *page_diskinfo, *page1, *page2, *page3, *page4;
 
     /* Refactored Page 0 (Benchmark) using standard ReAction macros */
     page0 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_Label,
@@ -255,19 +255,22 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
         {NM_ITEM, (STRPTR) "Quit", (STRPTR) "Q", 0, 0, (APTR)MID_QUIT},
         {NM_END, NULL, NULL, 0, 0, NULL}};
 
+    /* Page DiskInfo */
+    page_diskinfo = CreateDiskInfoPage();
+
     Object *main_content = NULL;
-    if (ui.PageAvailable && page0 && page1 && page2 && page3 && page4 && tab_list) {
-        ui.page_obj =
-            IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page0, PAGE_Add, (uint32)page1, PAGE_Add,
-                                  (uint32)page2, PAGE_Add, (uint32)page4, /* Health before Bulk? Or same as tabs? */
-                                  PAGE_Add, (uint32)page3, TAG_DONE);
+    if (ui.PageAvailable && page0 && page_diskinfo && page1 && page2 && page3 && page4 && tab_list) {
+        ui.page_obj = IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page0, PAGE_Add,
+                                            (uint32)page_diskinfo, PAGE_Add, (uint32)page1, PAGE_Add, (uint32)page2,
+                                            PAGE_Add, (uint32)page4, /* Health before Bulk? Or same as tabs? */
+                                            PAGE_Add, (uint32)page3, TAG_DONE);
         ui.tabs = ClickTabObject, GA_ID, GID_TABS, GA_RelVerify, TRUE, CLICKTAB_Labels, (uint32)tab_list,
         CLICKTAB_PageGroup, (uint32)ui.page_obj, End;
         main_content = ui.tabs;
     } else {
         LOG_DEBUG("CreateMainLayout: Using vertical fallback layout (components missing)");
-        main_content = VLayoutObject, LAYOUT_AddChild, page0, LAYOUT_AddChild, page1, LAYOUT_AddChild, page2,
-        LAYOUT_AddChild, page4, LAYOUT_AddChild, page3, End;
+        main_content = VLayoutObject, LAYOUT_AddChild, page0, LAYOUT_AddChild, page_diskinfo, LAYOUT_AddChild, page1,
+        LAYOUT_AddChild, page2, LAYOUT_AddChild, page4, LAYOUT_AddChild, page3, End;
         ui.tabs = NULL;
         ui.page_obj = NULL;
     }
