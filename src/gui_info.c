@@ -41,7 +41,7 @@ static void ClearInfoTree(void)
 {
     struct Node *node;
     if (ui.diskinfo_tree) {
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_tree, ui.window, NULL, LISTBROWSER_Labels, NULL,
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_tree, ui.window, NULL, LISTBROWSER_Labels, (ULONG)-1,
                                    TAG_DONE);
     }
 

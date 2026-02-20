@@ -27,11 +27,17 @@
 #include <proto/exec.h>
 
 /* Global Debug Switch */
-#define DEBUG_ENABLED 0
+#define DEBUG_ENABLED 1
 
-/* Debug Macro */
+/* Debug Macro - Filtered to diskinfo modules */
 #if DEBUG_ENABLED
-#define LOG_DEBUG(fmt, ...) IExec->DebugPrintF("[AmigaDiskBench] %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#include <string.h>
+#define LOG_DEBUG(fmt, ...)                                                                                            \
+    do {                                                                                                               \
+        if (strstr(__FILE__, "diskinfo") != NULL || strstr(__FILE__, "gui_info") != NULL) {                            \
+            IExec->DebugPrintF("[AmigaDiskBench] %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);                \
+        }                                                                                                              \
+    } while (0)
 #else
 #define LOG_DEBUG(fmt, ...)                                                                                            \
     do {                                                                                                               \

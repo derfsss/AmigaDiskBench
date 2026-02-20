@@ -34,6 +34,17 @@ static void StripTrailingSpaces(char *str, uint32 len)
     }
 }
 
+static void SanitizeString(char *str)
+{
+    while (*str) {
+        // Replace non-printable ascii characters with spaces to prevent graphics.library DSI crashes
+        if ((unsigned char)*str < 32 || (unsigned char)*str > 126) {
+            *str = ' ';
+        }
+        str++;
+    }
+}
+
 const char *BusTypeToString(BusType type)
 {
     switch (type) {
@@ -399,10 +410,17 @@ static void EnrichPhysicalDrive(PhysicalDrive *drive)
     }
     IExec->FreeSysObject(ASOT_PORT, port);
 
+    IExec->FreeSysObject(ASOT_PORT, port);
+
+    // Sanitize any garbage returned by arbitrary device drivers
+    SanitizeString(drive->vendor);
+    SanitizeString(drive->product);
+    SanitizeString(drive->revision);
+
     // Final cleanup of strings
-    if (strlen(drive->vendor) == 0)
+    if (strlen(drive->vendor) == 0 || strncmp(drive->vendor, "        ", 8) == 0)
         snprintf(drive->vendor, sizeof(drive->vendor), "Generic");
-    if (strlen(drive->product) == 0)
+    if (strlen(drive->product) == 0 || strncmp(drive->product, "                ", 16) == 0)
         snprintf(drive->product, sizeof(drive->product), "Storage Device");
 }
 

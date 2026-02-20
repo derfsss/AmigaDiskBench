@@ -1,0 +1,1887 @@
+
+build/gui_info.o:     file format elf32-powerpc-amigaos
+
+
+Disassembly of section .text:
+
+00000000 <RefreshDiskInfoTree>:
+RefreshDiskInfoTree():
+       0:	94 21 fe 60 	stwu    r1,-416(r1)
+       4:	7c 08 02 a6 	mflr    r0
+       8:	92 61 01 6c 	stw     r19,364(r1)
+       c:	3e 60 00 00 	lis     r19,0
+      10:	3a 73 00 00 	addi    r19,r19,0
+      14:	90 01 01 a4 	stw     r0,420(r1)
+      18:	80 93 10 68 	lwz     r4,4200(r19)
+      1c:	93 21 01 84 	stw     r25,388(r1)
+      20:	2c 04 00 00 	cmpwi   r4,0
+      24:	93 41 01 88 	stw     r26,392(r1)
+      28:	93 61 01 8c 	stw     r27,396(r1)
+      2c:	93 81 01 90 	stw     r28,400(r1)
+      30:	93 a1 01 94 	stw     r29,404(r1)
+      34:	93 c1 01 98 	stw     r30,408(r1)
+      38:	93 e1 01 9c 	stw     r31,412(r1)
+      3c:	41 82 00 3c 	beq     78 <RefreshDiskInfoTree+0x78>
+      40:	3d 20 85 00 	lis     r9,-31488
+      44:	39 40 00 00 	li      r10,0
+      48:	80 b3 00 04 	lwz     r5,4(r19)
+      4c:	61 29 30 03 	ori     r9,r9,12291
+      50:	91 41 00 10 	stw     r10,16(r1)
+      54:	3d 00 00 00 	lis     r8,0
+      58:	91 21 00 08 	stw     r9,8(r1)
+      5c:	38 c0 00 00 	li      r6,0
+      60:	91 41 00 0c 	stw     r10,12(r1)
+      64:	80 68 00 00 	lwz     r3,0(r8)
+      68:	81 23 02 10 	lwz     r9,528(r3)
+      6c:	7d 29 03 a6 	mtctr   r9
+      70:	4c c6 32 42 	crset   4*cr1+eq
+      74:	4e 80 04 21 	bctrl
+      78:	3f 60 00 00 	lis     r27,0
+      7c:	3f 40 85 00 	lis     r26,-31488
+      80:	3d 20 00 00 	lis     r9,0
+      84:	3b 7b 00 00 	addi    r27,r27,0
+      88:	3b e9 00 00 	addi    r31,r9,0
+      8c:	63 5a 35 03 	ori     r26,r26,13571
+      90:	3b 80 00 00 	li      r28,0
+      94:	3f a0 00 00 	lis     r29,0
+      98:	3b 21 00 30 	addi    r25,r1,48
+      9c:	48 00 00 7c 	b       118 <RefreshDiskInfoTree+0x118>
+      a0:	93 81 00 10 	stw     r28,16(r1)
+      a4:	93 21 00 0c 	stw     r25,12(r1)
+      a8:	93 41 00 08 	stw     r26,8(r1)
+      ac:	80 7d 00 00 	lwz     r3,0(r29)
+      b0:	93 81 00 30 	stw     r28,48(r1)
+      b4:	81 23 00 68 	lwz     r9,104(r3)
+      b8:	7d 29 03 a6 	mtctr   r9
+      bc:	4c c6 32 42 	crset   4*cr1+eq
+      c0:	4e 80 04 21 	bctrl
+      c4:	81 21 00 30 	lwz     r9,48(r1)
+      c8:	2c 09 00 00 	cmpwi   r9,0
+      cc:	41 82 00 38 	beq     104 <RefreshDiskInfoTree+0x104>
+      d0:	80 89 00 08 	lwz     r4,8(r9)
+      d4:	2c 04 00 00 	cmpwi   r4,0
+      d8:	41 82 00 18 	beq     f0 <RefreshDiskInfoTree+0xf0>
+      dc:	80 7f 00 00 	lwz     r3,0(r31)
+      e0:	81 23 00 ac 	lwz     r9,172(r3)
+      e4:	7d 29 03 a6 	mtctr   r9
+      e8:	4e 80 04 21 	bctrl
+      ec:	81 21 00 30 	lwz     r9,48(r1)
+      f0:	80 7f 00 00 	lwz     r3,0(r31)
+      f4:	7d 24 4b 78 	mr      r4,r9
+      f8:	81 23 00 ac 	lwz     r9,172(r3)
+      fc:	7d 29 03 a6 	mtctr   r9
+     100:	4e 80 04 21 	bctrl
+     104:	80 7d 00 00 	lwz     r3,0(r29)
+     108:	7f c4 f3 78 	mr      r4,r30
+     10c:	81 23 00 58 	lwz     r9,88(r3)
+     110:	7d 29 03 a6 	mtctr   r9
+     114:	4e 80 04 21 	bctrl
+     118:	80 7f 00 00 	lwz     r3,0(r31)
+     11c:	7f 64 db 78 	mr      r4,r27
+     120:	81 23 00 d0 	lwz     r9,208(r3)
+     124:	7d 29 03 a6 	mtctr   r9
+     128:	4e 80 04 21 	bctrl
+     12c:	7c 7e 1b 79 	mr.     r30,r3
+     130:	7f c4 f3 78 	mr      r4,r30
+     134:	40 82 ff 6c 	bne     a0 <RefreshDiskInfoTree+0xa0>
+     138:	80 7f 00 00 	lwz     r3,0(r31)
+     13c:	7f 64 db 78 	mr      r4,r27
+     140:	81 23 02 d4 	lwz     r9,724(r3)
+     144:	7d 29 03 a6 	mtctr   r9
+     148:	4e 80 04 21 	bctrl
+     14c:	48 00 00 01 	bl      14c <RefreshDiskInfoTree+0x14c>
+     150:	7c 69 1b 79 	mr.     r9,r3
+     154:	91 21 01 40 	stw     r9,320(r1)
+     158:	41 82 06 30 	beq     788 <RefreshDiskInfoTree+0x788>
+     15c:	80 7b 00 10 	lwz     r3,16(r27)
+     160:	91 e1 01 5c 	stw     r15,348(r1)
+     164:	2c 03 00 00 	cmpwi   r3,0
+     168:	92 21 01 64 	stw     r17,356(r1)
+     16c:	92 41 01 68 	stw     r18,360(r1)
+     170:	92 81 01 70 	stw     r20,368(r1)
+     174:	92 a1 01 74 	stw     r21,372(r1)
+     178:	92 c1 01 78 	stw     r22,376(r1)
+     17c:	93 01 01 80 	stw     r24,384(r1)
+     180:	41 82 00 08 	beq     188 <RefreshDiskInfoTree+0x188>
+     184:	48 00 00 01 	bl      184 <RefreshDiskInfoTree+0x184>
+     188:	81 21 01 40 	lwz     r9,320(r1)
+     18c:	3d 40 00 00 	lis     r10,0
+     190:	3f 00 80 00 	lis     r24,-32768
+     194:	80 ca 00 00 	lwz     r6,0(r10)
+     198:	3f 20 80 00 	lis     r25,-32768
+     19c:	3e 80 85 00 	lis     r20,-31488
+     1a0:	91 3b 00 10 	stw     r9,16(r27)
+     1a4:	39 2a 00 00 	addi    r9,r10,0
+     1a8:	3d 40 85 00 	lis     r10,-31488
+     1ac:	80 e9 00 04 	lwz     r7,4(r9)
+     1b0:	61 4a 35 02 	ori     r10,r10,13570
+     1b4:	3e a0 85 00 	lis     r21,-31488
+     1b8:	81 09 00 08 	lwz     r8,8(r9)
+     1bc:	3d 20 00 00 	lis     r9,0
+     1c0:	3e c0 85 00 	lis     r22,-31488
+     1c4:	39 29 00 00 	addi    r9,r9,0
+     1c8:	90 c1 01 30 	stw     r6,304(r1)
+     1cc:	3e 40 00 00 	lis     r18,0
+     1d0:	90 e1 01 34 	stw     r7,308(r1)
+     1d4:	63 18 00 06 	ori     r24,r24,6
+     1d8:	63 39 00 01 	ori     r25,r25,1
+     1dc:	91 01 01 38 	stw     r8,312(r1)
+     1e0:	62 94 35 0c 	ori     r20,r20,13580
+     1e4:	62 b5 35 03 	ori     r21,r21,13571
+     1e8:	91 41 01 44 	stw     r10,324(r1)
+     1ec:	62 d6 35 05 	ori     r22,r22,13573
+     1f0:	3a 52 00 00 	addi    r18,r18,0
+     1f4:	91 21 01 48 	stw     r9,328(r1)
+     1f8:	3a 21 01 30 	addi    r17,r1,304
+     1fc:	3b 80 00 00 	li      r28,0
+     200:	80 7f 00 00 	lwz     r3,0(r31)
+     204:	80 81 01 40 	lwz     r4,320(r1)
+     208:	81 23 03 28 	lwz     r9,808(r3)
+     20c:	7d 29 03 a6 	mtctr   r9
+     210:	4e 80 04 21 	bctrl
+     214:	7c 69 1b 79 	mr.     r9,r3
+     218:	40 a2 00 1c 	bne     234 <RefreshDiskInfoTree+0x234>
+     21c:	48 00 00 e4 	b       300 <RefreshDiskInfoTree+0x300>
+     220:	81 28 03 30 	lwz     r9,816(r8)
+     224:	7d 29 03 a6 	mtctr   r9
+     228:	4e 80 04 21 	bctrl
+     22c:	7c 69 1b 79 	mr.     r9,r3
+     230:	41 82 00 d0 	beq     300 <RefreshDiskInfoTree+0x300>
+     234:	80 e9 00 c8 	lwz     r7,200(r9)
+     238:	7d 24 4b 78 	mr      r4,r9
+     23c:	39 40 00 02 	li      r10,2
+     240:	81 1f 00 00 	lwz     r8,0(r31)
+     244:	2c 07 00 03 	cmpwi   r7,3
+     248:	7d 03 43 78 	mr      r3,r8
+     24c:	41 82 00 14 	beq     260 <RefreshDiskInfoTree+0x260>
+     250:	81 49 00 c4 	lwz     r10,196(r9)
+     254:	69 4a 00 04 	xori    r10,r10,4
+     258:	7d 4a 00 34 	cntlzw  r10,r10
+     25c:	55 4a d9 7e 	srwi    r10,r10,5
+     260:	7c 0a e0 00 	cmpw    r10,r28
+     264:	40 82 ff bc 	bne     220 <RefreshDiskInfoTree+0x220>
+     268:	3b c0 00 00 	li      r30,0
+     26c:	39 20 10 00 	li      r9,4096
+     270:	93 01 00 10 	stw     r24,16(r1)
+     274:	93 21 00 08 	stw     r25,8(r1)
+     278:	7d 03 43 78 	mr      r3,r8
+     27c:	38 80 00 0c 	li      r4,12
+     280:	93 c1 00 18 	stw     r30,24(r1)
+     284:	93 c1 00 14 	stw     r30,20(r1)
+     288:	91 21 00 0c 	stw     r9,12(r1)
+     28c:	81 28 03 a8 	lwz     r9,936(r8)
+     290:	7d 29 03 a6 	mtctr   r9
+     294:	4c c6 32 42 	crset   4*cr1+eq
+     298:	4e 80 04 21 	bctrl
+     29c:	2c 03 00 00 	cmpwi   r3,0
+     2a0:	41 82 00 60 	beq     300 <RefreshDiskInfoTree+0x300>
+     2a4:	81 11 00 00 	lwz     r8,0(r17)
+     2a8:	39 40 00 0c 	li      r10,12
+     2ac:	39 20 00 01 	li      r9,1
+     2b0:	80 e1 01 44 	lwz     r7,324(r1)
+     2b4:	38 80 00 01 	li      r4,1
+     2b8:	90 61 00 14 	stw     r3,20(r1)
+     2bc:	91 01 00 0c 	stw     r8,12(r1)
+     2c0:	3d 00 00 00 	lis     r8,0
+     2c4:	93 c1 00 28 	stw     r30,40(r1)
+     2c8:	39 e8 00 00 	addi    r15,r8,0
+     2cc:	90 e1 00 20 	stw     r7,32(r1)
+     2d0:	92 81 00 18 	stw     r20,24(r1)
+     2d4:	92 a1 00 10 	stw     r21,16(r1)
+     2d8:	92 c1 00 08 	stw     r22,8(r1)
+     2dc:	91 41 00 24 	stw     r10,36(r1)
+     2e0:	91 21 00 1c 	stw     r9,28(r1)
+     2e4:	80 68 00 00 	lwz     r3,0(r8)
+     2e8:	81 23 00 54 	lwz     r9,84(r3)
+     2ec:	7d 29 03 a6 	mtctr   r9
+     2f0:	4c c6 32 42 	crset   4*cr1+eq
+     2f4:	4e 80 04 21 	bctrl
+     2f8:	7c 65 1b 79 	mr.     r5,r3
+     2fc:	40 82 01 5c 	bne     458 <RefreshDiskInfoTree+0x458>
+     300:	3b 9c 00 01 	addi    r28,r28,1
+     304:	3a 31 00 04 	addi    r17,r17,4
+     308:	2c 1c 00 03 	cmpwi   r28,3
+     30c:	40 82 fe f4 	bne     200 <RefreshDiskInfoTree+0x200>
+     310:	80 93 10 68 	lwz     r4,4200(r19)
+     314:	2c 04 00 00 	cmpwi   r4,0
+     318:	41 82 04 54 	beq     76c <RefreshDiskInfoTree+0x76c>
+     31c:	3d 40 85 00 	lis     r10,-31488
+     320:	3d 20 85 00 	lis     r9,-31488
+     324:	93 61 00 0c 	stw     r27,12(r1)
+     328:	61 4a 30 10 	ori     r10,r10,12304
+     32c:	39 00 00 01 	li      r8,1
+     330:	80 b3 00 04 	lwz     r5,4(r19)
+     334:	61 29 30 03 	ori     r9,r9,12291
+     338:	3b c0 00 00 	li      r30,0
+     33c:	91 41 00 10 	stw     r10,16(r1)
+     340:	91 01 00 14 	stw     r8,20(r1)
+     344:	3f e0 00 00 	lis     r31,0
+     348:	38 c0 00 00 	li      r6,0
+     34c:	91 21 00 08 	stw     r9,8(r1)
+     350:	93 c1 00 18 	stw     r30,24(r1)
+     354:	80 7f 00 00 	lwz     r3,0(r31)
+     358:	81 23 02 10 	lwz     r9,528(r3)
+     35c:	7d 29 03 a6 	mtctr   r9
+     360:	4c c6 32 42 	crset   4*cr1+eq
+     364:	4e 80 04 21 	bctrl
+     368:	3d 20 00 00 	lis     r9,0
+     36c:	7f 64 db 78 	mr      r4,r27
+     370:	80 69 00 00 	lwz     r3,0(r9)
+     374:	81 23 03 28 	lwz     r9,808(r3)
+     378:	7d 29 03 a6 	mtctr   r9
+     37c:	4e 80 04 21 	bctrl
+     380:	2c 03 00 00 	cmpwi   r3,0
+     384:	41 82 00 6c 	beq     3f0 <RefreshDiskInfoTree+0x3f0>
+     388:	3d 20 85 00 	lis     r9,-31488
+     38c:	90 61 00 0c 	stw     r3,12(r1)
+     390:	38 c0 00 00 	li      r6,0
+     394:	61 29 30 05 	ori     r9,r9,12293
+     398:	93 c1 00 10 	stw     r30,16(r1)
+     39c:	91 21 00 08 	stw     r9,8(r1)
+     3a0:	80 7f 00 00 	lwz     r3,0(r31)
+     3a4:	80 b3 00 04 	lwz     r5,4(r19)
+     3a8:	81 23 02 10 	lwz     r9,528(r3)
+     3ac:	80 93 10 68 	lwz     r4,4200(r19)
+     3b0:	7d 29 03 a6 	mtctr   r9
+     3b4:	4c c6 32 42 	crset   4*cr1+eq
+     3b8:	4e 80 04 21 	bctrl
+     3bc:	3d 20 85 00 	lis     r9,-31488
+     3c0:	93 c1 00 10 	stw     r30,16(r1)
+     3c4:	38 c0 00 00 	li      r6,0
+     3c8:	61 29 72 03 	ori     r9,r9,29187
+     3cc:	93 c1 00 0c 	stw     r30,12(r1)
+     3d0:	91 21 00 08 	stw     r9,8(r1)
+     3d4:	80 7f 00 00 	lwz     r3,0(r31)
+     3d8:	80 b3 00 04 	lwz     r5,4(r19)
+     3dc:	81 23 02 10 	lwz     r9,528(r3)
+     3e0:	80 93 10 6c 	lwz     r4,4204(r19)
+     3e4:	7d 29 03 a6 	mtctr   r9
+     3e8:	4c c6 32 42 	crset   4*cr1+eq
+     3ec:	4e 80 04 21 	bctrl
+     3f0:	80 7f 00 00 	lwz     r3,0(r31)
+     3f4:	38 e0 00 01 	li      r7,1
+     3f8:	38 c0 00 00 	li      r6,0
+     3fc:	80 01 01 a4 	lwz     r0,420(r1)
+     400:	81 23 01 5c 	lwz     r9,348(r3)
+     404:	80 b3 00 04 	lwz     r5,4(r19)
+     408:	7c 08 03 a6 	mtlr    r0
+     40c:	80 93 10 68 	lwz     r4,4200(r19)
+     410:	7d 29 03 a6 	mtctr   r9
+     414:	81 e1 01 5c 	lwz     r15,348(r1)
+     418:	82 21 01 64 	lwz     r17,356(r1)
+     41c:	82 41 01 68 	lwz     r18,360(r1)
+     420:	82 81 01 70 	lwz     r20,368(r1)
+     424:	82 a1 01 74 	lwz     r21,372(r1)
+     428:	82 c1 01 78 	lwz     r22,376(r1)
+     42c:	83 01 01 80 	lwz     r24,384(r1)
+     430:	82 61 01 6c 	lwz     r19,364(r1)
+     434:	83 21 01 84 	lwz     r25,388(r1)
+     438:	83 41 01 88 	lwz     r26,392(r1)
+     43c:	83 61 01 8c 	lwz     r27,396(r1)
+     440:	83 81 01 90 	lwz     r28,400(r1)
+     444:	83 a1 01 94 	lwz     r29,404(r1)
+     448:	83 c1 01 98 	lwz     r30,408(r1)
+     44c:	83 e1 01 9c 	lwz     r31,412(r1)
+     450:	38 21 01 a0 	addi    r1,r1,416
+     454:	4e 80 04 20 	bctr
+     458:	80 7f 00 00 	lwz     r3,0(r31)
+     45c:	7f 64 db 78 	mr      r4,r27
+     460:	81 23 00 58 	lwz     r9,88(r3)
+     464:	7d 29 03 a6 	mtctr   r9
+     468:	4e 80 04 21 	bctrl
+     46c:	80 7f 00 00 	lwz     r3,0(r31)
+     470:	80 81 01 40 	lwz     r4,320(r1)
+     474:	81 23 03 28 	lwz     r9,808(r3)
+     478:	7d 29 03 a6 	mtctr   r9
+     47c:	4e 80 04 21 	bctrl
+     480:	7c 7d 1b 79 	mr.     r29,r3
+     484:	41 a2 fe 7c 	beq     300 <RefreshDiskInfoTree+0x300>
+     488:	91 c1 01 58 	stw     r14,344(r1)
+     48c:	92 01 01 60 	stw     r16,352(r1)
+     490:	92 e1 01 7c 	stw     r23,380(r1)
+     494:	48 00 00 20 	b       4b4 <RefreshDiskInfoTree+0x4b4>
+     498:	80 7f 00 00 	lwz     r3,0(r31)
+     49c:	7f a4 eb 78 	mr      r4,r29
+     4a0:	81 23 03 30 	lwz     r9,816(r3)
+     4a4:	7d 29 03 a6 	mtctr   r9
+     4a8:	4e 80 04 21 	bctrl
+     4ac:	7c 7d 1b 79 	mr.     r29,r3
+     4b0:	41 82 02 ac 	beq     75c <RefreshDiskInfoTree+0x75c>
+     4b4:	81 5d 00 c8 	lwz     r10,200(r29)
+     4b8:	39 20 00 02 	li      r9,2
+     4bc:	2c 0a 00 03 	cmpwi   r10,3
+     4c0:	41 82 00 14 	beq     4d4 <RefreshDiskInfoTree+0x4d4>
+     4c4:	81 3d 00 c4 	lwz     r9,196(r29)
+     4c8:	69 29 00 04 	xori    r9,r9,4
+     4cc:	7d 29 00 34 	cntlzw  r9,r9
+     4d0:	55 29 d9 7e 	srwi    r9,r9,5
+     4d4:	7c 09 e0 00 	cmpw    r9,r28
+     4d8:	40 a2 ff c0 	bne     498 <RefreshDiskInfoTree+0x498>
+     4dc:	3a e0 00 00 	li      r23,0
+     4e0:	3b c0 10 00 	li      r30,4096
+     4e4:	93 01 00 10 	stw     r24,16(r1)
+     4e8:	93 21 00 08 	stw     r25,8(r1)
+     4ec:	38 80 00 0c 	li      r4,12
+     4f0:	92 e1 00 18 	stw     r23,24(r1)
+     4f4:	92 e1 00 14 	stw     r23,20(r1)
+     4f8:	93 c1 00 0c 	stw     r30,12(r1)
+     4fc:	80 7f 00 00 	lwz     r3,0(r31)
+     500:	81 23 03 a8 	lwz     r9,936(r3)
+     504:	7d 29 03 a6 	mtctr   r9
+     508:	4c c6 32 42 	crset   4*cr1+eq
+     50c:	4e 80 04 21 	bctrl
+     510:	80 fd 00 30 	lwz     r7,48(r29)
+     514:	38 dd 00 0e 	addi    r6,r29,14
+     518:	38 80 00 80 	li      r4,128
+     51c:	80 a1 01 48 	lwz     r5,328(r1)
+     520:	7c 7a 1b 78 	mr      r26,r3
+     524:	38 61 00 b0 	addi    r3,r1,176
+     528:	4c c6 31 82 	crclr   4*cr1+eq
+     52c:	48 00 00 01 	bl      52c <RefreshDiskInfoTree+0x52c>
+     530:	2c 1a 00 00 	cmpwi   r26,0
+     534:	41 a2 ff 64 	beq     498 <RefreshDiskInfoTree+0x498>
+     538:	93 ba 00 00 	stw     r29,0(r26)
+     53c:	38 61 00 b0 	addi    r3,r1,176
+     540:	81 df 00 00 	lwz     r14,0(r31)
+     544:	48 00 00 01 	bl      544 <RefreshDiskInfoTree+0x544>
+     548:	92 e1 00 10 	stw     r23,16(r1)
+     54c:	93 c1 00 0c 	stw     r30,12(r1)
+     550:	7c 64 1b 78 	mr      r4,r3
+     554:	7d c3 73 78 	mr      r3,r14
+     558:	93 21 00 08 	stw     r25,8(r1)
+     55c:	38 84 00 01 	addi    r4,r4,1
+     560:	81 2e 03 a8 	lwz     r9,936(r14)
+     564:	7d 29 03 a6 	mtctr   r9
+     568:	4c c6 32 42 	crset   4*cr1+eq
+     56c:	4e 80 04 21 	bctrl
+     570:	2c 03 00 00 	cmpwi   r3,0
+     574:	90 7a 00 08 	stw     r3,8(r26)
+     578:	7c 69 1b 78 	mr      r9,r3
+     57c:	41 82 00 10 	beq     58c <RefreshDiskInfoTree+0x58c>
+     580:	38 81 00 b0 	addi    r4,r1,176
+     584:	48 00 00 01 	bl      584 <RefreshDiskInfoTree+0x584>
+     588:	81 3a 00 08 	lwz     r9,8(r26)
+     58c:	81 41 01 44 	lwz     r10,324(r1)
+     590:	39 00 00 00 	li      r8,0
+     594:	38 e0 00 02 	li      r7,2
+     598:	90 e1 00 1c 	stw     r7,28(r1)
+     59c:	38 80 00 01 	li      r4,1
+     5a0:	91 41 00 20 	stw     r10,32(r1)
+     5a4:	39 40 00 0c 	li      r10,12
+     5a8:	92 81 00 18 	stw     r20,24(r1)
+     5ac:	93 41 00 14 	stw     r26,20(r1)
+     5b0:	92 a1 00 10 	stw     r21,16(r1)
+     5b4:	91 21 00 0c 	stw     r9,12(r1)
+     5b8:	92 c1 00 08 	stw     r22,8(r1)
+     5bc:	91 01 00 28 	stw     r8,40(r1)
+     5c0:	91 41 00 24 	stw     r10,36(r1)
+     5c4:	80 6f 00 00 	lwz     r3,0(r15)
+     5c8:	81 23 00 54 	lwz     r9,84(r3)
+     5cc:	7d 29 03 a6 	mtctr   r9
+     5d0:	4c c6 32 42 	crset   4*cr1+eq
+     5d4:	4e 80 04 21 	bctrl
+     5d8:	7c 65 1b 79 	mr.     r5,r3
+     5dc:	41 a2 fe bc 	beq     498 <RefreshDiskInfoTree+0x498>
+     5e0:	80 7f 00 00 	lwz     r3,0(r31)
+     5e4:	7f 64 db 78 	mr      r4,r27
+     5e8:	81 23 00 58 	lwz     r9,88(r3)
+     5ec:	7d 29 03 a6 	mtctr   r9
+     5f0:	4e 80 04 21 	bctrl
+     5f4:	80 7f 00 00 	lwz     r3,0(r31)
+     5f8:	38 9d 02 ea 	addi    r4,r29,746
+     5fc:	81 23 03 28 	lwz     r9,808(r3)
+     600:	7d 29 03 a6 	mtctr   r9
+     604:	4e 80 04 21 	bctrl
+     608:	7c 7e 1b 79 	mr.     r30,r3
+     60c:	41 a2 fe 8c 	beq     498 <RefreshDiskInfoTree+0x498>
+     610:	3b 40 00 00 	li      r26,0
+     614:	3a e0 10 00 	li      r23,4096
+     618:	93 41 00 18 	stw     r26,24(r1)
+     61c:	38 80 00 0c 	li      r4,12
+     620:	93 41 00 14 	stw     r26,20(r1)
+     624:	93 01 00 10 	stw     r24,16(r1)
+     628:	92 e1 00 0c 	stw     r23,12(r1)
+     62c:	93 21 00 08 	stw     r25,8(r1)
+     630:	80 7f 00 00 	lwz     r3,0(r31)
+     634:	81 23 03 a8 	lwz     r9,936(r3)
+     638:	7d 29 03 a6 	mtctr   r9
+     63c:	4c c6 32 42 	crset   4*cr1+eq
+     640:	4e 80 04 21 	bctrl
+     644:	89 5e 00 2e 	lbz     r10,46(r30)
+     648:	7e 45 93 78 	mr      r5,r18
+     64c:	38 80 00 80 	li      r4,128
+     650:	7c 6e 1b 78 	mr      r14,r3
+     654:	38 de 00 0e 	addi    r6,r30,14
+     658:	2c 0a 00 00 	cmpwi   r10,0
+     65c:	38 61 00 30 	addi    r3,r1,48
+     660:	41 82 00 08 	beq     668 <RefreshDiskInfoTree+0x668>
+     664:	38 de 00 2e 	addi    r6,r30,46
+     668:	4c c6 31 82 	crclr   4*cr1+eq
+     66c:	48 00 00 01 	bl      66c <RefreshDiskInfoTree+0x66c>
+     670:	2c 0e 00 00 	cmpwi   r14,0
+     674:	38 61 00 30 	addi    r3,r1,48
+     678:	41 82 00 ac 	beq     724 <RefreshDiskInfoTree+0x724>
+     67c:	93 ae 00 00 	stw     r29,0(r14)
+     680:	93 ce 00 04 	stw     r30,4(r14)
+     684:	82 1f 00 00 	lwz     r16,0(r31)
+     688:	48 00 00 01 	bl      688 <RefreshDiskInfoTree+0x688>
+     68c:	93 41 00 10 	stw     r26,16(r1)
+     690:	92 e1 00 0c 	stw     r23,12(r1)
+     694:	7c 64 1b 78 	mr      r4,r3
+     698:	7e 03 83 78 	mr      r3,r16
+     69c:	93 21 00 08 	stw     r25,8(r1)
+     6a0:	38 84 00 01 	addi    r4,r4,1
+     6a4:	81 30 03 a8 	lwz     r9,936(r16)
+     6a8:	7d 29 03 a6 	mtctr   r9
+     6ac:	4c c6 32 42 	crset   4*cr1+eq
+     6b0:	4e 80 04 21 	bctrl
+     6b4:	38 81 00 30 	addi    r4,r1,48
+     6b8:	2c 03 00 00 	cmpwi   r3,0
+     6bc:	90 6e 00 08 	stw     r3,8(r14)
+     6c0:	7c 6a 1b 78 	mr      r10,r3
+     6c4:	41 82 00 0c 	beq     6d0 <RefreshDiskInfoTree+0x6d0>
+     6c8:	48 00 00 01 	bl      6c8 <RefreshDiskInfoTree+0x6c8>
+     6cc:	81 4e 00 08 	lwz     r10,8(r14)
+     6d0:	39 20 00 03 	li      r9,3
+     6d4:	93 41 00 20 	stw     r26,32(r1)
+     6d8:	38 80 00 01 	li      r4,1
+     6dc:	91 21 00 1c 	stw     r9,28(r1)
+     6e0:	92 81 00 18 	stw     r20,24(r1)
+     6e4:	91 c1 00 14 	stw     r14,20(r1)
+     6e8:	92 a1 00 10 	stw     r21,16(r1)
+     6ec:	91 41 00 0c 	stw     r10,12(r1)
+     6f0:	92 c1 00 08 	stw     r22,8(r1)
+     6f4:	80 6f 00 00 	lwz     r3,0(r15)
+     6f8:	81 23 00 54 	lwz     r9,84(r3)
+     6fc:	7d 29 03 a6 	mtctr   r9
+     700:	4c c6 32 42 	crset   4*cr1+eq
+     704:	4e 80 04 21 	bctrl
+     708:	7f 64 db 78 	mr      r4,r27
+     70c:	7c 65 1b 79 	mr.     r5,r3
+     710:	41 82 00 14 	beq     724 <RefreshDiskInfoTree+0x724>
+     714:	80 7f 00 00 	lwz     r3,0(r31)
+     718:	81 23 00 58 	lwz     r9,88(r3)
+     71c:	7d 29 03 a6 	mtctr   r9
+     720:	4e 80 04 21 	bctrl
+     724:	80 7f 00 00 	lwz     r3,0(r31)
+     728:	7f c4 f3 78 	mr      r4,r30
+     72c:	81 23 03 30 	lwz     r9,816(r3)
+     730:	7d 29 03 a6 	mtctr   r9
+     734:	4e 80 04 21 	bctrl
+     738:	7c 7e 1b 79 	mr.     r30,r3
+     73c:	40 82 fe dc 	bne     618 <RefreshDiskInfoTree+0x618>
+     740:	80 7f 00 00 	lwz     r3,0(r31)
+     744:	7f a4 eb 78 	mr      r4,r29
+     748:	81 23 03 30 	lwz     r9,816(r3)
+     74c:	7d 29 03 a6 	mtctr   r9
+     750:	4e 80 04 21 	bctrl
+     754:	7c 7d 1b 79 	mr.     r29,r3
+     758:	40 82 fd 5c 	bne     4b4 <RefreshDiskInfoTree+0x4b4>
+     75c:	81 c1 01 58 	lwz     r14,344(r1)
+     760:	82 01 01 60 	lwz     r16,352(r1)
+     764:	82 e1 01 7c 	lwz     r23,380(r1)
+     768:	4b ff fb 98 	b       300 <RefreshDiskInfoTree+0x300>
+     76c:	81 e1 01 5c 	lwz     r15,348(r1)
+     770:	82 21 01 64 	lwz     r17,356(r1)
+     774:	82 41 01 68 	lwz     r18,360(r1)
+     778:	82 81 01 70 	lwz     r20,368(r1)
+     77c:	82 a1 01 74 	lwz     r21,372(r1)
+     780:	82 c1 01 78 	lwz     r22,376(r1)
+     784:	83 01 01 80 	lwz     r24,384(r1)
+     788:	80 01 01 a4 	lwz     r0,420(r1)
+     78c:	82 61 01 6c 	lwz     r19,364(r1)
+     790:	83 21 01 84 	lwz     r25,388(r1)
+     794:	7c 08 03 a6 	mtlr    r0
+     798:	83 41 01 88 	lwz     r26,392(r1)
+     79c:	83 61 01 8c 	lwz     r27,396(r1)
+     7a0:	83 81 01 90 	lwz     r28,400(r1)
+     7a4:	83 a1 01 94 	lwz     r29,404(r1)
+     7a8:	83 c1 01 98 	lwz     r30,408(r1)
+     7ac:	83 e1 01 9c 	lwz     r31,412(r1)
+     7b0:	38 21 01 a0 	addi    r1,r1,416
+     7b4:	4e 80 00 20 	blr
+
+000007b8 <HandleDiskInfoEvent>:
+HandleDiskInfoEvent():
+     7b8:	94 21 ff a0 	stwu    r1,-96(r1)
+     7bc:	7c 08 02 a6 	mflr    r0
+     7c0:	3c 80 85 00 	lis     r4,-31488
+     7c4:	60 84 30 05 	ori     r4,r4,12293
+     7c8:	93 c1 00 58 	stw     r30,88(r1)
+     7cc:	3f c0 00 00 	lis     r30,0
+     7d0:	38 c1 00 1c 	addi    r6,r1,28
+     7d4:	80 7e 00 00 	lwz     r3,0(r30)
+     7d8:	93 41 00 48 	stw     r26,72(r1)
+     7dc:	3f 40 00 00 	lis     r26,0
+     7e0:	81 23 02 08 	lwz     r9,520(r3)
+     7e4:	93 a1 00 54 	stw     r29,84(r1)
+     7e8:	3b a0 00 00 	li      r29,0
+     7ec:	93 e1 00 5c 	stw     r31,92(r1)
+     7f0:	3b fa 00 00 	addi    r31,r26,0
+     7f4:	7d 29 03 a6 	mtctr   r9
+     7f8:	90 01 00 64 	stw     r0,100(r1)
+     7fc:	93 a1 00 1c 	stw     r29,28(r1)
+     800:	93 a1 00 18 	stw     r29,24(r1)
+     804:	80 bf 10 68 	lwz     r5,4200(r31)
+     808:	4e 80 04 21 	bctrl
+     80c:	80 81 00 1c 	lwz     r4,28(r1)
+     810:	2c 04 00 00 	cmpwi   r4,0
+     814:	41 82 02 c0 	beq     ad4 <HandleDiskInfoEvent+0x31c>
+     818:	3d 20 85 00 	lis     r9,-31488
+     81c:	39 41 00 18 	addi    r10,r1,24
+     820:	93 a1 00 10 	stw     r29,16(r1)
+     824:	61 29 35 03 	ori     r9,r9,13571
+     828:	91 41 00 0c 	stw     r10,12(r1)
+     82c:	3d 40 00 00 	lis     r10,0
+     830:	91 21 00 08 	stw     r9,8(r1)
+     834:	80 6a 00 00 	lwz     r3,0(r10)
+     838:	81 23 00 68 	lwz     r9,104(r3)
+     83c:	7d 29 03 a6 	mtctr   r9
+     840:	4c c6 32 42 	crset   4*cr1+eq
+     844:	4e 80 04 21 	bctrl
+     848:	81 21 00 18 	lwz     r9,24(r1)
+     84c:	2c 09 00 00 	cmpwi   r9,0
+     850:	41 82 05 7c 	beq     dcc <HandleDiskInfoEvent+0x614>
+     854:	93 81 00 50 	stw     r28,80(r1)
+     858:	83 89 00 04 	lwz     r28,4(r9)
+     85c:	2c 1c 00 00 	cmpwi   r28,0
+     860:	41 82 02 94 	beq     af4 <HandleDiskInfoEvent+0x33c>
+     864:	92 a1 00 34 	stw     r21,52(r1)
+     868:	38 dc 00 2e 	addi    r6,r28,46
+     86c:	92 c1 00 38 	stw     r22,56(r1)
+     870:	92 e1 00 3c 	stw     r23,60(r1)
+     874:	93 01 00 40 	stw     r24,64(r1)
+     878:	93 21 00 44 	stw     r25,68(r1)
+     87c:	93 61 00 4c 	stw     r27,76(r1)
+     880:	89 3c 00 2e 	lbz     r9,46(r28)
+     884:	2c 09 00 00 	cmpwi   r9,0
+     888:	41 82 04 d8 	beq     d60 <HandleDiskInfoEvent+0x5a8>
+     88c:	3f a0 00 00 	lis     r29,0
+     890:	3c a0 00 00 	lis     r5,0
+     894:	3b bd 00 00 	addi    r29,r29,0
+     898:	3f 60 80 03 	lis     r27,-32765
+     89c:	3b 1d 00 14 	addi    r24,r29,20
+     8a0:	3b 20 00 00 	li      r25,0
+     8a4:	63 7b 00 09 	ori     r27,r27,9
+     8a8:	38 a5 00 00 	addi    r5,r5,0
+     8ac:	7f 03 c3 78 	mr      r3,r24
+     8b0:	38 80 00 80 	li      r4,128
+     8b4:	4c c6 31 82 	crclr   4*cr1+eq
+     8b8:	48 00 00 01 	bl      8b8 <HandleDiskInfoEvent+0x100>
+     8bc:	93 01 00 0c 	stw     r24,12(r1)
+     8c0:	38 c0 00 00 	li      r6,0
+     8c4:	3a bd 00 94 	addi    r21,r29,148
+     8c8:	93 21 00 10 	stw     r25,16(r1)
+     8cc:	3a dd 00 d4 	addi    r22,r29,212
+     8d0:	3a fd 01 14 	addi    r23,r29,276
+     8d4:	93 61 00 08 	stw     r27,8(r1)
+     8d8:	3b 1d 01 54 	addi    r24,r29,340
+     8dc:	3b bd 01 d4 	addi    r29,r29,468
+     8e0:	80 7e 00 00 	lwz     r3,0(r30)
+     8e4:	80 bf 00 04 	lwz     r5,4(r31)
+     8e8:	81 23 02 10 	lwz     r9,528(r3)
+     8ec:	80 9f 10 88 	lwz     r4,4232(r31)
+     8f0:	7d 29 03 a6 	mtctr   r9
+     8f4:	4c c6 32 42 	crset   4*cr1+eq
+     8f8:	4e 80 04 21 	bctrl
+     8fc:	80 7c 00 78 	lwz     r3,120(r28)
+     900:	7e a5 ab 78 	mr      r5,r21
+     904:	38 c0 00 40 	li      r6,64
+     908:	80 9c 00 7c 	lwz     r4,124(r28)
+     90c:	48 00 00 01 	bl      90c <HandleDiskInfoEvent+0x154>
+     910:	92 a1 00 0c 	stw     r21,12(r1)
+     914:	38 c0 00 00 	li      r6,0
+     918:	93 61 00 08 	stw     r27,8(r1)
+     91c:	93 21 00 10 	stw     r25,16(r1)
+     920:	80 7e 00 00 	lwz     r3,0(r30)
+     924:	80 bf 00 04 	lwz     r5,4(r31)
+     928:	81 23 02 10 	lwz     r9,528(r3)
+     92c:	80 9f 10 8c 	lwz     r4,4236(r31)
+     930:	7d 29 03 a6 	mtctr   r9
+     934:	4c c6 32 42 	crset   4*cr1+eq
+     938:	4e 80 04 21 	bctrl
+     93c:	80 7c 00 80 	lwz     r3,128(r28)
+     940:	7e c5 b3 78 	mr      r5,r22
+     944:	38 c0 00 40 	li      r6,64
+     948:	80 9c 00 84 	lwz     r4,132(r28)
+     94c:	48 00 00 01 	bl      94c <HandleDiskInfoEvent+0x194>
+     950:	92 c1 00 0c 	stw     r22,12(r1)
+     954:	38 c0 00 00 	li      r6,0
+     958:	93 61 00 08 	stw     r27,8(r1)
+     95c:	93 21 00 10 	stw     r25,16(r1)
+     960:	80 7e 00 00 	lwz     r3,0(r30)
+     964:	80 bf 00 04 	lwz     r5,4(r31)
+     968:	81 23 02 10 	lwz     r9,528(r3)
+     96c:	80 9f 10 90 	lwz     r4,4240(r31)
+     970:	7d 29 03 a6 	mtctr   r9
+     974:	4c c6 32 42 	crset   4*cr1+eq
+     978:	4e 80 04 21 	bctrl
+     97c:	80 7c 00 88 	lwz     r3,136(r28)
+     980:	7e e5 bb 78 	mr      r5,r23
+     984:	38 c0 00 40 	li      r6,64
+     988:	80 9c 00 8c 	lwz     r4,140(r28)
+     98c:	48 00 00 01 	bl      98c <HandleDiskInfoEvent+0x1d4>
+     990:	92 e1 00 0c 	stw     r23,12(r1)
+     994:	38 c0 00 00 	li      r6,0
+     998:	93 61 00 08 	stw     r27,8(r1)
+     99c:	93 21 00 10 	stw     r25,16(r1)
+     9a0:	80 7e 00 00 	lwz     r3,0(r30)
+     9a4:	80 bf 00 04 	lwz     r5,4(r31)
+     9a8:	81 23 02 10 	lwz     r9,528(r3)
+     9ac:	80 9f 10 94 	lwz     r4,4244(r31)
+     9b0:	7d 29 03 a6 	mtctr   r9
+     9b4:	4c c6 32 42 	crset   4*cr1+eq
+     9b8:	4e 80 04 21 	bctrl
+     9bc:	82 fc 00 98 	lwz     r23,152(r28)
+     9c0:	7e e3 bb 78 	mr      r3,r23
+     9c4:	48 00 00 01 	bl      9c4 <HandleDiskInfoEvent+0x20c>
+     9c8:	3c a0 00 00 	lis     r5,0
+     9cc:	7e e7 bb 78 	mr      r7,r23
+     9d0:	7c 66 1b 78 	mr      r6,r3
+     9d4:	38 a5 00 00 	addi    r5,r5,0
+     9d8:	38 80 00 80 	li      r4,128
+     9dc:	7f 03 c3 78 	mr      r3,r24
+     9e0:	4c c6 31 82 	crclr   4*cr1+eq
+     9e4:	48 00 00 01 	bl      9e4 <HandleDiskInfoEvent+0x22c>
+     9e8:	93 01 00 0c 	stw     r24,12(r1)
+     9ec:	38 c0 00 00 	li      r6,0
+     9f0:	93 61 00 08 	stw     r27,8(r1)
+     9f4:	93 21 00 10 	stw     r25,16(r1)
+     9f8:	80 7e 00 00 	lwz     r3,0(r30)
+     9fc:	80 bf 00 04 	lwz     r5,4(r31)
+     a00:	81 23 02 10 	lwz     r9,528(r3)
+     a04:	80 9f 10 98 	lwz     r4,4248(r31)
+     a08:	7d 29 03 a6 	mtctr   r9
+     a0c:	4c c6 32 42 	crset   4*cr1+eq
+     a10:	4e 80 04 21 	bctrl
+     a14:	80 dc 00 94 	lwz     r6,148(r28)
+     a18:	3c a0 00 00 	lis     r5,0
+     a1c:	38 80 00 40 	li      r4,64
+     a20:	38 a5 00 00 	addi    r5,r5,0
+     a24:	7f a3 eb 78 	mr      r3,r29
+     a28:	4c c6 31 82 	crclr   4*cr1+eq
+     a2c:	48 00 00 01 	bl      a2c <HandleDiskInfoEvent+0x274>
+     a30:	93 61 00 08 	stw     r27,8(r1)
+     a34:	38 c0 00 00 	li      r6,0
+     a38:	93 a1 00 0c 	stw     r29,12(r1)
+     a3c:	93 21 00 10 	stw     r25,16(r1)
+     a40:	80 7e 00 00 	lwz     r3,0(r30)
+     a44:	80 bf 00 04 	lwz     r5,4(r31)
+     a48:	81 23 02 10 	lwz     r9,528(r3)
+     a4c:	80 9f 10 9c 	lwz     r4,4252(r31)
+     a50:	7d 29 03 a6 	mtctr   r9
+     a54:	4c c6 32 42 	crset   4*cr1+eq
+     a58:	4e 80 04 21 	bctrl
+     a5c:	3d 20 85 00 	lis     r9,-31488
+     a60:	39 40 00 02 	li      r10,2
+     a64:	93 21 00 10 	stw     r25,16(r1)
+     a68:	61 29 72 03 	ori     r9,r9,29187
+     a6c:	91 41 00 0c 	stw     r10,12(r1)
+     a70:	38 c0 00 00 	li      r6,0
+     a74:	91 21 00 08 	stw     r9,8(r1)
+     a78:	80 7e 00 00 	lwz     r3,0(r30)
+     a7c:	80 9f 10 6c 	lwz     r4,4204(r31)
+     a80:	81 23 02 10 	lwz     r9,528(r3)
+     a84:	80 bf 00 04 	lwz     r5,4(r31)
+     a88:	7d 29 03 a6 	mtctr   r9
+     a8c:	4c c6 32 42 	crset   4*cr1+eq
+     a90:	4e 80 04 21 	bctrl
+     a94:	3d 20 00 57 	lis     r9,87
+     a98:	80 7e 00 00 	lwz     r3,0(r30)
+     a9c:	61 29 00 06 	ori     r9,r9,6
+     aa0:	80 9a 00 00 	lwz     r4,0(r26)
+     aa4:	91 21 00 08 	stw     r9,8(r1)
+     aa8:	81 23 02 e0 	lwz     r9,736(r3)
+     aac:	7d 29 03 a6 	mtctr   r9
+     ab0:	4c c6 32 42 	crset   4*cr1+eq
+     ab4:	4e 80 04 21 	bctrl
+     ab8:	82 a1 00 34 	lwz     r21,52(r1)
+     abc:	82 c1 00 38 	lwz     r22,56(r1)
+     ac0:	82 e1 00 3c 	lwz     r23,60(r1)
+     ac4:	83 01 00 40 	lwz     r24,64(r1)
+     ac8:	83 21 00 44 	lwz     r25,68(r1)
+     acc:	83 61 00 4c 	lwz     r27,76(r1)
+     ad0:	83 81 00 50 	lwz     r28,80(r1)
+     ad4:	80 01 00 64 	lwz     r0,100(r1)
+     ad8:	83 41 00 48 	lwz     r26,72(r1)
+     adc:	83 a1 00 54 	lwz     r29,84(r1)
+     ae0:	7c 08 03 a6 	mtlr    r0
+     ae4:	83 c1 00 58 	lwz     r30,88(r1)
+     ae8:	83 e1 00 5c 	lwz     r31,92(r1)
+     aec:	38 21 00 60 	addi    r1,r1,96
+     af0:	4e 80 00 20 	blr
+     af4:	83 a9 00 00 	lwz     r29,0(r9)
+     af8:	2c 1d 00 00 	cmpwi   r29,0
+     afc:	41 82 02 70 	beq     d6c <HandleDiskInfoEvent+0x5b4>
+     b00:	92 81 00 30 	stw     r20,48(r1)
+     b04:	38 dd 00 34 	addi    r6,r29,52
+     b08:	38 fd 00 54 	addi    r7,r29,84
+     b0c:	92 a1 00 34 	stw     r21,52(r1)
+     b10:	3f 80 00 00 	lis     r28,0
+     b14:	92 c1 00 38 	stw     r22,56(r1)
+     b18:	92 e1 00 3c 	stw     r23,60(r1)
+     b1c:	93 01 00 40 	stw     r24,64(r1)
+     b20:	93 21 00 44 	stw     r25,68(r1)
+     b24:	93 61 00 4c 	stw     r27,76(r1)
+     b28:	89 3d 00 94 	lbz     r9,148(r29)
+     b2c:	2c 09 00 00 	cmpwi   r9,0
+     b30:	41 82 02 fc 	beq     e2c <HandleDiskInfoEvent+0x674>
+     b34:	3b 9c 00 00 	addi    r28,r28,0
+     b38:	3c a0 00 00 	lis     r5,0
+     b3c:	3a fc 02 14 	addi    r23,r28,532
+     b40:	38 a5 00 00 	addi    r5,r5,0
+     b44:	7e e3 bb 78 	mr      r3,r23
+     b48:	39 1d 00 94 	addi    r8,r29,148
+     b4c:	38 80 00 80 	li      r4,128
+     b50:	3f 00 00 00 	lis     r24,0
+     b54:	4c c6 31 82 	crclr   4*cr1+eq
+     b58:	48 00 00 01 	bl      b58 <HandleDiskInfoEvent+0x3a0>
+     b5c:	3b 18 00 00 	addi    r24,r24,0
+     b60:	3f 60 80 03 	lis     r27,-32765
+     b64:	3b 20 00 00 	li      r25,0
+     b68:	92 e1 00 0c 	stw     r23,12(r1)
+     b6c:	63 7b 00 09 	ori     r27,r27,9
+     b70:	93 21 00 10 	stw     r25,16(r1)
+     b74:	38 c0 00 00 	li      r6,0
+     b78:	93 61 00 08 	stw     r27,8(r1)
+     b7c:	3a 9c 02 94 	addi    r20,r28,660
+     b80:	3a bc 03 14 	addi    r21,r28,788
+     b84:	80 7e 00 00 	lwz     r3,0(r30)
+     b88:	3a dc 03 54 	addi    r22,r28,852
+     b8c:	80 bf 00 04 	lwz     r5,4(r31)
+     b90:	81 23 02 10 	lwz     r9,528(r3)
+     b94:	80 9f 10 70 	lwz     r4,4208(r31)
+     b98:	7d 29 03 a6 	mtctr   r9
+     b9c:	4c c6 32 42 	crset   4*cr1+eq
+     ba0:	4e 80 04 21 	bctrl
+     ba4:	80 7d 00 c8 	lwz     r3,200(r29)
+     ba8:	48 00 00 01 	bl      ba8 <HandleDiskInfoEvent+0x3f0>
+     bac:	7c 77 1b 78 	mr      r23,r3
+     bb0:	80 7d 00 c4 	lwz     r3,196(r29)
+     bb4:	48 00 00 01 	bl      bb4 <HandleDiskInfoEvent+0x3fc>
+     bb8:	7e e6 bb 78 	mr      r6,r23
+     bbc:	7f 05 c3 78 	mr      r5,r24
+     bc0:	7c 67 1b 78 	mr      r7,r3
+     bc4:	38 80 00 80 	li      r4,128
+     bc8:	7e 83 a3 78 	mr      r3,r20
+     bcc:	4c c6 31 82 	crclr   4*cr1+eq
+     bd0:	48 00 00 01 	bl      bd0 <HandleDiskInfoEvent+0x418>
+     bd4:	93 61 00 08 	stw     r27,8(r1)
+     bd8:	38 c0 00 00 	li      r6,0
+     bdc:	93 21 00 10 	stw     r25,16(r1)
+     be0:	92 81 00 0c 	stw     r20,12(r1)
+     be4:	80 7e 00 00 	lwz     r3,0(r30)
+     be8:	80 bf 00 04 	lwz     r5,4(r31)
+     bec:	81 23 02 10 	lwz     r9,528(r3)
+     bf0:	80 9f 10 80 	lwz     r4,4224(r31)
+     bf4:	7d 29 03 a6 	mtctr   r9
+     bf8:	4c c6 32 42 	crset   4*cr1+eq
+     bfc:	4e 80 04 21 	bctrl
+     c00:	80 7d 00 e0 	lwz     r3,224(r29)
+     c04:	7e a5 ab 78 	mr      r5,r21
+     c08:	38 c0 00 40 	li      r6,64
+     c0c:	80 9d 00 e4 	lwz     r4,228(r29)
+     c10:	48 00 00 01 	bl      c10 <HandleDiskInfoEvent+0x458>
+     c14:	93 61 00 08 	stw     r27,8(r1)
+     c18:	38 c0 00 00 	li      r6,0
+     c1c:	93 21 00 10 	stw     r25,16(r1)
+     c20:	92 a1 00 0c 	stw     r21,12(r1)
+     c24:	80 7e 00 00 	lwz     r3,0(r30)
+     c28:	80 bf 00 04 	lwz     r5,4(r31)
+     c2c:	81 23 02 10 	lwz     r9,528(r3)
+     c30:	80 9f 10 7c 	lwz     r4,4220(r31)
+     c34:	7d 29 03 a6 	mtctr   r9
+     c38:	4c c6 32 42 	crset   4*cr1+eq
+     c3c:	4e 80 04 21 	bctrl
+     c40:	81 3d 00 dc 	lwz     r9,220(r29)
+     c44:	3c a0 00 00 	lis     r5,0
+     c48:	38 80 00 80 	li      r4,128
+     c4c:	81 1d 00 d8 	lwz     r8,216(r29)
+     c50:	38 a5 00 00 	addi    r5,r5,0
+     c54:	7e c3 b3 78 	mr      r3,r22
+     c58:	80 fd 00 d4 	lwz     r7,212(r29)
+     c5c:	80 dd 00 d0 	lwz     r6,208(r29)
+     c60:	4c c6 31 82 	crclr   4*cr1+eq
+     c64:	48 00 00 01 	bl      c64 <HandleDiskInfoEvent+0x4ac>
+     c68:	93 61 00 08 	stw     r27,8(r1)
+     c6c:	38 c0 00 00 	li      r6,0
+     c70:	93 21 00 10 	stw     r25,16(r1)
+     c74:	92 c1 00 0c 	stw     r22,12(r1)
+     c78:	80 7e 00 00 	lwz     r3,0(r30)
+     c7c:	80 bf 00 04 	lwz     r5,4(r31)
+     c80:	81 23 02 10 	lwz     r9,528(r3)
+     c84:	80 9f 10 74 	lwz     r4,4212(r31)
+     c88:	7d 29 03 a6 	mtctr   r9
+     c8c:	4c c6 32 42 	crset   4*cr1+eq
+     c90:	4e 80 04 21 	bctrl
+     c94:	a9 3d 00 e8 	lha     r9,232(r29)
+     c98:	2c 09 00 00 	cmpwi   r9,0
+     c9c:	40 82 01 84 	bne     e20 <HandleDiskInfoEvent+0x668>
+     ca0:	3c c0 00 00 	lis     r6,0
+     ca4:	38 c6 00 00 	addi    r6,r6,0
+     ca8:	3b 9c 03 d4 	addi    r28,r28,980
+     cac:	3c a0 00 00 	lis     r5,0
+     cb0:	38 a5 00 00 	addi    r5,r5,0
+     cb4:	38 80 00 40 	li      r4,64
+     cb8:	7f 83 e3 78 	mr      r3,r28
+     cbc:	3b a0 00 00 	li      r29,0
+     cc0:	4c c6 31 82 	crclr   4*cr1+eq
+     cc4:	48 00 00 01 	bl      cc4 <HandleDiskInfoEvent+0x50c>
+     cc8:	3d 20 80 03 	lis     r9,-32765
+     ccc:	93 81 00 0c 	stw     r28,12(r1)
+     cd0:	38 c0 00 00 	li      r6,0
+     cd4:	61 29 00 09 	ori     r9,r9,9
+     cd8:	93 a1 00 10 	stw     r29,16(r1)
+     cdc:	91 21 00 08 	stw     r9,8(r1)
+     ce0:	80 7e 00 00 	lwz     r3,0(r30)
+     ce4:	80 bf 00 04 	lwz     r5,4(r31)
+     ce8:	81 23 02 10 	lwz     r9,528(r3)
+     cec:	80 9f 10 78 	lwz     r4,4216(r31)
+     cf0:	7d 29 03 a6 	mtctr   r9
+     cf4:	4c c6 32 42 	crset   4*cr1+eq
+     cf8:	4e 80 04 21 	bctrl
+     cfc:	3d 20 85 00 	lis     r9,-31488
+     d00:	39 40 00 01 	li      r10,1
+     d04:	93 a1 00 10 	stw     r29,16(r1)
+     d08:	61 29 72 03 	ori     r9,r9,29187
+     d0c:	91 41 00 0c 	stw     r10,12(r1)
+     d10:	38 c0 00 00 	li      r6,0
+     d14:	91 21 00 08 	stw     r9,8(r1)
+     d18:	80 7e 00 00 	lwz     r3,0(r30)
+     d1c:	80 bf 00 04 	lwz     r5,4(r31)
+     d20:	81 23 02 10 	lwz     r9,528(r3)
+     d24:	80 9f 10 6c 	lwz     r4,4204(r31)
+     d28:	7d 29 03 a6 	mtctr   r9
+     d2c:	4c c6 32 42 	crset   4*cr1+eq
+     d30:	4e 80 04 21 	bctrl
+     d34:	3d 20 00 57 	lis     r9,87
+     d38:	80 7e 00 00 	lwz     r3,0(r30)
+     d3c:	61 29 00 06 	ori     r9,r9,6
+     d40:	80 9a 00 00 	lwz     r4,0(r26)
+     d44:	91 21 00 08 	stw     r9,8(r1)
+     d48:	81 23 02 e0 	lwz     r9,736(r3)
+     d4c:	7d 29 03 a6 	mtctr   r9
+     d50:	4c c6 32 42 	crset   4*cr1+eq
+     d54:	4e 80 04 21 	bctrl
+     d58:	82 81 00 30 	lwz     r20,48(r1)
+     d5c:	4b ff fd 5c 	b       ab8 <HandleDiskInfoEvent+0x300>
+     d60:	3c c0 00 00 	lis     r6,0
+     d64:	38 c6 00 00 	addi    r6,r6,0
+     d68:	4b ff fb 24 	b       88c <HandleDiskInfoEvent+0xd4>
+     d6c:	3d 20 85 00 	lis     r9,-31488
+     d70:	93 a1 00 10 	stw     r29,16(r1)
+     d74:	38 c0 00 00 	li      r6,0
+     d78:	61 29 72 03 	ori     r9,r9,29187
+     d7c:	93 a1 00 0c 	stw     r29,12(r1)
+     d80:	91 21 00 08 	stw     r9,8(r1)
+     d84:	80 7e 00 00 	lwz     r3,0(r30)
+     d88:	80 bf 00 04 	lwz     r5,4(r31)
+     d8c:	81 23 02 10 	lwz     r9,528(r3)
+     d90:	80 9f 10 6c 	lwz     r4,4204(r31)
+     d94:	7d 29 03 a6 	mtctr   r9
+     d98:	4c c6 32 42 	crset   4*cr1+eq
+     d9c:	4e 80 04 21 	bctrl
+     da0:	3d 20 00 57 	lis     r9,87
+     da4:	80 7e 00 00 	lwz     r3,0(r30)
+     da8:	61 29 00 06 	ori     r9,r9,6
+     dac:	80 9a 00 00 	lwz     r4,0(r26)
+     db0:	91 21 00 08 	stw     r9,8(r1)
+     db4:	81 23 02 e0 	lwz     r9,736(r3)
+     db8:	7d 29 03 a6 	mtctr   r9
+     dbc:	4c c6 32 42 	crset   4*cr1+eq
+     dc0:	4e 80 04 21 	bctrl
+     dc4:	83 81 00 50 	lwz     r28,80(r1)
+     dc8:	4b ff fd 0c 	b       ad4 <HandleDiskInfoEvent+0x31c>
+     dcc:	3d 40 85 00 	lis     r10,-31488
+     dd0:	91 21 00 10 	stw     r9,16(r1)
+     dd4:	38 c0 00 00 	li      r6,0
+     dd8:	61 4a 72 03 	ori     r10,r10,29187
+     ddc:	91 21 00 0c 	stw     r9,12(r1)
+     de0:	91 41 00 08 	stw     r10,8(r1)
+     de4:	80 7e 00 00 	lwz     r3,0(r30)
+     de8:	80 bf 00 04 	lwz     r5,4(r31)
+     dec:	81 23 02 10 	lwz     r9,528(r3)
+     df0:	80 9f 10 6c 	lwz     r4,4204(r31)
+     df4:	7d 29 03 a6 	mtctr   r9
+     df8:	4c c6 32 42 	crset   4*cr1+eq
+     dfc:	4e 80 04 21 	bctrl
+     e00:	80 01 00 64 	lwz     r0,100(r1)
+     e04:	83 41 00 48 	lwz     r26,72(r1)
+     e08:	83 a1 00 54 	lwz     r29,84(r1)
+     e0c:	7c 08 03 a6 	mtlr    r0
+     e10:	83 c1 00 58 	lwz     r30,88(r1)
+     e14:	83 e1 00 5c 	lwz     r31,92(r1)
+     e18:	38 21 00 60 	addi    r1,r1,96
+     e1c:	4e 80 00 20 	blr
+     e20:	3c c0 00 00 	lis     r6,0
+     e24:	38 c6 00 00 	addi    r6,r6,0
+     e28:	4b ff fe 80 	b       ca8 <HandleDiskInfoEvent+0x4f0>
+     e2c:	3b 9c 00 00 	addi    r28,r28,0
+     e30:	3f 00 00 00 	lis     r24,0
+     e34:	3b 18 00 00 	addi    r24,r24,0
+     e38:	3a fc 02 14 	addi    r23,r28,532
+     e3c:	7e e3 bb 78 	mr      r3,r23
+     e40:	7f 05 c3 78 	mr      r5,r24
+     e44:	38 80 00 80 	li      r4,128
+     e48:	4c c6 31 82 	crclr   4*cr1+eq
+     e4c:	48 00 00 01 	bl      e4c <HandleDiskInfoEvent+0x694>
+     e50:	4b ff fd 10 	b       b60 <HandleDiskInfoEvent+0x3a8>
+
+00000e54 <CreateDiskInfoPage>:
+CreateDiskInfoPage():
+     e54:	3d 20 00 00 	lis     r9,0
+     e58:	94 21 fe a0 	stwu    r1,-352(r1)
+     e5c:	7c 08 02 a6 	mflr    r0
+     e60:	80 69 00 00 	lwz     r3,0(r9)
+     e64:	3c 80 00 00 	lis     r4,0
+     e68:	38 84 00 00 	addi    r4,r4,0
+     e6c:	81 23 02 d4 	lwz     r9,724(r3)
+     e70:	90 01 01 64 	stw     r0,356(r1)
+     e74:	91 c1 01 18 	stw     r14,280(r1)
+     e78:	7d 29 03 a6 	mtctr   r9
+     e7c:	91 e1 01 1c 	stw     r15,284(r1)
+     e80:	3d e0 00 00 	lis     r15,0
+     e84:	92 01 01 20 	stw     r16,288(r1)
+     e88:	3e 00 00 00 	lis     r16,0
+     e8c:	92 21 01 24 	stw     r17,292(r1)
+     e90:	3e 20 00 00 	lis     r17,0
+     e94:	92 41 01 28 	stw     r18,296(r1)
+     e98:	92 61 01 2c 	stw     r19,300(r1)
+     e9c:	92 81 01 30 	stw     r20,304(r1)
+     ea0:	92 a1 01 34 	stw     r21,308(r1)
+     ea4:	3e a0 84 00 	lis     r21,-31744
+     ea8:	92 c1 01 38 	stw     r22,312(r1)
+     eac:	62 b5 00 10 	ori     r21,r21,16
+     eb0:	3e c0 00 00 	lis     r22,0
+     eb4:	92 e1 01 3c 	stw     r23,316(r1)
+     eb8:	3e e0 80 03 	lis     r23,-32765
+     ebc:	3a d6 00 00 	addi    r22,r22,0
+     ec0:	93 01 01 40 	stw     r24,320(r1)
+     ec4:	3f 00 80 03 	lis     r24,-32765
+     ec8:	62 f7 00 09 	ori     r23,r23,9
+     ecc:	93 21 01 44 	stw     r25,324(r1)
+     ed0:	63 18 00 29 	ori     r24,r24,41
+     ed4:	93 41 01 48 	stw     r26,328(r1)
+     ed8:	93 61 01 4c 	stw     r27,332(r1)
+     edc:	93 81 01 50 	stw     r28,336(r1)
+     ee0:	93 a1 01 54 	stw     r29,340(r1)
+     ee4:	3b a0 00 01 	li      r29,1
+     ee8:	93 c1 01 58 	stw     r30,344(r1)
+     eec:	3f c0 00 00 	lis     r30,0
+     ef0:	93 e1 01 5c 	stw     r31,348(r1)
+     ef4:	3b e0 00 00 	li      r31,0
+     ef8:	4e 80 04 21 	bctrl
+     efc:	80 70 00 00 	lwz     r3,0(r16)
+     f00:	82 9e 00 00 	lwz     r20,0(r30)
+     f04:	81 23 00 4c 	lwz     r9,76(r3)
+     f08:	82 74 01 f8 	lwz     r19,504(r20)
+     f0c:	7d 29 03 a6 	mtctr   r9
+     f10:	4e 80 04 21 	bctrl
+     f14:	81 2f 00 00 	lwz     r9,0(r15)
+     f18:	7c 7b 1b 78 	mr      r27,r3
+     f1c:	83 9e 00 00 	lwz     r28,0(r30)
+     f20:	81 49 00 4c 	lwz     r10,76(r9)
+     f24:	7d 23 4b 78 	mr      r3,r9
+     f28:	83 5c 01 f8 	lwz     r26,504(r28)
+     f2c:	7d 49 03 a6 	mtctr   r10
+     f30:	4e 80 04 21 	bctrl
+     f34:	93 e1 00 08 	stw     r31,8(r1)
+     f38:	7f 49 03 a6 	mtctr   r26
+     f3c:	38 a0 00 00 	li      r5,0
+     f40:	7c 64 1b 78 	mr      r4,r3
+     f44:	7f 83 e3 78 	mr      r3,r28
+     f48:	4c c6 32 42 	crset   4*cr1+eq
+     f4c:	4e 80 04 21 	bctrl
+     f50:	3d 00 84 00 	lis     r8,-31744
+     f54:	3d 40 84 00 	lis     r10,-31744
+     f58:	93 e1 00 30 	stw     r31,48(r1)
+     f5c:	61 08 00 0f 	ori     r8,r8,15
+     f60:	3d 20 00 00 	lis     r9,0
+     f64:	93 a1 00 2c 	stw     r29,44(r1)
+     f68:	61 4a 00 0d 	ori     r10,r10,13
+     f6c:	91 01 00 20 	stw     r8,32(r1)
+     f70:	39 29 00 00 	addi    r9,r9,0
+     f74:	39 00 00 04 	li      r8,4
+     f78:	91 41 00 18 	stw     r10,24(r1)
+     f7c:	7c 7a 1b 78 	mr      r26,r3
+     f80:	91 01 00 1c 	stw     r8,28(r1)
+     f84:	7e c5 b3 78 	mr      r5,r22
+     f88:	38 80 00 00 	li      r4,0
+     f8c:	93 a1 00 24 	stw     r29,36(r1)
+     f90:	93 a1 00 0c 	stw     r29,12(r1)
+     f94:	92 a1 00 28 	stw     r21,40(r1)
+     f98:	92 e1 00 10 	stw     r23,16(r1)
+     f9c:	93 01 00 08 	stw     r24,8(r1)
+     fa0:	91 21 00 14 	stw     r9,20(r1)
+     fa4:	80 7e 00 00 	lwz     r3,0(r30)
+     fa8:	81 23 01 f8 	lwz     r9,504(r3)
+     fac:	7d 29 03 a6 	mtctr   r9
+     fb0:	4c c6 32 42 	crset   4*cr1+eq
+     fb4:	4e 80 04 21 	bctrl
+     fb8:	83 9e 00 00 	lwz     r28,0(r30)
+     fbc:	7c 79 1b 78 	mr      r25,r3
+     fc0:	80 6f 00 00 	lwz     r3,0(r15)
+     fc4:	82 5c 01 f8 	lwz     r18,504(r28)
+     fc8:	81 23 00 4c 	lwz     r9,76(r3)
+     fcc:	7d 29 03 a6 	mtctr   r9
+     fd0:	4e 80 04 21 	bctrl
+     fd4:	93 e1 00 08 	stw     r31,8(r1)
+     fd8:	7e 49 03 a6 	mtctr   r18
+     fdc:	38 a0 00 00 	li      r5,0
+     fe0:	7c 64 1b 78 	mr      r4,r3
+     fe4:	7f 83 e3 78 	mr      r3,r28
+     fe8:	3f 80 85 00 	lis     r28,-31488
+     fec:	3e 40 00 00 	lis     r18,0
+     ff0:	63 9c 70 14 	ori     r28,r28,28692
+     ff4:	3a 52 00 00 	addi    r18,r18,0
+     ff8:	4c c6 32 42 	crset   4*cr1+eq
+     ffc:	4e 80 04 21 	bctrl
+    1000:	3d 40 85 00 	lis     r10,-31488
+    1004:	7f 64 db 78 	mr      r4,r27
+    1008:	93 21 00 1c 	stw     r25,28(r1)
+    100c:	61 4a 70 01 	ori     r10,r10,28673
+    1010:	7c 69 1b 78 	mr      r9,r3
+    1014:	93 41 00 14 	stw     r26,20(r1)
+    1018:	91 41 00 08 	stw     r10,8(r1)
+    101c:	38 a0 00 00 	li      r5,0
+    1020:	7e 69 03 a6 	mtctr   r19
+    1024:	93 e1 00 28 	stw     r31,40(r1)
+    1028:	7e 83 a3 78 	mr      r3,r20
+    102c:	3f 20 80 03 	lis     r25,-32765
+    1030:	93 a1 00 0c 	stw     r29,12(r1)
+    1034:	63 39 00 10 	ori     r25,r25,16
+    1038:	3f 40 00 00 	lis     r26,0
+    103c:	91 21 00 24 	stw     r9,36(r1)
+    1040:	3b 5a 00 00 	addi    r26,r26,0
+    1044:	3e 60 85 00 	lis     r19,-31488
+    1048:	93 81 00 20 	stw     r28,32(r1)
+    104c:	62 73 60 01 	ori     r19,r19,24577
+    1050:	93 81 00 18 	stw     r28,24(r1)
+    1054:	93 81 00 10 	stw     r28,16(r1)
+    1058:	91 41 00 b8 	stw     r10,184(r1)
+    105c:	4c c6 32 42 	crset   4*cr1+eq
+    1060:	4e 80 04 21 	bctrl
+    1064:	81 30 00 00 	lwz     r9,0(r16)
+    1068:	80 de 00 00 	lwz     r6,0(r30)
+    106c:	81 09 00 4c 	lwz     r8,76(r9)
+    1070:	90 61 00 dc 	stw     r3,220(r1)
+    1074:	7d 23 4b 78 	mr      r3,r9
+    1078:	7d 09 03 a6 	mtctr   r8
+    107c:	80 e6 01 f8 	lwz     r7,504(r6)
+    1080:	90 c1 00 f4 	stw     r6,244(r1)
+    1084:	90 e1 00 f0 	stw     r7,240(r1)
+    1088:	4e 80 04 21 	bctrl
+    108c:	81 30 00 00 	lwz     r9,0(r16)
+    1090:	81 7e 00 00 	lwz     r11,0(r30)
+    1094:	81 09 00 4c 	lwz     r8,76(r9)
+    1098:	90 61 00 bc 	stw     r3,188(r1)
+    109c:	7d 23 4b 78 	mr      r3,r9
+    10a0:	7d 09 03 a6 	mtctr   r8
+    10a4:	80 0b 01 f8 	lwz     r0,504(r11)
+    10a8:	91 61 00 ec 	stw     r11,236(r1)
+    10ac:	90 01 00 e8 	stw     r0,232(r1)
+    10b0:	4e 80 04 21 	bctrl
+    10b4:	39 20 00 3e 	li      r9,62
+    10b8:	92 a1 00 20 	stw     r21,32(r1)
+    10bc:	7e c5 b3 78 	mr      r5,r22
+    10c0:	92 e1 00 18 	stw     r23,24(r1)
+    10c4:	38 80 00 00 	li      r4,0
+    10c8:	93 01 00 10 	stw     r24,16(r1)
+    10cc:	93 e1 00 28 	stw     r31,40(r1)
+    10d0:	93 e1 00 24 	stw     r31,36(r1)
+    10d4:	93 a1 00 14 	stw     r29,20(r1)
+    10d8:	92 41 00 1c 	stw     r18,28(r1)
+    10dc:	93 21 00 08 	stw     r25,8(r1)
+    10e0:	91 21 00 0c 	stw     r9,12(r1)
+    10e4:	90 61 00 c0 	stw     r3,192(r1)
+    10e8:	80 7e 00 00 	lwz     r3,0(r30)
+    10ec:	81 23 01 f8 	lwz     r9,504(r3)
+    10f0:	7d 29 03 a6 	mtctr   r9
+    10f4:	4c c6 32 42 	crset   4*cr1+eq
+    10f8:	4e 80 04 21 	bctrl
+    10fc:	81 31 00 00 	lwz     r9,0(r17)
+    1100:	7c 68 1b 78 	mr      r8,r3
+    1104:	82 9e 00 00 	lwz     r20,0(r30)
+    1108:	80 e9 00 4c 	lwz     r7,76(r9)
+    110c:	7d 23 4b 78 	mr      r3,r9
+    1110:	91 1a 10 70 	stw     r8,4208(r26)
+    1114:	7c e9 03 a6 	mtctr   r7
+    1118:	91 01 00 e4 	stw     r8,228(r1)
+    111c:	83 74 01 f8 	lwz     r27,504(r20)
+    1120:	4e 80 04 21 	bctrl
+    1124:	3d 20 00 00 	lis     r9,0
+    1128:	93 e1 00 10 	stw     r31,16(r1)
+    112c:	7f 69 03 a6 	mtctr   r27
+    1130:	39 29 00 00 	addi    r9,r9,0
+    1134:	92 61 00 08 	stw     r19,8(r1)
+    1138:	7c 64 1b 78 	mr      r4,r3
+    113c:	91 21 00 0c 	stw     r9,12(r1)
+    1140:	7e 83 a3 78 	mr      r3,r20
+    1144:	38 a0 00 00 	li      r5,0
+    1148:	4c c6 32 42 	crset   4*cr1+eq
+    114c:	4e 80 04 21 	bctrl
+    1150:	39 20 00 42 	li      r9,66
+    1154:	92 a1 00 20 	stw     r21,32(r1)
+    1158:	7e c5 b3 78 	mr      r5,r22
+    115c:	92 41 00 1c 	stw     r18,28(r1)
+    1160:	38 80 00 00 	li      r4,0
+    1164:	92 e1 00 18 	stw     r23,24(r1)
+    1168:	93 01 00 10 	stw     r24,16(r1)
+    116c:	93 21 00 08 	stw     r25,8(r1)
+    1170:	93 e1 00 28 	stw     r31,40(r1)
+    1174:	93 e1 00 24 	stw     r31,36(r1)
+    1178:	93 a1 00 14 	stw     r29,20(r1)
+    117c:	91 21 00 0c 	stw     r9,12(r1)
+    1180:	90 61 00 c4 	stw     r3,196(r1)
+    1184:	80 7e 00 00 	lwz     r3,0(r30)
+    1188:	81 23 01 f8 	lwz     r9,504(r3)
+    118c:	7d 29 03 a6 	mtctr   r9
+    1190:	4c c6 32 42 	crset   4*cr1+eq
+    1194:	4e 80 04 21 	bctrl
+    1198:	81 31 00 00 	lwz     r9,0(r17)
+    119c:	7c 6e 1b 78 	mr      r14,r3
+    11a0:	82 9e 00 00 	lwz     r20,0(r30)
+    11a4:	81 09 00 4c 	lwz     r8,76(r9)
+    11a8:	7d 23 4b 78 	mr      r3,r9
+    11ac:	91 da 10 80 	stw     r14,4224(r26)
+    11b0:	7d 09 03 a6 	mtctr   r8
+    11b4:	83 74 01 f8 	lwz     r27,504(r20)
+    11b8:	4e 80 04 21 	bctrl
+    11bc:	3d 20 00 00 	lis     r9,0
+    11c0:	92 61 00 08 	stw     r19,8(r1)
+    11c4:	7f 69 03 a6 	mtctr   r27
+    11c8:	39 29 00 00 	addi    r9,r9,0
+    11cc:	93 e1 00 10 	stw     r31,16(r1)
+    11d0:	7c 64 1b 78 	mr      r4,r3
+    11d4:	91 21 00 0c 	stw     r9,12(r1)
+    11d8:	7e 83 a3 78 	mr      r3,r20
+    11dc:	38 a0 00 00 	li      r5,0
+    11e0:	4c c6 32 42 	crset   4*cr1+eq
+    11e4:	4e 80 04 21 	bctrl
+    11e8:	39 20 00 41 	li      r9,65
+    11ec:	92 a1 00 20 	stw     r21,32(r1)
+    11f0:	7e c5 b3 78 	mr      r5,r22
+    11f4:	92 41 00 1c 	stw     r18,28(r1)
+    11f8:	38 80 00 00 	li      r4,0
+    11fc:	92 e1 00 18 	stw     r23,24(r1)
+    1200:	93 01 00 10 	stw     r24,16(r1)
+    1204:	93 21 00 08 	stw     r25,8(r1)
+    1208:	93 e1 00 28 	stw     r31,40(r1)
+    120c:	93 e1 00 24 	stw     r31,36(r1)
+    1210:	93 a1 00 14 	stw     r29,20(r1)
+    1214:	91 21 00 0c 	stw     r9,12(r1)
+    1218:	90 61 00 c8 	stw     r3,200(r1)
+    121c:	80 7e 00 00 	lwz     r3,0(r30)
+    1220:	81 23 01 f8 	lwz     r9,504(r3)
+    1224:	7d 29 03 a6 	mtctr   r9
+    1228:	4c c6 32 42 	crset   4*cr1+eq
+    122c:	4e 80 04 21 	bctrl
+    1230:	81 51 00 00 	lwz     r10,0(r17)
+    1234:	7c 69 1b 78 	mr      r9,r3
+    1238:	82 9e 00 00 	lwz     r20,0(r30)
+    123c:	81 0a 00 4c 	lwz     r8,76(r10)
+    1240:	7d 43 53 78 	mr      r3,r10
+    1244:	91 3a 10 7c 	stw     r9,4220(r26)
+    1248:	7d 09 03 a6 	mtctr   r8
+    124c:	91 21 00 e0 	stw     r9,224(r1)
+    1250:	83 74 01 f8 	lwz     r27,504(r20)
+    1254:	4e 80 04 21 	bctrl
+    1258:	3d 40 00 00 	lis     r10,0
+    125c:	92 61 00 08 	stw     r19,8(r1)
+    1260:	7f 69 03 a6 	mtctr   r27
+    1264:	39 4a 00 00 	addi    r10,r10,0
+    1268:	93 e1 00 10 	stw     r31,16(r1)
+    126c:	7c 64 1b 78 	mr      r4,r3
+    1270:	91 41 00 0c 	stw     r10,12(r1)
+    1274:	7e 83 a3 78 	mr      r3,r20
+    1278:	38 a0 00 00 	li      r5,0
+    127c:	4c c6 32 42 	crset   4*cr1+eq
+    1280:	4e 80 04 21 	bctrl
+    1284:	39 40 00 3f 	li      r10,63
+    1288:	92 a1 00 20 	stw     r21,32(r1)
+    128c:	7e c5 b3 78 	mr      r5,r22
+    1290:	92 41 00 1c 	stw     r18,28(r1)
+    1294:	38 80 00 00 	li      r4,0
+    1298:	92 e1 00 18 	stw     r23,24(r1)
+    129c:	93 01 00 10 	stw     r24,16(r1)
+    12a0:	93 21 00 08 	stw     r25,8(r1)
+    12a4:	93 e1 00 28 	stw     r31,40(r1)
+    12a8:	93 e1 00 24 	stw     r31,36(r1)
+    12ac:	93 a1 00 14 	stw     r29,20(r1)
+    12b0:	91 41 00 0c 	stw     r10,12(r1)
+    12b4:	90 61 00 cc 	stw     r3,204(r1)
+    12b8:	80 7e 00 00 	lwz     r3,0(r30)
+    12bc:	81 23 01 f8 	lwz     r9,504(r3)
+    12c0:	7d 29 03 a6 	mtctr   r9
+    12c4:	4c c6 32 42 	crset   4*cr1+eq
+    12c8:	4e 80 04 21 	bctrl
+    12cc:	80 b1 00 00 	lwz     r5,0(r17)
+    12d0:	7c 6a 1b 78 	mr      r10,r3
+    12d4:	82 9e 00 00 	lwz     r20,0(r30)
+    12d8:	81 25 00 4c 	lwz     r9,76(r5)
+    12dc:	7c a3 2b 78 	mr      r3,r5
+    12e0:	91 5a 10 74 	stw     r10,4212(r26)
+    12e4:	7d 29 03 a6 	mtctr   r9
+    12e8:	91 41 00 d8 	stw     r10,216(r1)
+    12ec:	83 74 01 f8 	lwz     r27,504(r20)
+    12f0:	4e 80 04 21 	bctrl
+    12f4:	3c a0 00 00 	lis     r5,0
+    12f8:	92 61 00 08 	stw     r19,8(r1)
+    12fc:	7f 69 03 a6 	mtctr   r27
+    1300:	38 a5 00 00 	addi    r5,r5,0
+    1304:	93 e1 00 10 	stw     r31,16(r1)
+    1308:	7c 64 1b 78 	mr      r4,r3
+    130c:	90 a1 00 0c 	stw     r5,12(r1)
+    1310:	7e 83 a3 78 	mr      r3,r20
+    1314:	38 a0 00 00 	li      r5,0
+    1318:	3a 80 00 40 	li      r20,64
+    131c:	4c c6 32 42 	crset   4*cr1+eq
+    1320:	4e 80 04 21 	bctrl
+    1324:	92 a1 00 20 	stw     r21,32(r1)
+    1328:	7e c5 b3 78 	mr      r5,r22
+    132c:	38 80 00 00 	li      r4,0
+    1330:	92 41 00 1c 	stw     r18,28(r1)
+    1334:	7c 7b 1b 78 	mr      r27,r3
+    1338:	92 e1 00 18 	stw     r23,24(r1)
+    133c:	93 01 00 10 	stw     r24,16(r1)
+    1340:	93 21 00 08 	stw     r25,8(r1)
+    1344:	93 e1 00 28 	stw     r31,40(r1)
+    1348:	93 e1 00 24 	stw     r31,36(r1)
+    134c:	93 a1 00 14 	stw     r29,20(r1)
+    1350:	92 81 00 0c 	stw     r20,12(r1)
+    1354:	80 7e 00 00 	lwz     r3,0(r30)
+    1358:	81 23 01 f8 	lwz     r9,504(r3)
+    135c:	7d 29 03 a6 	mtctr   r9
+    1360:	4c c6 32 42 	crset   4*cr1+eq
+    1364:	4e 80 04 21 	bctrl
+    1368:	80 b1 00 00 	lwz     r5,0(r17)
+    136c:	7c 74 1b 78 	mr      r20,r3
+    1370:	80 9e 00 00 	lwz     r4,0(r30)
+    1374:	81 25 00 4c 	lwz     r9,76(r5)
+    1378:	7c a3 2b 78 	mr      r3,r5
+    137c:	92 9a 10 78 	stw     r20,4216(r26)
+    1380:	7d 29 03 a6 	mtctr   r9
+    1384:	81 84 01 f8 	lwz     r12,504(r4)
+    1388:	90 81 00 d4 	stw     r4,212(r1)
+    138c:	91 81 00 d0 	stw     r12,208(r1)
+    1390:	4e 80 04 21 	bctrl
+    1394:	80 81 00 d4 	lwz     r4,212(r1)
+    1398:	3c a0 00 00 	lis     r5,0
+    139c:	81 81 00 d0 	lwz     r12,208(r1)
+    13a0:	7c 69 03 a6 	mtctr   r3
+    13a4:	38 a5 00 00 	addi    r5,r5,0
+    13a8:	92 61 00 08 	stw     r19,8(r1)
+    13ac:	7c 83 23 78 	mr      r3,r4
+    13b0:	7c 89 02 a6 	mfctr   r4
+    13b4:	93 e1 00 10 	stw     r31,16(r1)
+    13b8:	7d 89 03 a6 	mtctr   r12
+    13bc:	90 a1 00 0c 	stw     r5,12(r1)
+    13c0:	38 a0 00 00 	li      r5,0
+    13c4:	4c c6 32 42 	crset   4*cr1+eq
+    13c8:	4e 80 04 21 	bctrl
+    13cc:	3d 20 85 00 	lis     r9,-31488
+    13d0:	93 61 00 74 	stw     r27,116(r1)
+    13d4:	3c 80 85 00 	lis     r4,-31488
+    13d8:	61 3b 71 06 	ori     r27,r9,28934
+    13dc:	81 21 00 cc 	lwz     r9,204(r1)
+    13e0:	7c 6c 1b 78 	mr      r12,r3
+    13e4:	81 41 00 d8 	lwz     r10,216(r1)
+    13e8:	3c 60 00 00 	lis     r3,0
+    13ec:	60 87 70 10 	ori     r7,r4,28688
+    13f0:	91 21 00 5c 	stw     r9,92(r1)
+    13f4:	3c a0 85 00 	lis     r5,-31488
+    13f8:	81 21 00 e0 	lwz     r9,224(r1)
+    13fc:	60 a6 70 0f 	ori     r6,r5,28687
+    1400:	38 a0 00 00 	li      r5,0
+    1404:	81 01 00 e4 	lwz     r8,228(r1)
+    1408:	91 21 00 54 	stw     r9,84(r1)
+    140c:	81 21 00 c8 	lwz     r9,200(r1)
+    1410:	91 41 00 6c 	stw     r10,108(r1)
+    1414:	39 43 00 00 	addi    r10,r3,0
+    1418:	91 21 00 44 	stw     r9,68(r1)
+    141c:	81 21 00 c4 	lwz     r9,196(r1)
+    1420:	80 01 00 e8 	lwz     r0,232(r1)
+    1424:	81 61 00 ec 	lwz     r11,236(r1)
+    1428:	91 81 00 8c 	stw     r12,140(r1)
+    142c:	7c 09 03 a6 	mtctr   r0
+    1430:	80 81 00 c0 	lwz     r4,192(r1)
+    1434:	7d 63 5b 78 	mr      r3,r11
+    1438:	91 01 00 24 	stw     r8,36(r1)
+    143c:	92 81 00 84 	stw     r20,132(r1)
+    1440:	3e 80 85 00 	lis     r20,-31488
+    1444:	93 81 00 80 	stw     r28,128(r1)
+    1448:	62 94 71 0c 	ori     r20,r20,28940
+    144c:	93 81 00 68 	stw     r28,104(r1)
+    1450:	93 81 00 50 	stw     r28,80(r1)
+    1454:	91 c1 00 3c 	stw     r14,60(r1)
+    1458:	93 81 00 38 	stw     r28,56(r1)
+    145c:	91 21 00 2c 	stw     r9,44(r1)
+    1460:	39 20 00 02 	li      r9,2
+    1464:	93 81 00 20 	stw     r28,32(r1)
+    1468:	93 e1 00 98 	stw     r31,152(r1)
+    146c:	93 e1 00 94 	stw     r31,148(r1)
+    1470:	93 e1 00 7c 	stw     r31,124(r1)
+    1474:	93 e1 00 64 	stw     r31,100(r1)
+    1478:	93 e1 00 4c 	stw     r31,76(r1)
+    147c:	93 e1 00 34 	stw     r31,52(r1)
+    1480:	93 61 00 90 	stw     r27,144(r1)
+    1484:	93 61 00 78 	stw     r27,120(r1)
+    1488:	93 61 00 60 	stw     r27,96(r1)
+    148c:	91 41 00 1c 	stw     r10,28(r1)
+    1490:	81 41 00 b8 	lwz     r10,184(r1)
+    1494:	90 e1 00 18 	stw     r7,24(r1)
+    1498:	90 c1 00 10 	stw     r6,16(r1)
+    149c:	93 61 00 48 	stw     r27,72(r1)
+    14a0:	93 61 00 30 	stw     r27,48(r1)
+    14a4:	92 81 00 88 	stw     r20,136(r1)
+    14a8:	92 81 00 70 	stw     r20,112(r1)
+    14ac:	92 81 00 58 	stw     r20,88(r1)
+    14b0:	92 81 00 40 	stw     r20,64(r1)
+    14b4:	92 81 00 28 	stw     r20,40(r1)
+    14b8:	91 41 00 08 	stw     r10,8(r1)
+    14bc:	93 a1 00 0c 	stw     r29,12(r1)
+    14c0:	91 21 00 14 	stw     r9,20(r1)
+    14c4:	90 e1 00 e4 	stw     r7,228(r1)
+    14c8:	90 c1 00 e8 	stw     r6,232(r1)
+    14cc:	4c c6 32 42 	crset   4*cr1+eq
+    14d0:	4e 80 04 21 	bctrl
+    14d4:	81 2f 00 00 	lwz     r9,0(r15)
+    14d8:	81 5e 00 00 	lwz     r10,0(r30)
+    14dc:	7c 6e 1b 78 	mr      r14,r3
+    14e0:	81 09 00 4c 	lwz     r8,76(r9)
+    14e4:	7d 23 4b 78 	mr      r3,r9
+    14e8:	81 2a 01 f8 	lwz     r9,504(r10)
+    14ec:	7d 09 03 a6 	mtctr   r8
+    14f0:	91 41 00 c4 	stw     r10,196(r1)
+    14f4:	91 21 00 c0 	stw     r9,192(r1)
+    14f8:	4e 80 04 21 	bctrl
+    14fc:	81 41 00 c4 	lwz     r10,196(r1)
+    1500:	38 a0 00 00 	li      r5,0
+    1504:	81 21 00 c0 	lwz     r9,192(r1)
+    1508:	7c 64 1b 78 	mr      r4,r3
+    150c:	93 e1 00 08 	stw     r31,8(r1)
+    1510:	7d 43 53 78 	mr      r3,r10
+    1514:	7d 29 03 a6 	mtctr   r9
+    1518:	4c c6 32 42 	crset   4*cr1+eq
+    151c:	4e 80 04 21 	bctrl
+    1520:	3d 40 85 00 	lis     r10,-31488
+    1524:	80 c1 00 f4 	lwz     r6,244(r1)
+    1528:	39 00 00 64 	li      r8,100
+    152c:	80 e1 00 f0 	lwz     r7,240(r1)
+    1530:	7c 69 1b 78 	mr      r9,r3
+    1534:	38 a0 00 00 	li      r5,0
+    1538:	91 c1 00 1c 	stw     r14,28(r1)
+    153c:	61 4e 70 26 	ori     r14,r10,28710
+    1540:	7c c3 33 78 	mr      r3,r6
+    1544:	81 41 00 b8 	lwz     r10,184(r1)
+    1548:	7c e9 03 a6 	mtctr   r7
+    154c:	91 01 00 34 	stw     r8,52(r1)
+    1550:	91 41 00 08 	stw     r10,8(r1)
+    1554:	80 81 00 bc 	lwz     r4,188(r1)
+    1558:	93 61 00 30 	stw     r27,48(r1)
+    155c:	93 81 00 28 	stw     r28,40(r1)
+    1560:	93 61 00 20 	stw     r27,32(r1)
+    1564:	93 81 00 18 	stw     r28,24(r1)
+    1568:	93 e1 00 38 	stw     r31,56(r1)
+    156c:	93 e1 00 24 	stw     r31,36(r1)
+    1570:	93 a1 00 14 	stw     r29,20(r1)
+    1574:	93 a1 00 0c 	stw     r29,12(r1)
+    1578:	91 21 00 2c 	stw     r9,44(r1)
+    157c:	91 c1 00 10 	stw     r14,16(r1)
+    1580:	4c c6 32 42 	crset   4*cr1+eq
+    1584:	4e 80 04 21 	bctrl
+    1588:	81 30 00 00 	lwz     r9,0(r16)
+    158c:	81 9e 00 00 	lwz     r12,0(r30)
+    1590:	80 a9 00 4c 	lwz     r5,76(r9)
+    1594:	90 61 00 e0 	stw     r3,224(r1)
+    1598:	7d 23 4b 78 	mr      r3,r9
+    159c:	7c a9 03 a6 	mtctr   r5
+    15a0:	81 6c 01 f8 	lwz     r11,504(r12)
+    15a4:	91 81 01 0c 	stw     r12,268(r1)
+    15a8:	91 61 01 08 	stw     r11,264(r1)
+    15ac:	4e 80 04 21 	bctrl
+    15b0:	81 30 00 00 	lwz     r9,0(r16)
+    15b4:	80 1e 00 00 	lwz     r0,0(r30)
+    15b8:	80 a9 00 4c 	lwz     r5,76(r9)
+    15bc:	90 61 00 bc 	stw     r3,188(r1)
+    15c0:	7d 23 4b 78 	mr      r3,r9
+    15c4:	7c 09 03 78 	mr      r9,r0
+    15c8:	7c a9 03 a6 	mtctr   r5
+    15cc:	80 a9 01 f8 	lwz     r5,504(r9)
+    15d0:	90 01 01 04 	stw     r0,260(r1)
+    15d4:	90 a1 00 c0 	stw     r5,192(r1)
+    15d8:	4e 80 04 21 	bctrl
+    15dc:	39 20 00 44 	li      r9,68
+    15e0:	92 a1 00 20 	stw     r21,32(r1)
+    15e4:	7e c5 b3 78 	mr      r5,r22
+    15e8:	92 41 00 1c 	stw     r18,28(r1)
+    15ec:	38 80 00 00 	li      r4,0
+    15f0:	92 e1 00 18 	stw     r23,24(r1)
+    15f4:	93 01 00 10 	stw     r24,16(r1)
+    15f8:	93 21 00 08 	stw     r25,8(r1)
+    15fc:	93 e1 00 28 	stw     r31,40(r1)
+    1600:	93 e1 00 24 	stw     r31,36(r1)
+    1604:	93 a1 00 14 	stw     r29,20(r1)
+    1608:	91 21 00 0c 	stw     r9,12(r1)
+    160c:	90 61 00 c4 	stw     r3,196(r1)
+    1610:	80 7e 00 00 	lwz     r3,0(r30)
+    1614:	81 63 01 f8 	lwz     r11,504(r3)
+    1618:	7d 69 03 a6 	mtctr   r11
+    161c:	4c c6 32 42 	crset   4*cr1+eq
+    1620:	4e 80 04 21 	bctrl
+    1624:	81 31 00 00 	lwz     r9,0(r17)
+    1628:	7c 60 1b 78 	mr      r0,r3
+    162c:	81 1e 00 00 	lwz     r8,0(r30)
+    1630:	81 69 00 4c 	lwz     r11,76(r9)
+    1634:	7d 23 4b 78 	mr      r3,r9
+    1638:	90 1a 10 88 	stw     r0,4232(r26)
+    163c:	7d 69 03 a6 	mtctr   r11
+    1640:	81 48 01 f8 	lwz     r10,504(r8)
+    1644:	90 01 00 c8 	stw     r0,200(r1)
+    1648:	91 01 00 d0 	stw     r8,208(r1)
+    164c:	91 41 00 cc 	stw     r10,204(r1)
+    1650:	4e 80 04 21 	bctrl
+    1654:	81 01 00 d0 	lwz     r8,208(r1)
+    1658:	3d 20 00 00 	lis     r9,0
+    165c:	38 a0 00 00 	li      r5,0
+    1660:	81 41 00 cc 	lwz     r10,204(r1)
+    1664:	39 29 00 00 	addi    r9,r9,0
+    1668:	7c 64 1b 78 	mr      r4,r3
+    166c:	92 61 00 08 	stw     r19,8(r1)
+    1670:	7d 03 43 78 	mr      r3,r8
+    1674:	7d 49 03 a6 	mtctr   r10
+    1678:	93 e1 00 10 	stw     r31,16(r1)
+    167c:	91 21 00 0c 	stw     r9,12(r1)
+    1680:	4c c6 32 42 	crset   4*cr1+eq
+    1684:	4e 80 04 21 	bctrl
+    1688:	39 20 00 45 	li      r9,69
+    168c:	92 a1 00 20 	stw     r21,32(r1)
+    1690:	7e c5 b3 78 	mr      r5,r22
+    1694:	92 41 00 1c 	stw     r18,28(r1)
+    1698:	38 80 00 00 	li      r4,0
+    169c:	92 e1 00 18 	stw     r23,24(r1)
+    16a0:	93 01 00 10 	stw     r24,16(r1)
+    16a4:	93 21 00 08 	stw     r25,8(r1)
+    16a8:	93 e1 00 28 	stw     r31,40(r1)
+    16ac:	93 e1 00 24 	stw     r31,36(r1)
+    16b0:	93 a1 00 14 	stw     r29,20(r1)
+    16b4:	91 21 00 0c 	stw     r9,12(r1)
+    16b8:	90 61 00 cc 	stw     r3,204(r1)
+    16bc:	80 7e 00 00 	lwz     r3,0(r30)
+    16c0:	80 03 01 f8 	lwz     r0,504(r3)
+    16c4:	7c 09 03 a6 	mtctr   r0
+    16c8:	4c c6 32 42 	crset   4*cr1+eq
+    16cc:	4e 80 04 21 	bctrl
+    16d0:	81 31 00 00 	lwz     r9,0(r17)
+    16d4:	7c 60 1b 78 	mr      r0,r3
+    16d8:	81 1e 00 00 	lwz     r8,0(r30)
+    16dc:	81 89 00 4c 	lwz     r12,76(r9)
+    16e0:	7d 23 4b 78 	mr      r3,r9
+    16e4:	90 1a 10 8c 	stw     r0,4236(r26)
+    16e8:	7d 89 03 a6 	mtctr   r12
+    16ec:	81 48 01 f8 	lwz     r10,504(r8)
+    16f0:	90 01 00 d0 	stw     r0,208(r1)
+    16f4:	91 01 00 d8 	stw     r8,216(r1)
+    16f8:	91 41 00 d4 	stw     r10,212(r1)
+    16fc:	4e 80 04 21 	bctrl
+    1700:	81 01 00 d8 	lwz     r8,216(r1)
+    1704:	3d 20 00 00 	lis     r9,0
+    1708:	38 a0 00 00 	li      r5,0
+    170c:	81 41 00 d4 	lwz     r10,212(r1)
+    1710:	39 29 00 00 	addi    r9,r9,0
+    1714:	7c 64 1b 78 	mr      r4,r3
+    1718:	92 61 00 08 	stw     r19,8(r1)
+    171c:	7d 03 43 78 	mr      r3,r8
+    1720:	7d 49 03 a6 	mtctr   r10
+    1724:	93 e1 00 10 	stw     r31,16(r1)
+    1728:	91 21 00 0c 	stw     r9,12(r1)
+    172c:	4c c6 32 42 	crset   4*cr1+eq
+    1730:	4e 80 04 21 	bctrl
+    1734:	39 20 00 46 	li      r9,70
+    1738:	92 a1 00 20 	stw     r21,32(r1)
+    173c:	7e c5 b3 78 	mr      r5,r22
+    1740:	92 41 00 1c 	stw     r18,28(r1)
+    1744:	38 80 00 00 	li      r4,0
+    1748:	92 e1 00 18 	stw     r23,24(r1)
+    174c:	93 01 00 10 	stw     r24,16(r1)
+    1750:	93 21 00 08 	stw     r25,8(r1)
+    1754:	93 e1 00 28 	stw     r31,40(r1)
+    1758:	93 e1 00 24 	stw     r31,36(r1)
+    175c:	93 a1 00 14 	stw     r29,20(r1)
+    1760:	91 21 00 0c 	stw     r9,12(r1)
+    1764:	90 61 00 d4 	stw     r3,212(r1)
+    1768:	80 7e 00 00 	lwz     r3,0(r30)
+    176c:	81 83 01 f8 	lwz     r12,504(r3)
+    1770:	7d 89 03 a6 	mtctr   r12
+    1774:	4c c6 32 42 	crset   4*cr1+eq
+    1778:	4e 80 04 21 	bctrl
+    177c:	81 51 00 00 	lwz     r10,0(r17)
+    1780:	7c 69 1b 78 	mr      r9,r3
+    1784:	80 fe 00 00 	lwz     r7,0(r30)
+    1788:	81 8a 00 4c 	lwz     r12,76(r10)
+    178c:	7d 43 53 78 	mr      r3,r10
+    1790:	91 3a 10 90 	stw     r9,4240(r26)
+    1794:	7d 89 03 a6 	mtctr   r12
+    1798:	81 07 01 f8 	lwz     r8,504(r7)
+    179c:	91 21 01 00 	stw     r9,256(r1)
+    17a0:	90 e1 00 ec 	stw     r7,236(r1)
+    17a4:	91 01 00 d8 	stw     r8,216(r1)
+    17a8:	4e 80 04 21 	bctrl
+    17ac:	80 e1 00 ec 	lwz     r7,236(r1)
+    17b0:	3d 40 00 00 	lis     r10,0
+    17b4:	38 a0 00 00 	li      r5,0
+    17b8:	81 01 00 d8 	lwz     r8,216(r1)
+    17bc:	39 4a 00 00 	addi    r10,r10,0
+    17c0:	7c 64 1b 78 	mr      r4,r3
+    17c4:	92 61 00 08 	stw     r19,8(r1)
+    17c8:	7c e3 3b 78 	mr      r3,r7
+    17cc:	7d 09 03 a6 	mtctr   r8
+    17d0:	93 e1 00 10 	stw     r31,16(r1)
+    17d4:	91 41 00 0c 	stw     r10,12(r1)
+    17d8:	4c c6 32 42 	crset   4*cr1+eq
+    17dc:	4e 80 04 21 	bctrl
+    17e0:	39 40 00 47 	li      r10,71
+    17e4:	92 a1 00 20 	stw     r21,32(r1)
+    17e8:	7e c5 b3 78 	mr      r5,r22
+    17ec:	92 41 00 1c 	stw     r18,28(r1)
+    17f0:	38 80 00 00 	li      r4,0
+    17f4:	92 e1 00 18 	stw     r23,24(r1)
+    17f8:	93 01 00 10 	stw     r24,16(r1)
+    17fc:	93 21 00 08 	stw     r25,8(r1)
+    1800:	93 e1 00 28 	stw     r31,40(r1)
+    1804:	93 e1 00 24 	stw     r31,36(r1)
+    1808:	93 a1 00 14 	stw     r29,20(r1)
+    180c:	91 41 00 0c 	stw     r10,12(r1)
+    1810:	90 61 00 d8 	stw     r3,216(r1)
+    1814:	80 7e 00 00 	lwz     r3,0(r30)
+    1818:	81 83 01 f8 	lwz     r12,504(r3)
+    181c:	7d 89 03 a6 	mtctr   r12
+    1820:	4c c6 32 42 	crset   4*cr1+eq
+    1824:	4e 80 04 21 	bctrl
+    1828:	81 11 00 00 	lwz     r8,0(r17)
+    182c:	7c 6a 1b 78 	mr      r10,r3
+    1830:	80 be 00 00 	lwz     r5,0(r30)
+    1834:	81 88 00 4c 	lwz     r12,76(r8)
+    1838:	7d 03 43 78 	mr      r3,r8
+    183c:	91 5a 10 94 	stw     r10,4244(r26)
+    1840:	7d 89 03 a6 	mtctr   r12
+    1844:	80 c5 01 f8 	lwz     r6,504(r5)
+    1848:	91 41 00 fc 	stw     r10,252(r1)
+    184c:	90 a1 00 f0 	stw     r5,240(r1)
+    1850:	90 c1 00 ec 	stw     r6,236(r1)
+    1854:	4e 80 04 21 	bctrl
+    1858:	80 c1 00 ec 	lwz     r6,236(r1)
+    185c:	3d 00 00 00 	lis     r8,0
+    1860:	80 a1 00 f0 	lwz     r5,240(r1)
+    1864:	39 08 00 00 	addi    r8,r8,0
+    1868:	7c 64 1b 78 	mr      r4,r3
+    186c:	7c c9 03 a6 	mtctr   r6
+    1870:	92 61 00 08 	stw     r19,8(r1)
+    1874:	93 e1 00 10 	stw     r31,16(r1)
+    1878:	7c a3 2b 78 	mr      r3,r5
+    187c:	38 a0 00 00 	li      r5,0
+    1880:	91 01 00 0c 	stw     r8,12(r1)
+    1884:	4c c6 32 42 	crset   4*cr1+eq
+    1888:	4e 80 04 21 	bctrl
+    188c:	39 00 00 48 	li      r8,72
+    1890:	92 a1 00 20 	stw     r21,32(r1)
+    1894:	7e c5 b3 78 	mr      r5,r22
+    1898:	92 41 00 1c 	stw     r18,28(r1)
+    189c:	38 80 00 00 	li      r4,0
+    18a0:	92 e1 00 18 	stw     r23,24(r1)
+    18a4:	93 01 00 10 	stw     r24,16(r1)
+    18a8:	93 21 00 08 	stw     r25,8(r1)
+    18ac:	93 e1 00 28 	stw     r31,40(r1)
+    18b0:	93 e1 00 24 	stw     r31,36(r1)
+    18b4:	93 a1 00 14 	stw     r29,20(r1)
+    18b8:	91 01 00 0c 	stw     r8,12(r1)
+    18bc:	90 61 00 f8 	stw     r3,248(r1)
+    18c0:	80 7e 00 00 	lwz     r3,0(r30)
+    18c4:	81 83 01 f8 	lwz     r12,504(r3)
+    18c8:	7d 89 03 a6 	mtctr   r12
+    18cc:	4c c6 32 42 	crset   4*cr1+eq
+    18d0:	4e 80 04 21 	bctrl
+    18d4:	80 b1 00 00 	lwz     r5,0(r17)
+    18d8:	7c 68 1b 78 	mr      r8,r3
+    18dc:	80 9e 00 00 	lwz     r4,0(r30)
+    18e0:	81 85 00 4c 	lwz     r12,76(r5)
+    18e4:	7c a3 2b 78 	mr      r3,r5
+    18e8:	91 1a 10 98 	stw     r8,4248(r26)
+    18ec:	7d 89 03 a6 	mtctr   r12
+    18f0:	80 a4 01 f8 	lwz     r5,504(r4)
+    18f4:	91 01 00 f4 	stw     r8,244(r1)
+    18f8:	90 81 00 f0 	stw     r4,240(r1)
+    18fc:	90 a1 00 ec 	stw     r5,236(r1)
+    1900:	4e 80 04 21 	bctrl
+    1904:	80 81 00 f0 	lwz     r4,240(r1)
+    1908:	80 a1 00 ec 	lwz     r5,236(r1)
+    190c:	7c 69 03 a6 	mtctr   r3
+    1910:	7c 83 23 78 	mr      r3,r4
+    1914:	7c 89 02 a6 	mfctr   r4
+    1918:	92 61 00 08 	stw     r19,8(r1)
+    191c:	7c a9 03 a6 	mtctr   r5
+    1920:	3c a0 00 00 	lis     r5,0
+    1924:	93 e1 00 10 	stw     r31,16(r1)
+    1928:	38 a5 00 00 	addi    r5,r5,0
+    192c:	90 a1 00 0c 	stw     r5,12(r1)
+    1930:	38 a0 00 00 	li      r5,0
+    1934:	4c c6 32 42 	crset   4*cr1+eq
+    1938:	4e 80 04 21 	bctrl
+    193c:	92 a1 00 20 	stw     r21,32(r1)
+    1940:	7e c5 b3 78 	mr      r5,r22
+    1944:	38 80 00 00 	li      r4,0
+    1948:	7c 67 1b 78 	mr      r7,r3
+    194c:	38 60 00 49 	li      r3,73
+    1950:	92 41 00 1c 	stw     r18,28(r1)
+    1954:	92 e1 00 18 	stw     r23,24(r1)
+    1958:	7c f7 3b 78 	mr      r23,r7
+    195c:	93 01 00 10 	stw     r24,16(r1)
+    1960:	93 21 00 08 	stw     r25,8(r1)
+    1964:	93 e1 00 28 	stw     r31,40(r1)
+    1968:	93 e1 00 24 	stw     r31,36(r1)
+    196c:	93 a1 00 14 	stw     r29,20(r1)
+    1970:	90 61 00 0c 	stw     r3,12(r1)
+    1974:	80 7e 00 00 	lwz     r3,0(r30)
+    1978:	82 c3 01 f8 	lwz     r22,504(r3)
+    197c:	7e c9 03 a6 	mtctr   r22
+    1980:	4c c6 32 42 	crset   4*cr1+eq
+    1984:	4e 80 04 21 	bctrl
+    1988:	80 b1 00 00 	lwz     r5,0(r17)
+    198c:	7c 78 1b 78 	mr      r24,r3
+    1990:	82 be 00 00 	lwz     r21,0(r30)
+    1994:	82 c5 00 4c 	lwz     r22,76(r5)
+    1998:	7c a3 2b 78 	mr      r3,r5
+    199c:	93 1a 10 9c 	stw     r24,4252(r26)
+    19a0:	7e c9 03 a6 	mtctr   r22
+    19a4:	82 d5 01 f8 	lwz     r22,504(r21)
+    19a8:	4e 80 04 21 	bctrl
+    19ac:	3c a0 00 00 	lis     r5,0
+    19b0:	92 61 00 08 	stw     r19,8(r1)
+    19b4:	7e c9 03 a6 	mtctr   r22
+    19b8:	38 a5 00 00 	addi    r5,r5,0
+    19bc:	93 e1 00 10 	stw     r31,16(r1)
+    19c0:	7c 64 1b 78 	mr      r4,r3
+    19c4:	90 a1 00 0c 	stw     r5,12(r1)
+    19c8:	7e a3 ab 78 	mr      r3,r21
+    19cc:	38 a0 00 00 	li      r5,0
+    19d0:	3e c0 00 00 	lis     r22,0
+    19d4:	3a d6 00 00 	addi    r22,r22,0
+    19d8:	4c c6 32 42 	crset   4*cr1+eq
+    19dc:	4e 80 04 21 	bctrl
+    19e0:	93 01 00 9c 	stw     r24,156(r1)
+    19e4:	38 a0 00 00 	li      r5,0
+    19e8:	83 01 00 c0 	lwz     r24,192(r1)
+    19ec:	7c 75 1b 78 	mr      r21,r3
+    19f0:	80 01 01 04 	lwz     r0,260(r1)
+    19f4:	7f 09 03 a6 	mtctr   r24
+    19f8:	83 01 00 d8 	lwz     r24,216(r1)
+    19fc:	81 41 00 fc 	lwz     r10,252(r1)
+    1a00:	7c 03 03 78 	mr      r3,r0
+    1a04:	81 01 00 f4 	lwz     r8,244(r1)
+    1a08:	80 c1 00 f8 	lwz     r6,248(r1)
+    1a0c:	81 21 01 00 	lwz     r9,256(r1)
+    1a10:	80 01 00 d0 	lwz     r0,208(r1)
+    1a14:	93 01 00 5c 	stw     r24,92(r1)
+    1a18:	83 01 00 d4 	lwz     r24,212(r1)
+    1a1c:	91 41 00 6c 	stw     r10,108(r1)
+    1a20:	91 01 00 84 	stw     r8,132(r1)
+    1a24:	80 81 00 c4 	lwz     r4,196(r1)
+    1a28:	93 61 00 a8 	stw     r27,168(r1)
+    1a2c:	92 81 00 a0 	stw     r20,160(r1)
+    1a30:	93 81 00 98 	stw     r28,152(r1)
+    1a34:	93 61 00 90 	stw     r27,144(r1)
+    1a38:	92 e1 00 8c 	stw     r23,140(r1)
+    1a3c:	92 81 00 88 	stw     r20,136(r1)
+    1a40:	93 81 00 80 	stw     r28,128(r1)
+    1a44:	93 61 00 78 	stw     r27,120(r1)
+    1a48:	90 c1 00 74 	stw     r6,116(r1)
+    1a4c:	91 21 00 54 	stw     r9,84(r1)
+    1a50:	39 20 00 02 	li      r9,2
+    1a54:	93 01 00 44 	stw     r24,68(r1)
+    1a58:	90 01 00 3c 	stw     r0,60(r1)
+    1a5c:	92 a1 00 a4 	stw     r21,164(r1)
+    1a60:	92 81 00 70 	stw     r20,112(r1)
+    1a64:	93 81 00 68 	stw     r28,104(r1)
+    1a68:	93 61 00 60 	stw     r27,96(r1)
+    1a6c:	92 81 00 58 	stw     r20,88(r1)
+    1a70:	93 81 00 50 	stw     r28,80(r1)
+    1a74:	93 61 00 48 	stw     r27,72(r1)
+    1a78:	80 01 00 cc 	lwz     r0,204(r1)
+    1a7c:	80 e1 00 e4 	lwz     r7,228(r1)
+    1a80:	80 c1 00 e8 	lwz     r6,232(r1)
+    1a84:	81 61 00 c8 	lwz     r11,200(r1)
+    1a88:	82 a1 00 b8 	lwz     r21,184(r1)
+    1a8c:	90 01 00 2c 	stw     r0,44(r1)
+    1a90:	90 e1 00 18 	stw     r7,24(r1)
+    1a94:	90 c1 00 10 	stw     r6,16(r1)
+    1a98:	91 61 00 24 	stw     r11,36(r1)
+    1a9c:	92 81 00 40 	stw     r20,64(r1)
+    1aa0:	93 81 00 38 	stw     r28,56(r1)
+    1aa4:	93 e1 00 b0 	stw     r31,176(r1)
+    1aa8:	93 e1 00 ac 	stw     r31,172(r1)
+    1aac:	93 e1 00 94 	stw     r31,148(r1)
+    1ab0:	93 e1 00 7c 	stw     r31,124(r1)
+    1ab4:	93 e1 00 64 	stw     r31,100(r1)
+    1ab8:	93 e1 00 4c 	stw     r31,76(r1)
+    1abc:	93 e1 00 34 	stw     r31,52(r1)
+    1ac0:	93 61 00 30 	stw     r27,48(r1)
+    1ac4:	92 81 00 28 	stw     r20,40(r1)
+    1ac8:	91 21 00 14 	stw     r9,20(r1)
+    1acc:	92 a1 00 08 	stw     r21,8(r1)
+    1ad0:	93 81 00 20 	stw     r28,32(r1)
+    1ad4:	93 a1 00 0c 	stw     r29,12(r1)
+    1ad8:	92 c1 00 1c 	stw     r22,28(r1)
+    1adc:	4c c6 32 42 	crset   4*cr1+eq
+    1ae0:	4e 80 04 21 	bctrl
+    1ae4:	82 fe 00 00 	lwz     r23,0(r30)
+    1ae8:	7c 78 1b 78 	mr      r24,r3
+    1aec:	80 6f 00 00 	lwz     r3,0(r15)
+    1af0:	82 d7 01 f8 	lwz     r22,504(r23)
+    1af4:	81 23 00 4c 	lwz     r9,76(r3)
+    1af8:	7d 29 03 a6 	mtctr   r9
+    1afc:	4e 80 04 21 	bctrl
+    1b00:	93 e1 00 08 	stw     r31,8(r1)
+    1b04:	7e c9 03 a6 	mtctr   r22
+    1b08:	38 a0 00 00 	li      r5,0
+    1b0c:	7c 64 1b 78 	mr      r4,r3
+    1b10:	7e e3 bb 78 	mr      r3,r23
+    1b14:	4c c6 32 42 	crset   4*cr1+eq
+    1b18:	4e 80 04 21 	bctrl
+    1b1c:	81 81 01 0c 	lwz     r12,268(r1)
+    1b20:	39 00 00 64 	li      r8,100
+    1b24:	38 a0 00 00 	li      r5,0
+    1b28:	81 61 01 08 	lwz     r11,264(r1)
+    1b2c:	7c 69 1b 78 	mr      r9,r3
+    1b30:	91 01 00 34 	stw     r8,52(r1)
+    1b34:	7d 83 63 78 	mr      r3,r12
+    1b38:	7d 69 03 a6 	mtctr   r11
+    1b3c:	93 01 00 1c 	stw     r24,28(r1)
+    1b40:	93 61 00 30 	stw     r27,48(r1)
+    1b44:	93 61 00 20 	stw     r27,32(r1)
+    1b48:	91 c1 00 10 	stw     r14,16(r1)
+    1b4c:	91 21 00 2c 	stw     r9,44(r1)
+    1b50:	92 a1 00 08 	stw     r21,8(r1)
+    1b54:	93 81 00 28 	stw     r28,40(r1)
+    1b58:	93 81 00 18 	stw     r28,24(r1)
+    1b5c:	93 a1 00 14 	stw     r29,20(r1)
+    1b60:	93 a1 00 0c 	stw     r29,12(r1)
+    1b64:	93 e1 00 38 	stw     r31,56(r1)
+    1b68:	93 e1 00 24 	stw     r31,36(r1)
+    1b6c:	80 81 00 bc 	lwz     r4,188(r1)
+    1b70:	4c c6 32 42 	crset   4*cr1+eq
+    1b74:	4e 80 04 21 	bctrl
+    1b78:	81 41 00 e0 	lwz     r10,224(r1)
+    1b7c:	3d 20 85 00 	lis     r9,-31488
+    1b80:	3c a0 00 00 	lis     r5,0
+    1b84:	61 29 72 01 	ori     r9,r9,29185
+    1b88:	90 61 00 1c 	stw     r3,28(r1)
+    1b8c:	38 a5 00 00 	addi    r5,r5,0
+    1b90:	91 41 00 14 	stw     r10,20(r1)
+    1b94:	38 80 00 00 	li      r4,0
+    1b98:	81 41 00 dc 	lwz     r10,220(r1)
+    1b9c:	93 e1 00 20 	stw     r31,32(r1)
+    1ba0:	91 41 00 0c 	stw     r10,12(r1)
+    1ba4:	91 21 00 18 	stw     r9,24(r1)
+    1ba8:	91 21 00 10 	stw     r9,16(r1)
+    1bac:	91 21 00 08 	stw     r9,8(r1)
+    1bb0:	80 7e 00 00 	lwz     r3,0(r30)
+    1bb4:	81 23 01 f8 	lwz     r9,504(r3)
+    1bb8:	7d 29 03 a6 	mtctr   r9
+    1bbc:	4c c6 32 42 	crset   4*cr1+eq
+    1bc0:	4e 80 04 21 	bctrl
+    1bc4:	3d 20 00 00 	lis     r9,0
+    1bc8:	83 7e 00 00 	lwz     r27,0(r30)
+    1bcc:	81 29 00 00 	lwz     r9,0(r9)
+    1bd0:	90 7a 10 6c 	stw     r3,4204(r26)
+    1bd4:	81 49 00 4c 	lwz     r10,76(r9)
+    1bd8:	7d 23 4b 78 	mr      r3,r9
+    1bdc:	83 1b 01 f8 	lwz     r24,504(r27)
+    1be0:	7d 49 03 a6 	mtctr   r10
+    1be4:	4e 80 04 21 	bctrl
+    1be8:	3d 60 85 00 	lis     r11,-31488
+    1bec:	3c a0 85 00 	lis     r5,-31488
+    1bf0:	93 21 00 08 	stw     r25,8(r1)
+    1bf4:	3c c0 00 00 	lis     r6,0
+    1bf8:	3c e0 85 00 	lis     r7,-31488
+    1bfc:	93 a1 00 3c 	stw     r29,60(r1)
+    1c00:	3d 00 85 00 	lis     r8,-31488
+    1c04:	3d 40 85 00 	lis     r10,-31488
+    1c08:	93 a1 00 34 	stw     r29,52(r1)
+    1c0c:	3d 20 80 03 	lis     r9,-32765
+    1c10:	61 6b 30 10 	ori     r11,r11,12304
+    1c14:	93 a1 00 24 	stw     r29,36(r1)
+    1c18:	38 c6 00 00 	addi    r6,r6,0
+    1c1c:	60 e7 30 08 	ori     r7,r7,12296
+    1c20:	91 61 00 38 	stw     r11,56(r1)
+    1c24:	61 08 30 1b 	ori     r8,r8,12315
+    1c28:	61 4a 30 12 	ori     r10,r10,12306
+    1c2c:	90 c1 00 2c 	stw     r6,44(r1)
+    1c30:	61 29 00 16 	ori     r9,r9,22
+    1c34:	7f 09 03 a6 	mtctr   r24
+    1c38:	90 e1 00 28 	stw     r7,40(r1)
+    1c3c:	3b 00 00 3c 	li      r24,60
+    1c40:	60 a5 30 11 	ori     r5,r5,12305
+    1c44:	91 01 00 20 	stw     r8,32(r1)
+    1c48:	91 41 00 18 	stw     r10,24(r1)
+    1c4c:	7c 64 1b 78 	mr      r4,r3
+    1c50:	7f 63 db 78 	mr      r3,r27
+    1c54:	93 a1 00 1c 	stw     r29,28(r1)
+    1c58:	93 a1 00 14 	stw     r29,20(r1)
+    1c5c:	93 e1 00 40 	stw     r31,64(r1)
+    1c60:	90 a1 00 30 	stw     r5,48(r1)
+    1c64:	38 a0 00 00 	li      r5,0
+    1c68:	91 21 00 10 	stw     r9,16(r1)
+    1c6c:	93 01 00 0c 	stw     r24,12(r1)
+    1c70:	4c c6 32 42 	crset   4*cr1+eq
+    1c74:	4e 80 04 21 	bctrl
+    1c78:	83 de 00 00 	lwz     r30,0(r30)
+    1c7c:	7c 7b 1b 78 	mr      r27,r3
+    1c80:	80 70 00 00 	lwz     r3,0(r16)
+    1c84:	83 3e 01 f8 	lwz     r25,504(r30)
+    1c88:	81 23 00 4c 	lwz     r9,76(r3)
+    1c8c:	93 7a 10 68 	stw     r27,4200(r26)
+    1c90:	7d 29 03 a6 	mtctr   r9
+    1c94:	4e 80 04 21 	bctrl
+    1c98:	81 1a 10 6c 	lwz     r8,4204(r26)
+    1c9c:	3d 20 85 00 	lis     r9,-31488
+    1ca0:	39 40 00 28 	li      r10,40
+    1ca4:	61 29 71 05 	ori     r9,r9,28933
+    1ca8:	93 81 00 20 	stw     r28,32(r1)
+    1cac:	7c 64 1b 78 	mr      r4,r3
+    1cb0:	93 61 00 14 	stw     r27,20(r1)
+    1cb4:	7f c3 f3 78 	mr      r3,r30
+    1cb8:	7f 29 03 a6 	mtctr   r25
+    1cbc:	93 81 00 10 	stw     r28,16(r1)
+    1cc0:	38 a0 00 00 	li      r5,0
+    1cc4:	91 c1 00 08 	stw     r14,8(r1)
+    1cc8:	93 01 00 2c 	stw     r24,44(r1)
+    1ccc:	93 a1 00 0c 	stw     r29,12(r1)
+    1cd0:	93 e1 00 30 	stw     r31,48(r1)
+    1cd4:	91 01 00 24 	stw     r8,36(r1)
+    1cd8:	91 21 00 28 	stw     r9,40(r1)
+    1cdc:	91 21 00 18 	stw     r9,24(r1)
+    1ce0:	91 41 00 1c 	stw     r10,28(r1)
+    1ce4:	4c c6 32 42 	crset   4*cr1+eq
+    1ce8:	4e 80 04 21 	bctrl
+    1cec:	80 01 01 64 	lwz     r0,356(r1)
+    1cf0:	81 c1 01 18 	lwz     r14,280(r1)
+    1cf4:	81 e1 01 1c 	lwz     r15,284(r1)
+    1cf8:	7c 08 03 a6 	mtlr    r0
+    1cfc:	82 01 01 20 	lwz     r16,288(r1)
+    1d00:	82 21 01 24 	lwz     r17,292(r1)
+    1d04:	82 41 01 28 	lwz     r18,296(r1)
+    1d08:	82 61 01 2c 	lwz     r19,300(r1)
+    1d0c:	82 81 01 30 	lwz     r20,304(r1)
+    1d10:	82 a1 01 34 	lwz     r21,308(r1)
+    1d14:	82 c1 01 38 	lwz     r22,312(r1)
+    1d18:	82 e1 01 3c 	lwz     r23,316(r1)
+    1d1c:	83 01 01 40 	lwz     r24,320(r1)
+    1d20:	83 21 01 44 	lwz     r25,324(r1)
+    1d24:	83 41 01 48 	lwz     r26,328(r1)
+    1d28:	83 61 01 4c 	lwz     r27,332(r1)
+    1d2c:	83 81 01 50 	lwz     r28,336(r1)
+    1d30:	83 a1 01 54 	lwz     r29,340(r1)
+    1d34:	83 c1 01 58 	lwz     r30,344(r1)
+    1d38:	83 e1 01 5c 	lwz     r31,348(r1)
+    1d3c:	38 21 01 60 	addi    r1,r1,352
+    1d40:	4e 80 00 20 	blr
