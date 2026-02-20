@@ -410,8 +410,6 @@ static void EnrichPhysicalDrive(PhysicalDrive *drive)
     }
     IExec->FreeSysObject(ASOT_PORT, port);
 
-    IExec->FreeSysObject(ASOT_PORT, port);
-
     // Sanitize any garbage returned by arbitrary device drivers
     SanitizeString(drive->vendor);
     SanitizeString(drive->product);

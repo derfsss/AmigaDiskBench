@@ -34,7 +34,8 @@
 #include <string.h>
 #define LOG_DEBUG(fmt, ...)                                                                                            \
     do {                                                                                                               \
-        if (strstr(__FILE__, "diskinfo") != NULL || strstr(__FILE__, "gui_info") != NULL) {                            \
+        if (strstr(__FILE__, "diskinfo") != NULL || strstr(__FILE__, "gui_info") != NULL ||                            \
+            strstr(__FILE__, "main.c") != NULL) {                                                                      \
             IExec->DebugPrintF("[AmigaDiskBench] %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);                \
         }                                                                                                              \
     } while (0)
