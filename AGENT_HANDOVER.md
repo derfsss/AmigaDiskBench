@@ -35,7 +35,9 @@ AmigaDiskBench is a modern, ReAction-based disk benchmarking utility for AmigaOS
 - **SCSI Inquiry**: Enhanced to identify CD/DVD drives by Peripheral Device Type (0x05). Implemented logic to SKIP VPD Page 0x80 queries for CD-ROMs to prevent system freezes.
 - **Stability**: Wrapped `IDOS->Lock` calls with `SetProcWindow((APTR)-1)` to suppress "No Disk" system requesters on empty drives.
 - **Filesystem Display**: Standardized `GetDosTypeString` to format DOS types as `ABC/XX` (Hex).
-- **UI Hotfixes**: Resolved a DSI Exception by migrating string pointers for `GA_Text` attributes from the stack to static memory.
+- **UI Hotfixes**: Resolved a DSI Exception by migrating string pointers for `GA_Text` attributes from the stack to static memory. Added hide logic for unmounted tree partitions and a 'Refresh' button.
+- **Memory Fix**: Resolved kernel DSI Exception on startup by ensuring `ASOT_IOREQUEST` allocation uses `sizeof(struct IOExtTD)` instead of `struct IOStdReq` for `trackdisk.device` and SCSI devices.
+- **Virtualization Support**: Verified behavior under QEMU; `SCSI_INQUIRY` succeeds but `ATA PASS-THROUGH` (for S.M.A.R.T.) is expected to fail on emulated standard block devices.
 
 ### v2.2.14: Finalizing Release
 - **Build**: Bumped build number to release target.
