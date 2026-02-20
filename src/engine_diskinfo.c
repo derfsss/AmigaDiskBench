@@ -480,7 +480,7 @@ struct List *ScanSystemDrives(void)
                                 drive = IExec->AllocVecTags(sizeof(PhysicalDrive), AVT_Type, MEMF_SHARED,
                                                             AVT_ClearWithValue, 0, TAG_DONE);
                                 if (drive) {
-                                    strncpy(drive->device_name, devName, sizeof(drive->device_name) - 1);
+                                    snprintf(drive->device_name, sizeof(drive->device_name), "%s", devName);
                                     drive->unit_number = unit;
                                     IExec->NewMinList(&drive->partitions);
 
@@ -505,7 +505,7 @@ struct List *ScanSystemDrives(void)
                                     sizeof(LogicalPartition), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
                                 if (part) {
                                     // Use the DossHandler Name (e.g., DH0)
-                                    strncpy(part->dos_device_name, entryName, sizeof(part->dos_device_name) - 1);
+                                    snprintf(part->dos_device_name, sizeof(part->dos_device_name), "%s", entryName);
 
                                     // Volume Name & Info
                                     char devicePath[64];
@@ -538,7 +538,7 @@ struct List *ScanSystemDrives(void)
                                             // Actually InfoData doesn't have Volume Name.
                                             // We need to check if the Lock refers to a volume.
                                             // For now, use the Device Name as default Volume Name
-                                            strncpy(part->volume_name, entryName, sizeof(part->volume_name) - 1);
+                                            snprintf(part->volume_name, sizeof(part->volume_name), "%s", entryName);
 
                                             // Try to get real Volume Name
                                             char volBuf[64];
@@ -548,7 +548,7 @@ struct List *ScanSystemDrives(void)
                                                 char *colon = strchr(volBuf, ':');
                                                 if (colon)
                                                     *colon = '\0';
-                                                strncpy(part->volume_name, volBuf, sizeof(part->volume_name) - 1);
+                                                snprintf(part->volume_name, sizeof(part->volume_name), "%s", volBuf);
                                             }
                                         }
                                         IDOS->UnLock(lock);
