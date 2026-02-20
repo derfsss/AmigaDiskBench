@@ -317,10 +317,7 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             uint32 t = 0;
             IIntuition->GetAttr(CLICKTAB_Current, ui.tabs, &t);
 
-            /* Auto-Refresh Disk Info when switching to Disk Info Tab (Index 1) */
-            if (t == 1UL) {
-                RefreshDiskInfoTree();
-            }
+            /* Removed Auto-Refresh Disk Info when switching to Disk Info Tab (Index 1) based on user request */
 
             /* Auto-Refresh History when switching to Visualization Tab (Index 3) */
             if (t == 3UL) {
@@ -441,6 +438,9 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         }
         case GID_DISKINFO_TREE:
             HandleDiskInfoEvent(result);
+            break;
+        case GID_DISKINFO_REFRESH:
+            RefreshDiskInfoTree();
             break;
         case GID_BULK_ALL_TESTS:
         case GID_BULK_ALL_BLOCKS:

@@ -64,6 +64,16 @@ static void UpdateDetailsPage(struct InfoNodeData *data)
     // Partition Details
     if (data->part) {
         LogicalPartition *part = data->part;
+
+        // Hide details if partition is not mounted
+        if (part->volume_name[0] == '\0' || strcmp(part->volume_name, "Not Mounted") == 0) {
+            LOG_DEBUG("UpdateDetailsPage: Partition not mounted, showing Init Page");
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_INIT,
+                                       TAG_DONE);
+            IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
+            return;
+        }
+
         LOG_DEBUG("UpdateDetailsPage: Showing Partition Details for '%s'", part->volume_name);
 
         static char s_part_vol[128];
@@ -397,6 +407,10 @@ Object *CreateDiskInfoPage(void)
          // IPC? No, local list.
          End);
 
-    return HLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, tree, CHILD_WeightedWidth, 40, LAYOUT_AddChild,
+    Object *left_pane = VLayoutObject, LAYOUT_AddChild, tree, CHILD_WeightedHeight, 100, LAYOUT_AddChild, ButtonObject,
+           GA_ID, GID_DISKINFO_REFRESH, GA_Text, "Refresh Drives", GA_RelVerify, TRUE, End, CHILD_WeightedHeight, 0,
+           End;
+
+    return HLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, left_pane, CHILD_WeightedWidth, 40, LAYOUT_AddChild,
            ui.diskinfo_pages, CHILD_WeightedWidth, 60, End;
 }
