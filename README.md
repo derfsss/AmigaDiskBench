@@ -63,26 +63,51 @@ No special installation is required.
 1.  Extract the archive to a location of your choice (e.g., `Work:Utilities/AmigaDiskBench`).
 2.  Launch `AmigaDiskBench` from the icon.
 
-## How to Use
+## Comprehensive Guide
 
-### Basic Benchmarking
-1.  Go to the **Benchmark** tab.
-2.  Select a **Target Drive** and **Test Type**.
-3.  Set the **Block Size** and **Passes** (default is 3).
-4.  Click **Run Benchmark**.
+AmigaDiskBench is designed to be intuitive but powerful. This section provides a detailed walk-through of the main components.
 
-### Using Visualization
-1.  Switch to the **Visualization** tab.
-2.  Use the top filters to isolate the data you want (e.g., "System", "Random 4K Read").
-3.  Select a **Chart Type** (e.g., "Hybrid").
-4.  Select a **Color By** mode (e.g., "Test Type" to see Read vs Write colors).
-5.  Hover over the graph to see exact MB/s and IOPS values.
+### 1. Running Benchmarks
+The **Benchmark** tab is where performance testing happens.
+- **Target Drive**: Select the volume or partition you wish to test. Note that depending on the filesystem, some tests may require write access.
+- **Test Type**: 
+  - *Standard Tests*: Choose Sequential Read/Write, Random 4K Read/Write, or a Mixed 70/30 (Read/Write) workload.
+  - *Profiles*: Use preset profiles like "Sprinter" for quick I/O checks, "Marathon" for sustained thermal testing, or "Daily Grind" for everyday usage simulation.
+- **Parameters**: Adjust the **Block Size** (e.g., 4K, 32K, 1M) and the number of **Passes**. Higher passes yield more reliable averages.
+- **Execution**: Click **Run Benchmark**. Monitor the **Traffic Light** (green/yellow/red) for current status, and the **Fuel Gauge** for overall progress.
 
-### Checking Drive Health
-1.  Switch to the **Drive Health** tab.
-2.  Select a drive from the dropdown.
-3.  Click **Refresh Health Data**.
-4.  Review the S.M.A.R.T. attributes list and the status summary at the top.
+### 2. Bulk Testing / Queue
+For extensive testing sessions, use the Batch Queue.
+- Click **Add to Queue** to stockpile tests.
+- Alternatively, use **Add All Tests** or **Add All Block Sizes** to quickly generate a matrix of workloads for the selected drive.
+- Click **Start Queue** to let AmigaDiskBench run them sequentially.
+
+### 3. Visualizing Results
+The **Visualization** tab brings your data to life.
+- **Filters**: Located at the top. Use them to narrow down results by Volume, Test Type, or Date.
+- **Chart Modes**:
+  - *Hybrid*: Shows throughput (MB/s) as bars and IOPS as an overlaid line graph. Ideal for performance tuning.
+  - *Scaling*: Demonstrates how block size impacts performance.
+  - *Trend*: Shows historical performance decay or improvement over time.
+  - *Battle*: Select datasets to compare different drives head-to-head.
+- **Color Coding**: Group data series by Drive, Test Type, or Block Size for immediate visual clarity.
+- **Hover**: Move your mouse over any data point on the graph to reveal precise MB/s and IOPS metrics.
+
+### 4. Disk Information
+The **Disk Info** tab provides deep hardware enumeration.
+- **Navigation**: Use the left-side tree view. Drives are categorized logically into *Fixed Drives*, *USB Drives*, and *Optical Drives*.
+- **Physical Drives**: Click a root drive to view hardware details including Manufacturer, Model (and Revision), Bus Type, logical Geometry, Capacity, and whether a Rigid Disk Block (RDB) is present.
+- **Partitions**: Click a partition node under a drive to see filesystem specifics, including Volume Name, Used/Free Space, and the exact Hex DOS Type Identifier (e.g., SFS/00).
+
+### 5. Drive Health
+The **Drive Health** tab communicates directly with S.M.A.R.T. enabled drives.
+- **Status Check**: Click **Refresh Health Data** to retrieve the latest vital statistics.
+- **Interpretation**: The tool automatically interprets raw hexadecimal attributes (like Reallocated Sectors or Power-On Hours) and provides a human-readable health assessment at the top.
+
+### 6. History and Exporting
+- **History View**: Review all past benchmarks in a tabular format.
+- **Comparison**: Select any two rows and click **Compare Selected** to generate a delta report showing percentage improvements or regressions.
+- **Exporting**: Use **Export to CSV** to save the raw data for analysis in external spreadsheet software.
 
 ## Building from Source
 
@@ -114,3 +139,25 @@ This will produce the `AmigaDiskBench` executable in the `dist` folder.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Version History
+
+### v2.2.16 (Current)
+- **Disk Information Center**: Added a brand new, highly detailed hierarchical view organizing all physical storage devices into Fixed, USB, and Optical categories.
+- **True Hardware Scanning**: The engine now directly probes the system to map logical partitions precisely to their physical driver units.
+- **Enhanced CD/DVD Detection**: Added robust safeguards to prevent system freezes when querying optical drives.
+- **UI & Stability Polish**: Eliminated visual stuttering by implementing adaptive layout shrink-wrapping, and fixed minor crashes related to deep UI selection.
+
+### v2.2.14
+- **Release Optimization**: Disabled internal debug logging for maximum performance and polished code documentation for open-source clarity.
+- **Final Release Candidate**: Finalized versioning bumps and internal cleanup for stable deployment.
+
+### v2.2.11
+- **Architectural Foundation**: Established the multi-threaded benchmark engine and core CSV history persistence.
+- **UX Foundation**: Solidified the ReAction-based windowing interface.
+
+### v2.2.10
+- **Advanced Graphing**: Overhauled the visualization engine to chart performance across Block Sizes and auto-refresh dynamically.
+- **Variable Workloads**: Upgraded Random I/O tests to support dynamic user-selected block sizes beyond the static 4KB limit.
+- **Visual Feedback**: Introduced comprehensive Bubble Help tooltips, a Traffic Light status indicator, and a Fuel Gauge progress bar.
+- **Stability Pass**: Patched crucial memory alignment and exporting crashes.
