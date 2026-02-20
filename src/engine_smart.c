@@ -7,10 +7,12 @@
 
 #include "engine_internal.h"
 #include <devices/scsidisk.h>
+#include <devices/trackdisk.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <stdio.h>
 #include <string.h>
+
 
 /* S.M.A.R.T. Command Constants */
 #define ATA_SMART_CMD 0xB0
@@ -68,7 +70,7 @@ BOOL GetSmartData(const char *device_name, uint32 unit, SmartData *out_data)
      */
 
     struct MsgPort *port = IExec->AllocSysObjectTags(ASOT_PORT, TAG_DONE);
-    struct IOStdReq *io = IExec->AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_Size, sizeof(struct IOStdReq),
+    struct IOStdReq *io = IExec->AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_Size, sizeof(struct IOExtTD),
                                                     ASOIOR_ReplyPort, port, TAG_DONE);
 
     if (port && io) {

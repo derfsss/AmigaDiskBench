@@ -383,7 +383,7 @@ static void EnrichPhysicalDrive(PhysicalDrive *drive)
         return;
 
     struct IOStdReq *ior = IExec->AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_ReplyPort, port, ASOIOR_Size,
-                                                     sizeof(struct IOStdReq), TAG_DONE);
+                                                     sizeof(struct IOExtTD), TAG_DONE);
 
     if (ior) {
         LOG_DEBUG("EnrichPhysicalDrive: Opening device %s Unit %lu...", drive->device_name, drive->unit_number);

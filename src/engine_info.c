@@ -23,6 +23,8 @@
 
 #include "engine_internal.h"
 #include <devices/scsidisk.h>
+#include <devices/trackdisk.h>
+
 
 /* Helper to strip trailing spaces from SCSI strings */
 static void StripTrailingSpaces(char *str, uint32 len)
@@ -43,7 +45,7 @@ static void GetScsiHardwareInfo(const char *device_name, uint32 unit, BenchResul
         return;
 
     struct IOStdReq *ior = (struct IOStdReq *)IExec->AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_ReplyPort, port,
-                                                                        ASOIOR_Size, sizeof(struct IOStdReq), TAG_DONE);
+                                                                        ASOIOR_Size, sizeof(struct IOExtTD), TAG_DONE);
     if (!ior) {
         IExec->FreeSysObject(ASOT_PORT, port);
         return;
