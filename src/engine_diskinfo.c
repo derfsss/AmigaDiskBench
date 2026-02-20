@@ -96,17 +96,21 @@ static void PerformScsiInquiry(struct IOStdReq *ior, PhysicalDrive *drive)
 
     struct SCSICmd cmd;
     uint8 cdb[6];
-    uint8 type = 0;
+    uint8 sense_buffer[32];
+    uint8 type = SCSI_TYPE_UNKNOWN;
 
     // 1. Standard Inquiry (Vendor, Product, Revision)
     memset(&cmd, 0, sizeof(cmd));
     memset(cdb, 0, sizeof(cdb));
+    memset(sense_buffer, 0, sizeof(sense_buffer));
     cdb[0] = SCSI_CMD_INQUIRY;
     cdb[4] = SCSI_INQ_STD_LEN; // 36 bytes
 
     cmd.scsi_Data = (APTR)buffer;
     cmd.scsi_Length = SCSI_INQ_STD_LEN;
     cmd.scsi_Flags = SCSIF_READ | SCSIF_AUTOSENSE;
+    cmd.scsi_SenseData = (UBYTE *)sense_buffer;
+    cmd.scsi_SenseLength = sizeof(sense_buffer);
     cmd.scsi_Command = (APTR)cdb;
     cmd.scsi_CmdLength = 6;
 
@@ -154,6 +158,11 @@ static void PerformScsiInquiry(struct IOStdReq *ior, PhysicalDrive *drive)
             drive->media_type = MEDIA_TYPE_UNKNOWN;
             break;
         }
+    } else {
+        LOG_DEBUG("PerformScsiInquiry: Standard inquiry failed on %s %lu. Aborting VPD queries.", drive->device_name,
+                  drive->unit_number);
+        IExec->FreeVec(buffer);
+        return;
     }
 
     // 2. VPD Page 0x80 (Serial Number)
@@ -169,6 +178,8 @@ static void PerformScsiInquiry(struct IOStdReq *ior, PhysicalDrive *drive)
         cmd.scsi_Data = (APTR)buffer;
         cmd.scsi_Length = 252;
         cmd.scsi_Flags = SCSIF_READ | SCSIF_AUTOSENSE;
+        cmd.scsi_SenseData = (UBYTE *)sense_buffer;
+        cmd.scsi_SenseLength = sizeof(sense_buffer);
         cmd.scsi_Command = (APTR)cdb;
         cmd.scsi_CmdLength = 6;
 
@@ -202,6 +213,8 @@ static void PerformScsiInquiry(struct IOStdReq *ior, PhysicalDrive *drive)
         cmd.scsi_Data = (APTR)buffer;
         cmd.scsi_Length = 252;
         cmd.scsi_Flags = SCSIF_READ | SCSIF_AUTOSENSE;
+        cmd.scsi_SenseData = (UBYTE *)sense_buffer;
+        cmd.scsi_SenseLength = sizeof(sense_buffer);
         cmd.scsi_Command = (APTR)cdb;
         cmd.scsi_CmdLength = 6;
 

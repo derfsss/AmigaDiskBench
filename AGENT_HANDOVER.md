@@ -59,6 +59,7 @@ AmigaDiskBench is a modern, ReAction-based disk benchmarking utility for AmigaOS
 - **Custom Rendering**: The trend graph uses a custom `gpRender` hook. Ensure `WA_IDCMP` includes `IDCMP_MOUSEBUTTONS` for hover detection.
 - **ListBrowser Hierarchy**: To show expansion handles (`+`/`-`), parent nodes MUST have `LBNA_Flags` set to `LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN`. Merely nesting nodes is not enough.
 - **Layout Refresh**: When switching pages in a `page.gadget` layout on the fly, use `IIntuition->IDoMethod(window_obj, WM_RETHINK);` to force a complete re-layout. `RefreshGList` is often insufficient for complex layout changes.
+- **SCSI_INQUIRY & AUTOSENSE**: If you set `SCSIF_AUTOSENSE` on an `HD_SCSICMD` (like a SCSI Inquiry), you **MUST** provide a valid `scsi_SenseData` buffer and `scsi_SenseLength`. Failing to do so causes OS kernel DSI Exceptions when the driver attempts to write sense data linearly into a NULL pointer (particularly noted when polling empty CD-ROMs via IDE).
 
 ## Debugging
 - **Debug Port**: Logs are sent to the serial port (can be viewed via `KDebug` or similar on AmigaOS).
