@@ -1,6 +1,5 @@
 # Build artifacts
 build/
-dist/
 *.o
 
 # Local data
@@ -23,7 +22,7 @@ stats/
 plan/
 tmp/
 releases/
-docs/plans/
+docs/
 
 # Agent specific
 AGENT_HANDOVER.md
