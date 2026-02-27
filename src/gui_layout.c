@@ -53,10 +53,10 @@ static struct ColumnInfo bulk_cols[] = {{20, "", CIF_FIXED}, /* Checkbox */
                                         {1, "", CIF_FIXED},
                                         {-1, NULL, 0}};
 
-static struct ColumnInfo health_cols[] = {{30, "ID", CIF_SORTABLE},     {180, "Attribute Name", CIF_SORTABLE},
-                                          {60, "Value", CIF_SORTABLE},  {60, "Worst", CIF_SORTABLE},
-                                          {60, "Thresh", CIF_SORTABLE}, {120, "Raw Value", CIF_SORTABLE},
-                                          {80, "Status", CIF_SORTABLE}, {-1, NULL, 0}};
+static struct ColumnInfo health_cols[] = {{30, "ID", CIF_SORTABLE | CIF_DRAGGABLE},                {200, "Attribute Name", CIF_SORTABLE | CIF_DRAGGABLE},
+                                          {50, "Value", CIF_SORTABLE | CIF_DRAGGABLE},             {50, "Worst", CIF_SORTABLE | CIF_DRAGGABLE},
+                                          {50, "Thresh", CIF_SORTABLE | CIF_DRAGGABLE},            {80, "Raw Value", CIF_SORTABLE | CIF_DRAGGABLE},
+                                          {50, "Status", CIF_SORTABLE | CIF_DRAGGABLE},            {-1, NULL, 0}};
 
 /**
  * @brief Creates the main application window layout.
@@ -86,10 +86,18 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     (ui.test_chooser = ChooserObject, GA_ID, GID_TEST_CHOOSER, GA_RelVerify, TRUE, CHOOSER_Selected, 0, CHOOSER_Labels,
      (uint32)&ui.test_labels, GA_HintInfo, "Select the specific benchmark test to run.", End),
     CHILD_Label, LabelObject, LABEL_Text, GetString(5, "Test Type:"), End, CHILD_WeightedHeight, 0,
-    /* Passes */
-        LAYOUT_AddChild,
-    (ui.pass_gad = IntegerObject, GA_ID, GID_NUM_PASSES, GA_RelVerify, TRUE, INTEGER_Minimum, 3, INTEGER_Maximum, 20,
+    /* Passes + Average Method (same row, aligned with Drive/Test/Block) */
+        LAYOUT_AddChild, HLayoutObject, LAYOUT_HorizSpacing, 4,
+    LAYOUT_AddChild,
+    (ui.pass_gad = IntegerObject, GA_ID, GID_NUM_PASSES, GA_RelVerify, TRUE, INTEGER_MaxChars, 2,
+     INTEGER_Minimum, 3, INTEGER_Maximum, 20,
      INTEGER_Number, 3, GA_HintInfo, "Number of times to repeat the test (3-20).", End),
+    CHILD_WeightedWidth, 0, CHILD_MinWidth, 60,
+    LAYOUT_AddChild,
+    (ui.avg_method_label = ButtonObject, GA_ID, GID_AVG_METHOD_LABEL, GA_ReadOnly, TRUE,
+     GA_Text, "Average: All Passes", BUTTON_BevelStyle, BVS_NONE, BUTTON_Transparent, TRUE,
+     BUTTON_Justification, BCJ_LEFT, End),
+    CHILD_WeightedWidth, 100, End,
     CHILD_Label, LabelObject, LABEL_Text, GetString(6, "Passes:"), End, CHILD_WeightedHeight, 0,
     /* Block Size */
         LAYOUT_AddChild,
@@ -239,10 +247,11 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     CHILD_WeightedHeight, 0, End, CHILD_WeightedHeight, 0,
     /* S.M.A.R.T. Attributes List */
         LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "S.M.A.R.T. Attributes", LAYOUT_BevelStyle, BVS_GROUP,
+    LAYOUT_ShrinkWrap, FALSE,
     LAYOUT_AddChild,
-    (ui.health_list = ListBrowserObject, GA_ID, GID_HEALTH_LIST, LISTBROWSER_ColumnInfo, (uint32)health_cols,
+    (ui.health_list = ListBrowserObject, GA_ID, GID_HEALTH_LIST, GA_RelVerify, TRUE, LISTBROWSER_ColumnInfo, (uint32)health_cols,
      LISTBROWSER_ColumnTitles, TRUE, LISTBROWSER_Labels, (uint32)&ui.health_labels, LISTBROWSER_AutoFit, TRUE,
-     LISTBROWSER_HorizontalProp, TRUE, End),
+     LISTBROWSER_ShowSelected, TRUE, LISTBROWSER_HorizontalProp, TRUE, End),
     CHILD_WeightedHeight, 100, End, End;
 
     static struct NewMenu menu_data[] = {

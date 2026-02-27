@@ -23,6 +23,21 @@
 
 #include "gui_internal.h"
 
+static const char *avg_label_strs[] = {
+    "Average: All Passes",
+    "Average: Trimmed Mean (Excl. Top/Bottom)",
+    "Average: Median (Middle Value Only)",
+};
+#define NUM_AVG_LABELS 3
+
+void UpdateAvgMethodLabel(void)
+{
+    if (!ui.avg_method_label || !ui.window)
+        return;
+    const char *lbl = (ui.averaging_method < NUM_AVG_LABELS) ? avg_label_strs[ui.averaging_method] : avg_label_strs[0];
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.avg_method_label, ui.window, NULL, GA_Text, lbl, TAG_DONE);
+}
+
 void LoadPrefs(void)
 {
     LOG_DEBUG("LoadPrefs: Started");
@@ -77,9 +92,9 @@ void LoadPrefs(void)
             LOG_DEBUG("LoadPrefs: Set DefaultPasses result=%d (obj=%p)", res, obj);
             if (!res && obj)
                 IPrefs->PrefsBaseObject(obj, NULL, ALPO_Release, 0, TAG_DONE);
-            obj = IPrefs->PrefsNumber(NULL, NULL, ALPONUM_AllocSetBool, DEFAULT_TRIMMED_MEAN, TAG_DONE);
-            res = IPrefs->DictSetObjectForKey(dict, obj, "TrimmedMean");
-            LOG_DEBUG("LoadPrefs: Set TrimmedMean result=%d (obj=%p)", res, obj);
+            obj = IPrefs->PrefsNumber(NULL, NULL, ALPONUM_AllocSetLong, DEFAULT_AVERAGING_METHOD, TAG_DONE);
+            res = IPrefs->DictSetObjectForKey(dict, obj, "AveragingMethod");
+            LOG_DEBUG("LoadPrefs: Set AveragingMethod result=%d (obj=%p)", res, obj);
             if (!res && obj)
                 IPrefs->PrefsBaseObject(obj, NULL, ALPO_Release, 0, TAG_DONE);
             obj = IPrefs->PrefsString(NULL, NULL, ALPOSTR_AllocSetString, DEFAULT_CSV_PATH, TAG_DONE);
@@ -108,7 +123,7 @@ void LoadPrefs(void)
         }
         uint32 p_num = IPrefs->DictGetIntegerForKey(dict, "DefaultPasses", DEFAULT_PASSES);
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.pass_gad, ui.window, NULL, INTEGER_Number, p_num, TAG_DONE);
-        ui.use_trimmed_mean = IPrefs->DictGetBoolForKey(dict, "TrimmedMean", DEFAULT_TRIMMED_MEAN);
+        ui.averaging_method = IPrefs->DictGetIntegerForKey(dict, "AveragingMethod", DEFAULT_AVERAGING_METHOD);
         CONST_STRPTR p = IPrefs->DictGetStringForKey(dict, "CSVPath", DEFAULT_CSV_PATH);
         LOG_DEBUG("LoadPrefs: DictGetStringForKey(CSVPath) returned '%s'", (const char *)(p ? p : "NULL"));
         if (p) {
@@ -120,7 +135,7 @@ void LoadPrefs(void)
     } else {
         LOG_DEBUG("LoadPrefs: No preferences dictionary found (using defaults)");
         /* Defaults if no dict */
-        ui.use_trimmed_mean = DEFAULT_TRIMMED_MEAN;
+        ui.averaging_method = DEFAULT_AVERAGING_METHOD;
         snprintf(ui.csv_path, sizeof(ui.csv_path), "%s", DEFAULT_CSV_PATH);
     }
     LOG_DEBUG("LoadPrefs: Finished (Pre-Decouple)");
@@ -196,10 +211,23 @@ void OpenPrefsWindow(void)
 {
     if (ui.prefs_win_obj)
         return;
+
+    /* Build a proper Exec list of chooser nodes for the averaging method chooser.
+     * CHOOSER_Labels requires a struct List * that stays alive for the window's lifetime —
+     * chooser.gadget walks the list live when the popup opens, it does not deep-copy it.
+     * Store in ui.prefs_avg_list and free it when the window closes. */
+    IExec->NewList(&ui.prefs_avg_list);
+    for (uint32 i = 0; i < NUM_AVG_LABELS; i++)
+    {
+        struct Node *n = IChooser->AllocChooserNode(CNA_Text, avg_label_strs[i], CNA_CopyText, TRUE, TAG_DONE);
+        if (n)
+            IExec->AddTail(&ui.prefs_avg_list, n);
+    }
+
     /* Get current values from active state */
     uint32 num_passes = 3;
     IIntuition->GetAttr(INTEGER_Number, ui.pass_gad, &num_passes);
-    BOOL trimmed = ui.use_trimmed_mean;
+    uint32 avg_method = ui.averaging_method;
     char *csv_path = ui.csv_path;
     /* Preferences window using standard ReAction macros */
     ui.prefs_win_obj = WindowObject, WA_Title, "Preferences", WA_SizeGadget, TRUE, WA_CloseGadget, TRUE, WA_DragBar,
@@ -217,11 +245,13 @@ void OpenPrefsWindow(void)
     (ui.prefs_block_chooser = ChooserObject, GA_ID, GID_PREFS_BLOCK, GA_RelVerify, TRUE, CHOOSER_Selected,
      ui.default_block_size_idx, CHOOSER_Labels, (uint32)&ui.block_list, End),
     CHILD_Label, LabelObject, LABEL_Text, "Default Block:", End, LAYOUT_AddChild,
-    (ui.prefs_pass_gad = IntegerObject, GA_ID, GID_PREFS_PASSES, GA_RelVerify, TRUE, INTEGER_Minimum, 3,
-     INTEGER_Maximum, 20, INTEGER_Number, num_passes, End),
+    (ui.prefs_pass_gad = IntegerObject, GA_ID, GID_PREFS_PASSES, GA_RelVerify, TRUE, INTEGER_MaxChars, 2,
+     INTEGER_Minimum, 3, INTEGER_Maximum, 20, INTEGER_Number, num_passes, End),
     CHILD_Label, LabelObject, LABEL_Text, "Default Passes:", End, LAYOUT_AddChild,
-    (ui.prefs_trimmed_check = CheckBoxObject, GA_ID, GID_PREFS_TRIMMED, GA_RelVerify, TRUE, GA_Selected, trimmed,
-     GA_Text, "Use Trimmed Mean", End),
+    (ui.prefs_average_chooser = ChooserObject, GA_ID, GID_PREFS_AVERAGE_METHOD, GA_RelVerify, TRUE, CHOOSER_Selected,
+     avg_method, CHOOSER_Labels, (uint32)&ui.prefs_avg_list, GA_HintInfo,
+     "Select how to calculate performance from multiple passes.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Average Method:", End,
     End, LAYOUT_AddChild, HLayoutObject, LAYOUT_BevelStyle, BVS_GROUP, LAYOUT_Label, "Storage", LAYOUT_AddChild,
     (ui.prefs_csv_path = StringObject, GA_ID, GID_PREFS_CSV, GA_RelVerify, TRUE, STRINGA_TextVal, (uint32)csv_path,
      End),
@@ -230,6 +260,7 @@ void OpenPrefsWindow(void)
     LAYOUT_AddChild, ButtonObject, GA_ID, GID_PREFS_SAVE, GA_Text, "Save", GA_RelVerify, TRUE, End, LAYOUT_AddChild,
     ButtonObject, GA_ID, GID_PREFS_CANCEL, GA_Text, "Cancel", GA_RelVerify, TRUE, End, End, CHILD_WeightedHeight, 0,
     End, End;
+
     if (ui.prefs_win_obj) {
         ui.prefs_window = (struct Window *)IIntuition->IDoMethod(ui.prefs_win_obj, WM_OPEN);
         /* Set initial selection for Drive Chooser based on default_drive */
@@ -253,17 +284,18 @@ void UpdatePreferences(void)
     if (!ui.prefs_win_obj)
         return;
 
-    uint32 p_num = 3, t_mean = 0;
+    uint32 p_num = 3, avg_method = 0;
     char *c_path = NULL;
 
     IIntuition->GetAttr(INTEGER_Number, ui.prefs_pass_gad, &p_num);
-    IIntuition->GetAttr(GA_Selected, ui.prefs_trimmed_check, &t_mean);
+    IIntuition->GetAttr(CHOOSER_Selected, ui.prefs_average_chooser, &avg_method);
     IIntuition->GetAttr(STRINGA_TextVal, ui.prefs_csv_path, (uint32 *)&c_path);
 
     /* Update active state in main window */
     IIntuition->SetGadgetAttrs((struct Gadget *)ui.pass_gad, ui.window, NULL, INTEGER_Number, p_num, TAG_DONE);
     ui.current_passes = p_num;
-    ui.use_trimmed_mean = (BOOL)t_mean;
+    ui.averaging_method = avg_method;
+    UpdateAvgMethodLabel();
 
     uint32 t_type = DEFAULT_LAST_TEST;
     IIntuition->GetAttr(CHOOSER_Selected, ui.prefs_test_chooser, &t_type);
@@ -320,7 +352,7 @@ void UpdatePreferences(void)
         if (dict) {
             LOG_DEBUG("UpdatePreferences: Found MainPrefsDict at %p", dict);
             PrefsObject *p_num_obj = IPrefs->PrefsNumber(NULL, NULL, ALPONUM_AllocSetLong, p_num, TAG_DONE);
-            PrefsObject *t_mean_obj = IPrefs->PrefsNumber(NULL, NULL, ALPONUM_AllocSetBool, t_mean, TAG_DONE);
+            PrefsObject *avg_method_obj = IPrefs->PrefsNumber(NULL, NULL, ALPONUM_AllocSetLong, avg_method, TAG_DONE);
             PrefsObject *t_type_obj =
                 IPrefs->PrefsNumber(NULL, NULL, ALPONUM_AllocSetLong, ui.default_test_type, TAG_DONE);
             PrefsObject *b_size_obj =
@@ -331,8 +363,8 @@ void UpdatePreferences(void)
 
             if (p_num_obj)
                 IPrefs->DictSetObjectForKey(dict, p_num_obj, "DefaultPasses");
-            if (t_mean_obj)
-                IPrefs->DictSetObjectForKey(dict, t_mean_obj, "TrimmedMean");
+            if (avg_method_obj)
+                IPrefs->DictSetObjectForKey(dict, avg_method_obj, "AveragingMethod");
             if (t_type_obj)
                 IPrefs->DictSetObjectForKey(dict, t_type_obj, "DefaultTestType");
             if (b_size_obj)
@@ -366,4 +398,11 @@ void UpdatePreferences(void)
     IIntuition->DisposeObject(ui.prefs_win_obj);
     ui.prefs_win_obj = NULL;
     ui.prefs_window = NULL;
+
+    /* Free the averaging method chooser node list now that the window is gone */
+    struct Node *pn, *pnx;
+    for (pn = IExec->GetHead(&ui.prefs_avg_list); pn; pn = pnx) {
+        pnx = IExec->GetSucc(pn);
+        IChooser->FreeChooserNode(pn);
+    }
 }

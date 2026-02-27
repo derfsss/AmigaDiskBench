@@ -54,6 +54,12 @@ static void UpdateDetailsPage(struct InfoNodeData *data)
 {
     LOG_DEBUG("UpdateDetailsPage: Entry with data=%p", data);
 
+    /* Safety check */
+    if (!ui.window || !ui.win_obj || !ui.diskinfo_pages) {
+        LOG_DEBUG("UpdateDetailsPage: UI not fully initialized, aborting");
+        return;
+    }
+
     if (!data) {
         LOG_DEBUG("UpdateDetailsPage: Data is NULL, showing Init Page");
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_INIT,
@@ -229,52 +235,110 @@ void RefreshDiskInfoTree(void)
             if (rootNode) {
                 IExec->AddTail(&drive_tree_list, rootNode);
 
-                // Loop Drives for this category
+                /* Build one tree node per unique device_name in this category.
+                 * Multiple PhysicalDrive entries with the same device_name (different
+                 * unit_numbers) are merged: all their partitions appear under the
+                 * single device node. */
+                char seen_devices[32][32]; /* up to 32 unique device names per category */
+                int seen_device_count = 0;
+
                 for (dNode = IExec->GetHead(drives); dNode; dNode = IExec->GetSucc(dNode)) {
                     PhysicalDrive *drive = (PhysicalDrive *)dNode;
-                    int drive_cat = 0; // Fixed
-                    if (drive->media_type == MEDIA_TYPE_CDROM) {
-                        drive_cat = 2; // Optical
-                    } else if (drive->bus_type == BUS_TYPE_USB) {
-                        drive_cat = 1; // USB
-                    }
+                    int drive_cat = 0;
+                    if (drive->media_type == MEDIA_TYPE_CDROM)
+                        drive_cat = 2;
+                    else if (drive->bus_type == BUS_TYPE_USB)
+                        drive_cat = 1;
 
                     if (drive_cat != cat_idx)
                         continue;
 
+                    /* Skip if we already created a node for this device_name */
+                    BOOL already_seen = FALSE;
+                    for (int si = 0; si < seen_device_count; si++) {
+                        if (strcmp(seen_devices[si], drive->device_name) == 0) {
+                            already_seen = TRUE;
+                            break;
+                        }
+                    }
+                    if (already_seen)
+                        continue;
+
+                    /* Record this device name */
+                    if (seen_device_count < 32) {
+                        snprintf(seen_devices[seen_device_count], sizeof(seen_devices[seen_device_count]),
+                                 "%s", drive->device_name);
+                        seen_device_count++;
+                    }
+
+                    /* Create the device-level tree node */
                     struct InfoNodeData *dData = IExec->AllocVecTags(sizeof(struct InfoNodeData), AVT_Type, MEMF_SHARED,
                                                                      AVT_ClearWithValue, 0, TAG_DONE);
-                    char label[128];
-                    snprintf(label, sizeof(label), "%s (Unit %lu)", drive->device_name, drive->unit_number);
+                    if (!dData)
+                        continue;
 
-                    if (dData) {
-                        dData->drive = drive;
-                        dData->name_buffer = IExec->AllocVecTags(strlen(label) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
+                    dData->drive = drive; /* first matching unit — used for drive detail pane */
+                    dData->name_buffer =
+                        IExec->AllocVecTags(strlen(drive->device_name) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
+                    if (dData->name_buffer)
+                        strcpy(dData->name_buffer, drive->device_name);
+
+                    struct Node *lbDriveNode = IListBrowser->AllocListBrowserNode(
+                        1, LBNCA_Text, dData->name_buffer, LBNA_UserData, dData, LBNA_Generation, 2, LBNA_Flags,
+                        LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN, TAG_DONE);
+
+                    if (!lbDriveNode) {
                         if (dData->name_buffer)
-                            strcpy(dData->name_buffer, label);
+                            IExec->FreeVec(dData->name_buffer);
+                        IExec->FreeVec(dData);
+                        continue;
+                    }
+                    IExec->AddTail(&drive_tree_list, lbDriveNode);
 
-                        struct Node *lbDriveNode = IListBrowser->AllocListBrowserNode(
-                            1, LBNCA_Text, dData->name_buffer, LBNA_UserData, dData, LBNA_Generation, 2, LBNA_Flags,
-                            LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN, TAG_DONE);
+                    /* Add partitions from ALL units of this device_name that belong
+                     * to the same category. Collect mounted partitions first, then
+                     * "Not Mounted" entries so they always appear at the bottom. */
+                    struct Node *dNode2;
 
-                        if (lbDriveNode) {
-                            IExec->AddTail(&drive_tree_list, lbDriveNode);
+                    /* Two-pass: pass 0 = mounted, pass 1 = not mounted */
+                    for (int pass = 0; pass < 2; pass++) {
+                        for (dNode2 = IExec->GetHead(drives); dNode2; dNode2 = IExec->GetSucc(dNode2)) {
+                            PhysicalDrive *pd = (PhysicalDrive *)dNode2;
+                            if (strcmp(pd->device_name, drive->device_name) != 0)
+                                continue;
 
-                            // Actual Partitions (direct children of the drive)
+                            /* Only include units whose category matches the current category */
+                            int pd_cat = 0;
+                            if (pd->media_type == MEDIA_TYPE_CDROM)
+                                pd_cat = 2;
+                            else if (pd->bus_type == BUS_TYPE_USB)
+                                pd_cat = 1;
+                            if (pd_cat != cat_idx)
+                                continue;
+
                             struct Node *pNode;
-                            for (pNode = IExec->GetHead((struct List *)&drive->partitions); pNode;
+                            for (pNode = IExec->GetHead((struct List *)&pd->partitions); pNode;
                                  pNode = IExec->GetSucc(pNode)) {
                                 LogicalPartition *part = (LogicalPartition *)pNode;
+
+                                /* pass 0: skip not-mounted; pass 1: skip mounted */
+                                BOOL is_not_mounted = (part->volume_name[0] == '\0' ||
+                                                       strcmp(part->volume_name, "Not Mounted") == 0);
+                                if (pass == 0 && is_not_mounted)
+                                    continue;
+                                if (pass == 1 && !is_not_mounted)
+                                    continue;
+
                                 struct InfoNodeData *pData =
                                     IExec->AllocVecTags(sizeof(struct InfoNodeData), AVT_Type, MEMF_SHARED,
                                                         AVT_ClearWithValue, 0, TAG_DONE);
 
                                 char pLabel[128];
-                                snprintf(pLabel, sizeof(pLabel), "%s",
-                                         part->volume_name[0] ? part->volume_name : part->dos_device_name);
+                                const char *pName = part->volume_name[0] ? part->volume_name : part->dos_device_name;
+                                snprintf(pLabel, sizeof(pLabel), "%s (Unit %lu)", pName, pd->unit_number);
 
                                 if (pData) {
-                                    pData->drive = drive; // Assign drive so parent details can be accessed if needed
+                                    pData->drive = pd;
                                     pData->part = part;
                                     pData->name_buffer =
                                         IExec->AllocVecTags(strlen(pLabel) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
@@ -286,6 +350,11 @@ void RefreshDiskInfoTree(void)
                                         TAG_DONE);
                                     if (lbPartNode)
                                         IExec->AddTail(&drive_tree_list, lbPartNode);
+                                    else {
+                                        if (pData->name_buffer)
+                                            IExec->FreeVec(pData->name_buffer);
+                                        IExec->FreeVec(pData);
+                                    }
                                 }
                             }
                         }
@@ -317,6 +386,13 @@ void RefreshDiskInfoTree(void)
 void HandleDiskInfoEvent(uint32 result)
 {
     LOG_DEBUG("HandleDiskInfoEvent: Tree Event Received (Result=0x%08X)", result);
+    
+    /* Safety checks */
+    if (!ui.window || !ui.win_obj || !ui.diskinfo_tree || !ui.diskinfo_pages) {
+        LOG_DEBUG("HandleDiskInfoEvent: UI not fully initialized, aborting");
+        return;
+    }
+    
     struct Node *node = NULL;
     struct InfoNodeData *data = NULL;
     IIntuition->GetAttr(LISTBROWSER_SelectedNode, ui.diskinfo_tree, (uint32 *)&node);
@@ -326,6 +402,7 @@ void HandleDiskInfoEvent(uint32 result)
         UpdateDetailsPage(data);
     } else {
         LOG_DEBUG("HandleDiskInfoEvent: No node selected");
+        UpdateDetailsPage(NULL);
     }
 }
 

@@ -28,10 +28,10 @@
 #define STR(x) XSTR(x)
 
 #define VERSION 2
-#define REVISION 2
-#define MINOR 16
-#define BUILD 1040
-#define APP_DATE "20.02.2026"
+#define REVISION 3
+#define MINOR 7
+#define BUILD 1116
+#define APP_DATE "27.02.2026"
 #define APP_TITLE "AmigaDiskBench"
 #define VERSION_STR STR(VERSION) "." STR(REVISION) "." STR(MINOR) "." STR(BUILD)
 #define APP_VERSION_STR VERSION_STR

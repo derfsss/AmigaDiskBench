@@ -36,7 +36,7 @@ void UpdateBulkTabInfo(void)
     if (!ui.bulk_info_label || !ui.window)
         return;
 
-    char buf[128];
+    char buf[160];
     char test_name[32];
 
     uint32 run_all_tests = 0;
@@ -60,7 +60,11 @@ void UpdateBulkTabInfo(void)
         block_str = FormatPresetBlockSize(ui.current_block_size);
     }
 
-    snprintf(buf, sizeof(buf), "Settings: %s / %u Passes / %s", test_name, (unsigned int)ui.current_passes, block_str);
+    static const char *avg_method_short[] = {"All Passes", "Trimmed Mean", "Median"};
+    const char *avg_name = (ui.averaging_method < 3) ? avg_method_short[ui.averaging_method] : "All Passes";
+
+    snprintf(buf, sizeof(buf), "Settings: %s / %u Passes (%s) / %s",
+             test_name, (unsigned int)ui.current_passes, avg_name, block_str);
 
     IIntuition->SetGadgetAttrs((struct Gadget *)ui.bulk_info_label, ui.window, NULL, GA_Text, (uint32)buf, TAG_DONE);
 }
@@ -627,6 +631,13 @@ void HandlePrefsEvent(uint32 result, uint16 code)
         IIntuition->DisposeObject(ui.prefs_win_obj);
         ui.prefs_win_obj = NULL;
         ui.prefs_window = NULL;
+        {
+            struct Node *pn, *pnx;
+            for (pn = IExec->GetHead(&ui.prefs_avg_list); pn; pn = pnx) {
+                pnx = IExec->GetSucc(pn);
+                IChooser->FreeChooserNode(pn);
+            }
+        }
         break;
     case WMHI_GADGETUP:
         if (gid == GID_PREFS_SAVE) {
@@ -636,6 +647,13 @@ void HandlePrefsEvent(uint32 result, uint16 code)
             IIntuition->DisposeObject(ui.prefs_win_obj);
             ui.prefs_win_obj = NULL;
             ui.prefs_window = NULL;
+            {
+                struct Node *pn, *pnx;
+                for (pn = IExec->GetHead(&ui.prefs_avg_list); pn; pn = pnx) {
+                    pnx = IExec->GetSucc(pn);
+                    IChooser->FreeChooserNode(pn);
+                }
+            }
         } else if (gid == GID_PREFS_CSV_BR) {
             BrowseCSV();
         }

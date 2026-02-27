@@ -131,14 +131,19 @@ void RefreshHealthTab(void)
             attr_status = "Critical";
 
         struct Node *node = IListBrowser->AllocListBrowserNode(
-            7, LBNA_Column, 0, LBNCA_Text, id_str, LBNA_Column, 1, LBNCA_Text, attr->name, LBNA_Column, 2, LBNCA_Text,
-            val_str, LBNA_Column, 3, LBNCA_Text, worst_str, LBNA_Column, 4, LBNCA_Text, thresh_str, LBNA_Column, 5,
-            LBNCA_Text, raw_str, LBNA_Column, 6, LBNCA_Text, attr_status, TAG_DONE);
+            7, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)id_str, LBNA_Column, 1, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)attr->name,
+            LBNA_Column, 2, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)val_str, LBNA_Column, 3, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)worst_str, LBNA_Column, 4, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)thresh_str,
+            LBNA_Column, 5, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)raw_str, LBNA_Column, 6, LBNCA_CopyText, TRUE, LBNCA_Text, (uint32)attr_status, TAG_DONE);
 
         if (node)
             IExec->AddTail(&ui.health_labels, node);
     }
 
-    IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_list, ui.window, NULL, LISTBROWSER_Labels,
-                                      (uint32)&ui.health_labels, TAG_DONE);
+    /* Reattach labels — detach first, then reattach with AutoFit so the
+     * weighted column recalculates now that rows are present. */
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.health_list, ui.window, NULL,
+                               LISTBROWSER_Labels, (uint32)-1, TAG_DONE);
+    IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_list, ui.window, NULL,
+                                      LISTBROWSER_Labels, (uint32)&ui.health_labels,
+                                      LISTBROWSER_AutoFit, TRUE, TAG_DONE);
 }

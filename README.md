@@ -2,7 +2,7 @@
 
 **AmigaDiskBench** is a modern, high-performance disk benchmarking utility specifically designed for **AmigaOS 4.1 Final Edition**. It provides a robust, ReAction-based GUI to measure, analyze, and visualize the performance of various storage devices, filesystems, and hardware configurations.
 
-![AmigaDiskBench Icon](AmigaDiskBench.info)
+> This project was developed with the assistance of AI agents (Claude by Anthropic), which contributed to code design, implementation, and documentation throughout the development process.
 
 ## Key Features
 
@@ -15,7 +15,13 @@ Choose from a variety of tailored test scenarios:
 - **Profiler**: Detailed filesystem metadata performance analysis.
 - **Standard Tests**: Sequential Read/Write, Random 4K Read/Write, and Mixed 70/30.
 
-### 2. Advanced Visualization (Updated v2.2.14)
+### 2. Flexible Pass Averaging
+Choose how multi-pass results are combined, via **Preferences**:
+- **All Passes**: Simple arithmetic mean across every pass.
+- **Trimmed Mean**: Excludes the single best and worst pass, averages the rest (requires 3+ passes).
+- **Median**: Sorts all passes and picks the single middle value — eliminates outliers without distorting the average.
+
+### 3. Advanced Visualization
 Analyze your data with a powerful, interactive graphing engine:
 - **Chart Types**:
   - **Scaling**: Visualize performance vs. Block Size.
@@ -24,33 +30,33 @@ Analyze your data with a powerful, interactive graphing engine:
   - **Hybrid**: Professional diagnostic view overlaying **Throughput (MB/s)** bars with **IOPS** lines to identify bottlenecks.
   - **Battle**: Head-to-head comparison of multiple drives.
 - **Filtering**: Drill down into data by **Volume**, **Test Type**, **Date Range**, and **App Version**.
-- **Grouping**: Color-code results by **Drive**, **Test Type**, or **Block Size**.
+- **Grouping**: Color-code results by **Drive**, **Test Type**, or **Block Size** (up to 16 distinct series).
 - **Interactive**: Hover over data points for precise values.
 
-### 3. Drive Health Monitoring (New!)
+### 4. Drive Health Monitoring
 Keep an eye on your hardware's physical status:
-- **S.M.A.R.T. Analysis**: Reads raw attribute data directly from the drive.
+- **S.M.A.R.T. Analysis**: Reads raw attribute data directly from the drive via ATA PASS-THROUGH.
 - **Health Indicators**: Real-time display of **Temperature**, **Power-On Hours**, and overall **Health Status**.
 - **Assessment**: Automatic interpretation of critical attributes (Reallocated Sectors, Spin Retry Count, etc.).
 
-### 4. Bulk Testing
+### 5. Bulk Testing
 Automate your benchmarking workflow:
 - **Queue Jobs**: Select multiple drives and add them to a batch queue.
 - **Automation**: Options to "Run All Test Types" and "Run All Block Sizes" (4K to 1M) automatically.
-- **Progress Tracking**: dedicated "Fuel Gauge" to track overall batch progress.
+- **Progress Tracking**: Dedicated Fuel Gauge to track overall batch progress.
 
-### 5. History & Data Management
+### 6. History & Data Management
 - **Persistent Storage**: All results are automatically saved to `AmigaDiskBench_History.csv`.
 - **Comparison**: Select any two results to generate a delta report (Speedup/Slowdown %).
-- **Export**: Export specific datasets to CSV for external analysis (Excel, Sheets).
-- **Reports**: Generate global summary reports of all text activities.
+- **Export**: Export specific datasets to CSV for external analysis.
+- **Reports**: Generate global summary reports of all test activity.
 
-### 6. Detailed Disk Information (New!)
+### 7. Detailed Disk Information
 Inspect the physical and logical structure of your storage:
-- **Tree View**: Hierarchical display of Physical Drives and their Partitions.
+- **Tree View**: Hierarchical display of Physical Drives and their Partitions, categorized as Fixed, USB, and Optical. Each physical drive appears once (e.g., `a1ide.device`); partitions show their volume name and unit number (e.g., `DH3 (Unit 2)`).
 - **Physical Details**: Manufacturer, Model, Serial, Bus Type, Geometry, and Capacity.
 - **Partition Details**: Volume Name, Size, Used/Free Space, Filesystem, and Block size.
-- **Real-Time Updates**: Data refreshes automatically when devices are added or removed.
+- **Real-Time Updates**: Refresh button to rescan when devices are added or removed.
 
 ## Requirements
 
@@ -65,12 +71,10 @@ No special installation is required.
 
 ## Comprehensive Guide
 
-AmigaDiskBench is designed to be intuitive but powerful. This section provides a detailed walk-through of the main components.
-
 ### 1. Running Benchmarks
 The **Benchmark** tab is where performance testing happens.
-- **Target Drive**: Select the volume or partition you wish to test. Note that depending on the filesystem, some tests may require write access.
-- **Test Type**: 
+- **Target Drive**: Select the volume or partition you wish to test. Note that depending on the filesystem, some tests require write access.
+- **Test Type**:
   - *Standard Tests*: Choose Sequential Read/Write, Random 4K Read/Write, or a Mixed 70/30 (Read/Write) workload.
   - *Profiles*: Use preset profiles like "Sprinter" for quick I/O checks, "Marathon" for sustained thermal testing, or "Daily Grind" for everyday usage simulation.
 - **Parameters**: Adjust the **Block Size** (e.g., 4K, 32K, 1M) and the number of **Passes**. Higher passes yield more reliable averages.
@@ -93,18 +97,30 @@ The **Visualization** tab brings your data to life.
 - **Color Coding**: Group data series by Drive, Test Type, or Block Size for immediate visual clarity.
 - **Hover**: Move your mouse over any data point on the graph to reveal precise MB/s and IOPS metrics.
 
-### 4. Disk Information
+### 4. Preferences
+Open **Preferences** from the menu to configure defaults applied to all new benchmarks:
+- **Default Drive**: The volume pre-selected when the application starts.
+- **Default Test / Block Size / Passes**: Starting values for the benchmark controls.
+- **Average Method**: How pass results are combined:
+  - *All Passes* — Simple mean.
+  - *Trimmed Mean* — Excludes the fastest and slowest pass before averaging.
+  - *Median* — Uses only the middle pass value from a sorted set.
+- **CSV Path**: Location of the persistent history file.
+
+The **currently active Average Method** is always visible on the Benchmark tab in the "Benchmark Control" group, next to the Passes count — no need to open Preferences to check.
+
+### 5. Disk Information
 The **Disk Info** tab provides deep hardware enumeration.
 - **Navigation**: Use the left-side tree view. Drives are categorized logically into *Fixed Drives*, *USB Drives*, and *Optical Drives*.
 - **Physical Drives**: Click a root drive to view hardware details including Manufacturer, Model (and Revision), Bus Type, logical Geometry, Capacity, and whether a Rigid Disk Block (RDB) is present.
-- **Partitions**: Click a partition node under a drive to see filesystem specifics, including Volume Name, Used/Free Space, and the exact Hex DOS Type Identifier (e.g., SFS/00).
+- **Partitions**: Click a partition node under a drive to see filesystem specifics, including Volume Name, Used/Free Space, and the exact Hex DOS Type Identifier (e.g., `SFS/00`).
 
-### 5. Drive Health
-The **Drive Health** tab communicates directly with S.M.A.R.T. enabled drives.
+### 6. Drive Health
+The **Drive Health** tab communicates directly with S.M.A.R.T.-enabled drives.
 - **Status Check**: Click **Refresh Health Data** to retrieve the latest vital statistics.
-- **Interpretation**: The tool automatically interprets raw hexadecimal attributes (like Reallocated Sectors or Power-On Hours) and provides a human-readable health assessment at the top.
+- **Interpretation**: The tool automatically interprets raw hexadecimal attributes (Reallocated Sectors, Power-On Hours, etc.) and provides a human-readable health assessment.
 
-### 6. History and Exporting
+### 7. History and Exporting
 - **History View**: Review all past benchmarks in a tabular format.
 - **Comparison**: Select any two rows and click **Compare Selected** to generate a delta report showing percentage improvements or regressions.
 - **Exporting**: Use **Export to CSV** to save the raw data for analysis in external spreadsheet software.
@@ -118,41 +134,56 @@ AmigaDiskBench is open source and can be cross-compiled using a Docker-based too
 *   **Docker** installed and running.
 *   **Walkero's Amiga GCC 11 Image** (`walkero/amigagccondocker:os4-gcc11`).
 
-### Build Command
-From the project root:
+### Build Commands
+From the project root (WSL2):
 
 ```bash
-# Clean previous builds (optional but recommended)
+cd /mnt/w/Code/amiga/antigravity/projects/AmigaDiskBench
+
+# Clean previous build
 docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make clean
 
-# Build with 4 cores
-docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make -j4
+# Build
+docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make all
 ```
 
-This will produce the `AmigaDiskBench` executable in the `dist` folder.
+This will produce the `AmigaDiskBench` executable in the `build/` folder.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License — see the LICENSE file for details.
 
 ## Version History
 
-### v2.2.16 (Current)
+### v2.3.7 (Current)
+- **S.M.A.R.T. column auto-fit**: The Attribute Name column in the Drive Health tab now correctly auto-expands to show full attribute names without truncation.
+- **Average method display**: The Benchmark Control row now shows a single combined label (e.g. `Average: Median (Middle Value Only)`) next to the Passes count, removing the previous two-gadget layout that caused spacing issues.
+- **Bulk tab Settings text**: The Queued Job Settings line now includes the averaging method name, e.g. `Settings: Sprinter / 10 Passes (Median) / 4K`.
+- **Bug fixes**: Disk Info drive categorization, Not Mounted partition sorting, S.M.A.R.T. tab crash on first open.
+
+### v2.3.4 – v2.3.6
+- **Flexible Pass Averaging**: Choose how multi-pass results are combined via **Preferences**: All Passes (mean), Trimmed Mean (excludes best/worst), or Median (middle value — eliminates outliers).
+- **Average Method on Benchmark tab**: The currently active averaging method is always visible next to the Passes count in the Benchmark Control group — no need to open Preferences to check.
+- **Disk Info tree restructured**: Physical drive nodes show the device name only (e.g. `a1ide.device`). Multiple units of the same controller are merged into one node. Partition nodes show `VolumeName (Unit N)`.
+- **Bug fixes**: Underscore in volume names rendering as keyboard shortcuts, Preferences chooser lifetime crash, integer gadget tag ordering.
+
+### v2.2.16
 - **Disk Information Center**: Added a brand new, highly detailed hierarchical view organizing all physical storage devices into Fixed, USB, and Optical categories.
 - **True Hardware Scanning**: The engine now directly probes the system to map logical partitions precisely to their physical driver units.
-- **Enhanced CD/DVD Detection**: Added robust safeguards to prevent system freezes when querying optical drives.
-- **UI & Stability Polish**: Eliminated visual stuttering by implementing adaptive layout shrink-wrapping, and fixed minor crashes related to deep UI selection.
+- **Enhanced CD/DVD Detection**: Added robust safeguards to prevent system freezes when querying optical drives (skips VPD Page 0x80 for CD-ROMs).
+- **Filesystem Display**: Standardized DOS type formatting to `ABC/XX` hex notation.
+- **Bug fixes**: DSI exception on startup (IOExtTD buffer size), layout stuttering, crashes on deep UI selection.
 
 ### v2.2.14
-- **Release Optimization**: Disabled internal debug logging for maximum performance and polished code documentation for open-source clarity.
-- **Final Release Candidate**: Finalized versioning bumps and internal cleanup for stable deployment.
+- **Release Optimization**: Disabled internal debug logging for maximum performance.
+- **Final Release Polish**: Versioning bumps, code comment cleanup, open-source preparation.
 
 ### v2.2.11
 - **Architectural Foundation**: Established the multi-threaded benchmark engine and core CSV history persistence.
 - **UX Foundation**: Solidified the ReAction-based windowing interface.
 
 ### v2.2.10
-- **Advanced Graphing**: Overhauled the visualization engine to chart performance across Block Sizes and auto-refresh dynamically.
-- **Variable Workloads**: Upgraded Random I/O tests to support dynamic user-selected block sizes beyond the static 4KB limit.
-- **Visual Feedback**: Introduced comprehensive Bubble Help tooltips, a Traffic Light status indicator, and a Fuel Gauge progress bar.
-- **Stability Pass**: Patched crucial memory alignment and exporting crashes.
+- **Advanced Graphing**: Overhauled the visualization engine; X-axis changed to Block Size; auto-refresh on tab switch.
+- **Variable Workloads**: Upgraded Random I/O tests to support dynamic user-selected block sizes.
+- **Visual Feedback**: Introduced Traffic Light status indicator and Fuel Gauge progress bar.
+- **Bug fixes**: CSV export crashes (alignment/varargs), color allocation issues.
