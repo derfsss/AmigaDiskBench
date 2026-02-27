@@ -8,6 +8,7 @@ dist/
 *.log
 build_errors.txt
 build_log.txt
+dump.txt
 
 # OS / Editor specific
 .DS_Store
