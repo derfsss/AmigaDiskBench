@@ -59,10 +59,23 @@ void RefreshDriveList(void)
         struct Node *vol_node;
         for (vol_node = IExec->GetHead(vol_list); vol_node != NULL; vol_node = IExec->GetSucc(vol_node)) {
             char bare_name[MAX_PATH_LEN];
-            char detailed_name[512];
+            char escaped_name[MAX_PATH_LEN * 2]; /* worst case: every char is '_' */
+            char detailed_name[MAX_PATH_LEN * 2 + 80]; /* escaped name + " [fs_info]" suffix */
             char fs_info[64];
             /* vol_node->ln_Name is already a C-string (STRPTR) from DOS_VOLUMELIST */
             snprintf(bare_name, sizeof(bare_name), "%s", vol_node->ln_Name);
+            /* Replace underscores with spaces so chooser.gadget does not treat
+             * them as keyboard-shortcut prefixes ("_X" underlines X). */
+            {
+                const char *src = bare_name;
+                char *dst = escaped_name;
+                char *end = escaped_name + sizeof(escaped_name) - 1;
+                while (*src && dst < end) {
+                    *dst++ = (*src == '_') ? ' ' : *src;
+                    src++;
+                }
+                *dst = '\0';
+            }
             /* Get FS type from engine's helper */
             GetFileSystemInfo(bare_name, fs_info, sizeof(fs_info));
             /* Get Space info and check for Writable state */
@@ -76,7 +89,7 @@ void RefreshDriveList(void)
                         char sz_total[32], sz_free[32];
                         FormatSize(total, sz_total, sizeof(sz_total));
                         FormatSize(free, sz_free, sizeof(sz_free));
-                        snprintf(detailed_name, sizeof(detailed_name), "%s [%s]", bare_name, fs_info);
+                        snprintf(detailed_name, sizeof(detailed_name), "%s [%s]", escaped_name, fs_info);
                         /* Store names in DriveNodeData for the chooser node */
                         DriveNodeData *ddata = IExec->AllocVecTags(sizeof(DriveNodeData), AVT_Type, MEMF_SHARED,
                                                                    AVT_ClearWithValue, 0, TAG_DONE);

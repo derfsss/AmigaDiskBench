@@ -120,7 +120,7 @@ int StartGUI(void)
     struct Process *worker_proc = NULL;
     struct DiskObject *icon = NULL;
     memset(&ui, 0, sizeof(ui));
-    ui.use_trimmed_mean = DEFAULT_TRIMMED_MEAN;
+    ui.averaging_method = DEFAULT_AVERAGING_METHOD;
     ui.default_test_type = DEFAULT_LAST_TEST;
     ui.default_drive[0] = '\0';
     ui.default_block_size_idx = DEFAULT_BLOCK_SIZE_IDX;
@@ -267,6 +267,7 @@ int StartGUI(void)
         RefreshDriveList();
         RefreshDiskInfoTree(); // Populate Disk Info tab early
         LoadPrefs();
+        UpdateAvgMethodLabel();
         UpdateBulkTabInfo();
 
         /* Initial Block Size State configuration */
@@ -326,6 +327,10 @@ int StartGUI(void)
                                    sel_node ? CHOOSER_SelectedNode : CHOOSER_Selected, sel_node ? (uint32)sel_node : 0,
                                    TAG_DONE);
 
+        /* Discard any pending rethink set during init (e.g. from RefreshDiskInfoTree).
+           The window is not yet in steady state; user interaction will trigger it. */
+        ui.diskinfo_rethink_pending = FALSE;
+
         uint32 win_sig = 0;
         IIntuition->GetAttr(WINDOW_SigMask, ui.win_obj, &win_sig);
         uint32 wait_mask = win_sig | (1L << ui.gui_port->mp_SigBit) | (1L << ui.worker_reply_port->mp_SigBit) |
@@ -365,6 +370,14 @@ int StartGUI(void)
                         }
                     }
                     HandleGUIEvent(result, code, &running);
+                }
+                /* Deferred WM_RETHINK: page.gadget page switch needs a layout
+                   refresh, but calling WM_RETHINK from inside WM_HANDLEINPUT
+                   causes re-entrancy. Set the flag in UpdateDetailsPage and
+                   call WM_RETHINK here, safely after WM_HANDLEINPUT returns. */
+                if (ui.diskinfo_rethink_pending) {
+                    ui.diskinfo_rethink_pending = FALSE;
+                    IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
                 }
             }
             if (ui.prefs_win_obj && (sig & (1L << ui.prefs_port->mp_SigBit))) {

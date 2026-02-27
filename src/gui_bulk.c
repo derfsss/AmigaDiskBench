@@ -167,7 +167,7 @@ void LaunchBulkJobs(void)
                             job->num_passes = ui.current_passes;
                             job->block_size =
                                 force_single_run ? 0 : blocks[b]; /* 0 or default will be handled by Setup */
-                            job->use_trimmed_mean = ui.use_trimmed_mean;
+                            job->averaging_method = ui.averaging_method;
                             job->flush_cache = ui.flush_cache;
                             job->msg.mn_ReplyPort = ui.worker_reply_port;
 

@@ -53,9 +53,9 @@ Automate your benchmarking workflow:
 
 ### 7. Detailed Disk Information
 Inspect the physical and logical structure of your storage:
-- **Tree View**: Hierarchical display of Physical Drives and their Partitions, categorized as Fixed, USB, and Optical. Each physical drive appears once (e.g., `a1ide.device`); partitions show their volume name and unit number (e.g., `DH3 (Unit 2)`).
-- **Physical Details**: Manufacturer, Model, Serial, Bus Type, Geometry, and Capacity.
-- **Partition Details**: Volume Name, Size, Used/Free Space, Filesystem, and Block size.
+- **Tree View**: Hierarchical display organized as *Fixed Drives*, *USB Drives*, and *Optical Drives*. Each physical controller appears once (e.g., `a1ide.device`); partitions show their volume/device name and unit (e.g., `System (Unit 0)`, `DH3 (Unit 2)`).
+- **Disk Details**: Click a drive node to see the disk's human-readable identity (vendor + product + revision from SCSI inquiry), bus type, capacity, geometry, and whether an RDB is present.
+- **Partition Details**: Click a mounted partition to see Volume Name, Size, Used/Free space, Filesystem type, and Block count. Click an unmounted partition to see its DOS device name, size (from RDB geometry), and filesystem type — all without mounting.
 - **Real-Time Updates**: Refresh button to rescan when devices are added or removed.
 
 ## Requirements
@@ -112,8 +112,9 @@ The **currently active Average Method** is always visible on the Benchmark tab i
 ### 5. Disk Information
 The **Disk Info** tab provides deep hardware enumeration.
 - **Navigation**: Use the left-side tree view. Drives are categorized logically into *Fixed Drives*, *USB Drives*, and *Optical Drives*.
-- **Physical Drives**: Click a root drive to view hardware details including Manufacturer, Model (and Revision), Bus Type, logical Geometry, Capacity, and whether a Rigid Disk Block (RDB) is present.
-- **Partitions**: Click a partition node under a drive to see filesystem specifics, including Volume Name, Used/Free Space, and the exact Hex DOS Type Identifier (e.g., `SFS/00`).
+- **Disk Details**: Click a root drive node to view the disk's full identity (vendor, product, revision), Bus Type, logical Geometry, Capacity, and whether an RDB is present.
+- **Mounted Partitions**: Click a mounted partition to see Volume Name, Used/Free Space, total Size, and the DOS Type Identifier (e.g., `SFS/00 (0x53465300)`).
+- **Unmounted Partitions**: Click an unmounted partition to see its DOS device name (e.g., `DH3`), size derived from RDB geometry, and filesystem type — no mount required.
 
 ### 6. Drive Health
 The **Drive Health** tab communicates directly with S.M.A.R.T.-enabled drives.
@@ -159,7 +160,11 @@ This project is licensed under the MIT License — see the LICENSE file for deta
 - **S.M.A.R.T. column auto-fit**: The Attribute Name column in the Drive Health tab now correctly auto-expands to show full attribute names without truncation.
 - **Average method display**: The Benchmark Control row now shows a single combined label (e.g. `Average: Median (Middle Value Only)`) next to the Passes count, removing the previous two-gadget layout that caused spacing issues.
 - **Bulk tab Settings text**: The Queued Job Settings line now includes the averaging method name, e.g. `Settings: Sprinter / 10 Passes (Median) / 4K`.
-- **Bug fixes**: Disk Info drive categorization, Not Mounted partition sorting, S.M.A.R.T. tab crash on first open.
+- **Disk Info — improved naming**: The right-hand detail panel now uses precise terminology: *Disk Name* (SCSI vendor/product/revision), *Partition Name* (DOS device name, shown for unmounted partitions), and *Volume Name* (filesystem label, shown for mounted partitions). The section header is *Disk Details* for drives and *Partition Details* for partitions.
+- **Disk Info — unmounted partition details**: Clicking an unmounted partition now shows its DOS device name, size (derived from RDB/DosEnvec geometry without mounting), and filesystem type. Previously showed a blank panel.
+- **Disk Info — underscore sanitization**: Volume and partition names containing underscores (filesystem artifact) are displayed with spaces for readability.
+- **Disk Info — DOS type display**: The 4th byte of a DOS type identifier is now shown as a printable character when it is ASCII (e.g. `SWAP`, `CD01`) rather than hex notation (e.g. `SWA/50`, `CD0/31`).
+- **Bug fixes**: Disk Info drive categorization, Not Mounted partition sorting, S.M.A.R.T. tab crash on first open, DSI crash on Disk Info tab page switching.
 
 ### v2.3.4 – v2.3.6
 - **Flexible Pass Averaging**: Choose how multi-pass results are combined via **Preferences**: All Passes (mean), Trimmed Mean (excludes best/worst), or Median (middle value — eliminates outliers).

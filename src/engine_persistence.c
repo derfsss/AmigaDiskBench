@@ -72,9 +72,11 @@ BOOL SaveResultToCSV(const char *filename, BenchResult *result)
         // 3. Device Info (Name, Unit, Version)
         APPEND_CSV(",%s,%u,%s", result->device_name, (unsigned int)result->device_unit, result->app_version);
 
-        // 4. Test Settings (Passes, BlockSize, Trimmed)
-        APPEND_CSV(",%u,%u,%d", (unsigned int)result->passes, (unsigned int)result->block_size,
-                   (int)result->use_trimmed_mean);
+        // 4. Test Settings (Passes, BlockSize, AveragingMethod)
+        const char *avg_method_str = (result->averaging_method == AVERAGE_TRIMMED_MEAN) ? "TrimmedMean" :
+                                     (result->averaging_method == AVERAGE_MEDIAN) ? "Median" : "AllPasses";
+        APPEND_CSV(",%u,%u,%s", (unsigned int)result->passes, (unsigned int)result->block_size,
+                   avg_method_str);
 
         // 5. Detailed Stats (Min, Max, Duration)
         APPEND_CSV(",%.2f,%.2f,%.2f", result->min_mbps, result->max_mbps, result->total_duration);

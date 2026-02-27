@@ -27,6 +27,18 @@
 #include "version.h"
 #include <dos/dos.h>
 #include <exec/types.h>
+#include <math.h>
+
+/* Averaging Methods for Pass Results */
+/**
+ * @brief Enumeration of methods to average results from multiple passes.
+ */
+typedef enum
+{
+    AVERAGE_ALL_PASSES = 0,    /**< Simple average of all passes */
+    AVERAGE_TRIMMED_MEAN = 1,  /**< Exclude best and worst results */
+    AVERAGE_MEDIAN = 2         /**< Single median value from sorted results */
+} AveragingMethod;
 
 /* Test types */
 /**
@@ -88,7 +100,7 @@ typedef struct
     uint32 block_size;
 
     /* Persistence and Detailed Metrics */
-    BOOL use_trimmed_mean;
+    uint32 averaging_method;  /* AveragingMethod enum value */
     float min_mbps; /* Min/Max among non-trimmed passes if trimming active */
     float max_mbps;
     float total_duration;    /* Cumulative duration across all passes */
@@ -158,14 +170,14 @@ void CleanupEngine(void);
  * @param target_path The filesystem path to test (e.g., "DH0:").
  * @param passes Number of times to run the test for averaging.
  * @param block_size Block size to use for I/O operations (in bytes).
- * @param use_trimmed_mean If TRUE, discard best/worst runs before averaging.
+ * @param averaging_method Method to use for averaging passes (AveragingMethod enum).
  * @param flush_cache If TRUE, attempt to clear OS buffers before running.
  * @param progress_cb Optional progress callback for multi-pass updates (may be NULL).
  * @param out_result Pointer to a BenchResult structure to store the results.
  * @param out_samples Optional pointer to a BenchSampleData structure for time-series data (may be NULL).
  * @return TRUE if the benchmark completed successfully, FALSE on error or abort.
  */
-BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, uint32 block_size, BOOL use_trimmed_mean,
+BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, uint32 block_size, uint32 averaging_method,
                   BOOL flush_cache, ProgressCallback progress_cb, BenchResult *out_result,
                   BenchSampleData *out_samples);
 

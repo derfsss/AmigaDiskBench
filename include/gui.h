@@ -57,7 +57,7 @@ typedef struct
     char target_path[MAX_PATH_LEN];
     uint32 num_passes;
     uint32 block_size;
-    BOOL use_trimmed_mean;
+    uint32 averaging_method;  /* AveragingMethod enum value */
     BOOL flush_cache;
     struct MsgPort *reply_port;
 } BenchJob;
@@ -96,6 +96,7 @@ typedef struct
     Object *run_button;
     Object *test_chooser;
     Object *pass_gad;
+    Object *avg_method_label;
     Object *block_chooser;
     Object *target_chooser;
 
@@ -111,9 +112,10 @@ typedef struct
     Object *prefs_block_chooser;
     Object *prefs_pass_gad;
     Object *prefs_csv_path;
-    Object *prefs_trimmed_check;
+    Object *prefs_average_chooser;
     Object *prefs_test_chooser;
     Object *prefs_target_chooser;
+    struct List prefs_avg_list;     /* Chooser node list for Average Method — lives as long as prefs window */
 
     /* Gadgets - Details Window */
     Object *details_win_obj;
@@ -204,7 +206,7 @@ typedef struct
 
     /* Application State */
     BOOL PageAvailable;
-    BOOL use_trimmed_mean;
+    uint32 averaging_method;   /* AveragingMethod enum value */
     uint32 default_test_type;
     uint32 default_block_size_idx;
     char default_drive[MAX_PATH_LEN];
@@ -260,6 +262,7 @@ typedef struct
     Object *diskinfo_part_fs_label;
     Object *diskinfo_part_block_label;
     struct List diskinfo_labels;
+    BOOL diskinfo_rethink_pending; /* Set by UpdateDetailsPage; cleared after deferred WM_RETHINK */
 } GUIState;
 
 #include "benchmark_queue.h"
@@ -293,7 +296,7 @@ enum
     GID_PREFS_PASSES,
     GID_PREFS_CSV,
     GID_PREFS_CSV_BR,
-    GID_PREFS_TRIMMED,
+    GID_PREFS_AVERAGE_METHOD,
     GID_PREFS_TEST_TYPE,
     GID_PREFS_TARGET,
     GID_PREFS_SAVE,
@@ -303,6 +306,7 @@ enum
     GID_DETAILS_VSCROLL,
     GID_DETAILS_HSCROLL,
     GID_DETAILS_CLOSE,
+    GID_AVG_METHOD_LABEL,
     GID_FLUSH_CACHE,
     GID_VIZ_CANVAS,
     GID_VIZ_FILTER_VOLUME,

@@ -91,7 +91,10 @@ void OpenDetailsWindow(BenchResult *res)
              " Application:\n"
              "  Version:    %s\n",
              res->timestamp, TestTypeToDisplayName(res->type), res->volume_name, res->result_id, res->fs_type,
-             (unsigned int)res->passes, res->use_trimmed_mean ? "Yes" : "No", FormatPresetBlockSize(res->block_size),
+             (unsigned int)res->passes,
+             (res->averaging_method == AVERAGE_TRIMMED_MEAN) ? "Trimmed Mean" :
+             (res->averaging_method == AVERAGE_MEDIAN) ? "Median" : "All Passes",
+             FormatPresetBlockSize(res->block_size),
              res->mb_per_sec, res->min_mbps, res->max_mbps, (unsigned int)res->iops, res->total_duration,
              (double)res->cumulative_bytes / 1048576.0, res->max_mbps - res->min_mbps, res->device_name,
              (unsigned int)res->device_unit, res->vendor, res->product, res->firmware_rev, res->serial_number,

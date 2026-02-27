@@ -28,6 +28,18 @@
 /* Maximum results to plot on the graph */
 #define MAX_PLOT_RESULTS 200
 
+/* Replace underscores with spaces in dst so chooser.gadget does not treat
+ * them as keyboard-shortcut prefixes ("_X" underlines X). */
+static void SanitizeNameForChooser(const char *src, char *dst, size_t dst_size)
+{
+    size_t i = 0;
+    while (src[i] && i < dst_size - 1) {
+        dst[i] = (src[i] == '_') ? ' ' : src[i];
+        i++;
+    }
+    dst[i] = '\0';
+}
+
 /* Parse "YYYY-MM-DD HH:MM:SS" into year, month, day */
 static void ParseDate(const char *timestamp, int *y, int *m, int *d)
 {
@@ -184,8 +196,12 @@ static uint32 CollectVizData(VizData *vd)
                         vol_node = IExec->GetSucc(vol_node);
                         idx++;
                     }
-                    if (filter_name && strcmp(res->volume_name, filter_name) != 0)
-                        match = FALSE;
+                    if (filter_name) {
+                        char san_vol[32];
+                        SanitizeNameForChooser(res->volume_name, san_vol, sizeof(san_vol));
+                        if (strcmp(san_vol, filter_name) != 0)
+                            match = FALSE;
+                    }
                 }
 
                 if (filter_ver > 0 && match) {
@@ -410,7 +426,9 @@ void RefreshVizVolumeFilter(void)
             if (!found) {
                 snprintf(seen_volumes[seen_count], sizeof(seen_volumes[seen_count]), "%s", res->volume_name);
                 seen_count++;
-                n = IChooser->AllocChooserNode(CNA_Text, res->volume_name, CNA_CopyText, TRUE, TAG_DONE);
+                char disp_vol[32];
+                SanitizeNameForChooser(res->volume_name, disp_vol, sizeof(disp_vol));
+                n = IChooser->AllocChooserNode(CNA_Text, disp_vol, CNA_CopyText, TRUE, TAG_DONE);
                 if (n)
                     IExec->AddTail(&ui.viz_volume_labels, n);
             }

@@ -137,7 +137,22 @@ void RefreshHistory(void)
                 snprintf(res->app_version, sizeof(res->app_version), "%s", ver);
                 res->passes = strtoul(passes, NULL, 10);
                 res->block_size = strtoul(bs_str, NULL, 10);
-                res->use_trimmed_mean = (fields >= 13) ? strtoul(trimmed, NULL, 10) : 0;
+                /* Parse averaging method: handles both old (0/1 numeric) and new (string) formats */
+                if (fields >= 13) {
+                    if (strcasecmp(trimmed, "TrimmedMean") == 0) {
+                        res->averaging_method = AVERAGE_TRIMMED_MEAN;
+                    } else if (strcasecmp(trimmed, "Median") == 0) {
+                        res->averaging_method = AVERAGE_MEDIAN;
+                    } else if (strtoul(trimmed, NULL, 10) == 1) {
+                        /* Legacy: numeric 1 = TrimmedMean */
+                        res->averaging_method = AVERAGE_TRIMMED_MEAN;
+                    } else {
+                        /* Legacy: numeric 0 or unknown = all passes */
+                        res->averaging_method = AVERAGE_ALL_PASSES;
+                    }
+                } else {
+                    res->averaging_method = AVERAGE_ALL_PASSES;
+                }
                 res->min_mbps = (fields >= 14) ? atof(min_str) : res->mb_per_sec;
                 res->max_mbps = (fields >= 15) ? atof(max_str) : res->mb_per_sec;
                 res->total_duration = (fields >= 16) ? atof(dur_str) : 0;
@@ -337,12 +352,14 @@ static void SaveHistoryToCSV(const char *filename)
                 const char *typeName = TestTypeToString(result->type);
 
                 char line[1024];
+                const char *avg_method_str = (result->averaging_method == AVERAGE_TRIMMED_MEAN) ? "TrimmedMean" :
+                                             (result->averaging_method == AVERAGE_MEDIAN) ? "Median" : "AllPasses";
                 snprintf(line, sizeof(line),
-                         "%s,%s,%s,%s,%s,%.2f,%u,%s,%u,%s,%u,%u,%d,%.2f,%.2f,%.2f,%llu,%s,%s,%s,%s\n",
+                         "%s,%s,%s,%s,%s,%.2f,%u,%s,%u,%s,%u,%u,%s,%.2f,%.2f,%.2f,%llu,%s,%s,%s,%s\n",
                          result->result_id, result->timestamp, typeName, result->volume_name, result->fs_type,
                          result->mb_per_sec, (unsigned int)result->iops, result->device_name,
                          (unsigned int)result->device_unit, result->app_version, (unsigned int)result->passes,
-                         (unsigned int)result->block_size, (int)result->use_trimmed_mean, result->min_mbps,
+                         (unsigned int)result->block_size, avg_method_str, result->min_mbps,
                          result->max_mbps, result->total_duration, (unsigned long long)result->cumulative_bytes,
                          result->vendor, result->product, result->firmware_rev, result->serial_number);
                 IDOS->FPuts(file, line);

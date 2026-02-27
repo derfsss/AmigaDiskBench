@@ -64,6 +64,7 @@ static void UpdateDetailsPage(struct InfoNodeData *data)
         LOG_DEBUG("UpdateDetailsPage: Data is NULL, showing Init Page");
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_INIT,
                                    TAG_DONE);
+        ui.diskinfo_rethink_pending = TRUE;
         return;
     }
 
@@ -71,16 +72,11 @@ static void UpdateDetailsPage(struct InfoNodeData *data)
     if (data->part) {
         LogicalPartition *part = data->part;
 
-        // Hide details if partition is not mounted
-        if (part->volume_name[0] == '\0' || strcmp(part->volume_name, "Not Mounted") == 0) {
-            LOG_DEBUG("UpdateDetailsPage: Partition not mounted, showing Init Page");
-            IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_INIT,
-                                       TAG_DONE);
-            IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
-            return;
-        }
+        BOOL is_not_mounted = (part->volume_name[0] == '\0' ||
+                               strcmp(part->volume_name, "Not Mounted") == 0);
 
-        LOG_DEBUG("UpdateDetailsPage: Showing Partition Details for '%s' (addr: %p)", part->volume_name, part);
+        LOG_DEBUG("UpdateDetailsPage: Showing Partition Details for '%s' (mounted=%d, addr: %p)",
+                  is_not_mounted ? part->dos_device_name : part->volume_name, !is_not_mounted, part);
 
         static char s_part_vol[128];
         static char s_part_size[64];
@@ -89,23 +85,38 @@ static void UpdateDetailsPage(struct InfoNodeData *data)
         static char s_part_fs[128];
         static char s_part_block[64];
 
-        LOG_DEBUG("UpdateDetailsPage: Formatting volume name");
-        snprintf(s_part_vol, sizeof(s_part_vol), "%s", part->volume_name[0] ? part->volume_name : "Unmounted");
+        LOG_DEBUG("UpdateDetailsPage: Formatting volume/partition name");
+        {
+            char raw_sanitized[64];
+            const char *raw_name = is_not_mounted
+                                       ? (part->dos_device_name[0] ? part->dos_device_name : "Unknown")
+                                       : part->volume_name;
+            IUtility->Strlcpy(raw_sanitized, raw_name, sizeof(raw_sanitized));
+            for (char *p = raw_sanitized; *p; p++) if (*p == '_') *p = ' ';
+            snprintf(s_part_vol, sizeof(s_part_vol), "%s: %s",
+                     is_not_mounted ? "Partition" : "Volume", raw_sanitized);
+        }
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_vol_label, ui.window, NULL, GA_Text, s_part_vol,
                                    TAG_DONE);
 
         LOG_DEBUG("UpdateDetailsPage: Formatting size (%llu)", part->size_bytes);
-        FormatSize(part->size_bytes, s_part_size, sizeof(s_part_size));
+        if (part->size_bytes > 0)
+            FormatSize(part->size_bytes, s_part_size, sizeof(s_part_size));
+        else
+            snprintf(s_part_size, sizeof(s_part_size), "Unknown");
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_size_label, ui.window, NULL, GA_Text, s_part_size,
                                    TAG_DONE);
 
-        LOG_DEBUG("UpdateDetailsPage: Formatting used (%llu)", part->used_bytes);
-        FormatSize(part->used_bytes, s_part_used, sizeof(s_part_used));
+        LOG_DEBUG("UpdateDetailsPage: Formatting used/free (mounted=%d)", !is_not_mounted);
+        if (is_not_mounted) {
+            snprintf(s_part_used, sizeof(s_part_used), "N/A");
+            snprintf(s_part_free, sizeof(s_part_free), "N/A");
+        } else {
+            FormatSize(part->used_bytes, s_part_used, sizeof(s_part_used));
+            FormatSize(part->free_bytes, s_part_free, sizeof(s_part_free));
+        }
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_used_label, ui.window, NULL, GA_Text, s_part_used,
                                    TAG_DONE);
-
-        LOG_DEBUG("UpdateDetailsPage: Formatting free (%llu)", part->free_bytes);
-        FormatSize(part->free_bytes, s_part_free, sizeof(s_part_free));
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_free_label, ui.window, NULL, GA_Text, s_part_free,
                                    TAG_DONE);
 
@@ -129,10 +140,9 @@ static void UpdateDetailsPage(struct InfoNodeData *data)
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_part_block_label, ui.window, NULL, GA_Text,
                                    s_part_block, TAG_DONE);
 
-        LOG_DEBUG("UpdateDetailsPage: Changing page and rethinking layout");
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_PARTITION,
                                    TAG_DONE);
-        IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
+        ui.diskinfo_rethink_pending = TRUE;
         LOG_DEBUG("UpdateDetailsPage: Exit Partition Path");
         return;
     }
@@ -154,36 +164,45 @@ static void UpdateDetailsPage(struct InfoNodeData *data)
         } else {
             snprintf(s_drive_brand, sizeof(s_drive_brand), "%s %s", drive->vendor, drive->product);
         }
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_brand_label, ui.window, NULL, GA_Text, s_drive_brand,
-                                   TAG_DONE);
+        if (ui.diskinfo_brand_label)
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_brand_label, ui.window, NULL, GA_Text, s_drive_brand,
+                                       TAG_DONE);
 
         snprintf(s_drive_bus, sizeof(s_drive_bus), "%s %s", MediaTypeToString(drive->media_type),
                  BusTypeToString(drive->bus_type));
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_bus_label, ui.window, NULL, GA_Text, s_drive_bus,
-                                   TAG_DONE);
+        if (ui.diskinfo_bus_label)
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_bus_label, ui.window, NULL, GA_Text, s_drive_bus,
+                                       TAG_DONE);
 
         FormatSize(drive->capacity_bytes, s_drive_cap, sizeof(s_drive_cap));
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_capacity_label, ui.window, NULL, GA_Text, s_drive_cap,
-                                   TAG_DONE);
+        if (ui.diskinfo_capacity_label)
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_capacity_label, ui.window, NULL, GA_Text, s_drive_cap,
+                                       TAG_DONE);
 
         snprintf(s_drive_geom, sizeof(s_drive_geom), "C:%lu H:%lu S:%lu B:%lu", drive->cylinders, drive->heads,
                  drive->sectors, drive->block_bytes);
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_geometry_label, ui.window, NULL, GA_Text, s_drive_geom,
-                                   TAG_DONE);
+        if (ui.diskinfo_geometry_label)
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_geometry_label, ui.window, NULL, GA_Text, s_drive_geom,
+                                       TAG_DONE);
 
-        snprintf(s_drive_flags, sizeof(s_drive_flags), "RDB: %s", drive->rdb_found ? "Yes" : "No");
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_flags_label, ui.window, NULL, GA_Text, s_drive_flags,
-                                   TAG_DONE);
+        snprintf(s_drive_flags, sizeof(s_drive_flags), "%s", drive->rdb_found ? "Yes" : "No");
+        if (ui.diskinfo_flags_label)
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_flags_label, ui.window, NULL, GA_Text, s_drive_flags,
+                                       TAG_DONE);
 
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_DRIVE,
-                                   TAG_DONE);
-        IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
+        if (ui.diskinfo_pages) {
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_DRIVE,
+                                       TAG_DONE);
+            ui.diskinfo_rethink_pending = TRUE;
+        }
     } else {
         // Fallback for root node or category nodes
         LOG_DEBUG("UpdateDetailsPage: Data present but no Drive/Part (Root Node?)");
-        IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_INIT,
-                                   TAG_DONE);
-        IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
+        if (ui.diskinfo_pages) {
+            IIntuition->SetGadgetAttrs((struct Gadget *)ui.diskinfo_pages, ui.window, NULL, PAGE_Current, PAGE_INIT,
+                                       TAG_DONE);
+            ui.diskinfo_rethink_pending = TRUE;
+        }
     }
 }
 
@@ -335,7 +354,10 @@ void RefreshDiskInfoTree(void)
 
                                 char pLabel[128];
                                 const char *pName = part->volume_name[0] ? part->volume_name : part->dos_device_name;
-                                snprintf(pLabel, sizeof(pLabel), "%s (Unit %lu)", pName, pd->unit_number);
+                                char pSanitized[64];
+                                IUtility->Strlcpy(pSanitized, pName, sizeof(pSanitized));
+                                for (char *p = pSanitized; *p; p++) if (*p == '_') *p = ' ';
+                                snprintf(pLabel, sizeof(pLabel), "%s (Unit %lu)", pSanitized, pd->unit_number);
 
                                 if (pData) {
                                     pData->drive = pd;
@@ -416,12 +438,12 @@ Object *CreateDiskInfoPage(void)
 
     /* Physical Drive Page */
     Object *page_drive = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_BevelStyle,
-           BVS_GROUP, LAYOUT_Label, "Physical Drive Details",
+           BVS_GROUP, LAYOUT_Label, "Disk Details",
 
            LAYOUT_AddChild,
            (ui.diskinfo_brand_label = ButtonObject, GA_ID, GID_DISKINFO_BRAND, GA_ReadOnly, TRUE, GA_Text, "-",
             BUTTON_Justification, BCJ_LEFT, End),
-           CHILD_Label, LabelObject, LABEL_Text, "Model:", End, CHILD_WeightedHeight, 0,
+           CHILD_Label, LabelObject, LABEL_Text, "Disk Name:", End, CHILD_WeightedHeight, 0,
 
            LAYOUT_AddChild,
            (ui.diskinfo_bus_label = ButtonObject, GA_ID, GID_DISKINFO_BUS, GA_ReadOnly, TRUE, GA_Text, "-",
@@ -455,7 +477,7 @@ Object *CreateDiskInfoPage(void)
            LAYOUT_AddChild,
            (ui.diskinfo_part_vol_label = ButtonObject, GA_ID, GID_DISKINFO_PART_VOL, GA_ReadOnly, TRUE, GA_Text, "-",
             BUTTON_Justification, BCJ_LEFT, End),
-           CHILD_Label, LabelObject, LABEL_Text, "Volume:", End, CHILD_WeightedHeight, 0,
+           CHILD_Label, LabelObject, LABEL_Text, "Name:", End, CHILD_WeightedHeight, 0,
 
            LAYOUT_AddChild,
            (ui.diskinfo_part_size_label = ButtonObject, GA_ID, GID_DISKINFO_PART_SIZE, GA_ReadOnly, TRUE, GA_Text, "-",
@@ -490,7 +512,7 @@ Object *CreateDiskInfoPage(void)
     ui.diskinfo_pages = IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page_init, PAGE_Add,
                                               (uint32)page_drive, PAGE_Add, (uint32)page_part, TAG_DONE);
 
-    static struct ColumnInfo diskinfo_cols[] = {{100, "Device / Partition", CIF_WEIGHTED | CIF_DRAGGABLE},
+    static struct ColumnInfo diskinfo_cols[] = {{100, "Disk / Partition", CIF_WEIGHTED | CIF_DRAGGABLE},
                                                 {-1, NULL, 0}};
 
     Object *tree =

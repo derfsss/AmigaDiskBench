@@ -86,7 +86,7 @@ void BenchmarkWorker(void)
                         s_gui_reply_port = job->msg.mn_ReplyPort;
 
                         status->success = RunBenchmark(job->type, job->target_path, job->num_passes, job->block_size,
-                                                       job->use_trimmed_mean, job->flush_cache, SendProgressUpdate,
+                                                       job->averaging_method, job->flush_cache, SendProgressUpdate,
                                                        &status->result, &status->sample_data);
                         status->finished = TRUE;
 
@@ -183,8 +183,8 @@ void LaunchBenchmarkJob(void)
         block_val = 0;
     }
 
-    LOG_DEBUG("LaunchJob: path='%s', test=%u, passes=%u, block_val=%u, trimmed=%d", path, (unsigned int)test_type_idx,
-              passes, block_val, (int)ui.use_trimmed_mean);
+    LOG_DEBUG("LaunchJob: path='%s', test=%u, passes=%u, block_val=%u, avg_method=%u", path, (unsigned int)test_type_idx,
+              passes, block_val, (unsigned int)ui.averaging_method);
 
     BenchJob *job = IExec->AllocVecTags(sizeof(BenchJob), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
     if (job) {
@@ -194,7 +194,7 @@ void LaunchBenchmarkJob(void)
         job->target_path[sizeof(job->target_path) - 1] = '\0';
         job->num_passes = passes;
         job->block_size = block_val;
-        job->use_trimmed_mean = ui.use_trimmed_mean;
+        job->averaging_method = ui.averaging_method;
         job->flush_cache = ui.flush_cache;
         job->msg.mn_ReplyPort = ui.worker_reply_port;
 

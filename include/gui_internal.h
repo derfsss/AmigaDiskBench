@@ -130,7 +130,7 @@ extern GUIState ui;
 #define DEFAULT_LAST_TEST 3      /* 3 = All Tests (default) */
 #define DEFAULT_BLOCK_SIZE_IDX 0 /* 0 = 4K (default) */
 #define DEFAULT_PASSES 3
-#define DEFAULT_TRIMMED_MEAN TRUE
+#define DEFAULT_AVERAGING_METHOD AVERAGE_ALL_PASSES
 
 /* Prototypes for functions split out of gui.c */
 
@@ -244,6 +244,11 @@ void OpenPrefsWindow(void);
  * @brief Apply changes from the Preferences window and save them.
  */
 void UpdatePreferences(void);
+
+/**
+ * @brief Refresh the Average Method read-only label on the Benchmark tab.
+ */
+void UpdateAvgMethodLabel(void);
 
 /* [gui_layout.c] - UI Layout Construction */
 

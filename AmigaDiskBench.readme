@@ -75,12 +75,15 @@ Automate your benchmarking workflow:
 
 7. Detailed Disk Information
 Inspect the physical and logical structure of your storage:
-- Tree View: Hierarchical display of Physical Drives and their Partitions,
-  categorized as Fixed, USB, and Optical. Each physical drive appears once
-  (e.g., a1ide.device); partitions show their volume name and unit number
-  (e.g., DH3 (Unit 2)). Mounted partitions are listed before unmounted ones.
-- Physical Details: Manufacturer, Model, Serial, Bus Type, Geometry, Capacity.
-- Partition Details: Volume Name, Size, Used/Free Space, Filesystem, Block size.
+- Tree View: Hierarchical display organized as Fixed Drives, USB Drives, and
+  Optical Drives. Each physical controller appears once (e.g., a1ide.device);
+  partitions show their volume/device name and unit number.
+- Disk Details: Click a drive node to see the disk name (vendor/product/
+  revision), bus type, capacity, geometry, and RDB presence.
+- Partition Details (mounted): Volume Name, Size, Used/Free space, Filesystem
+  type, and Block count.
+- Partition Details (unmounted): DOS device name, size from RDB geometry, and
+  filesystem type -- no mounting required.
 - Real-Time Updates: Refresh button to rescan when devices are added or removed.
 
 
@@ -155,12 +158,12 @@ benchmarks:
 The Disk Info tab provides deep hardware enumeration.
 - Navigation: Use the left-side tree view. Drives are categorized logically
   into Fixed Drives, USB Drives, and Optical Drives.
-- Physical Drives: Click a root drive to view hardware details including
-  Manufacturer, Model (and Revision), Bus Type, logical Geometry, Capacity,
-  and whether a Rigid Disk Block (RDB) is present.
-- Partitions: Click a partition node under a drive to see filesystem specifics,
-  including Volume Name, Used/Free Space, and the exact Hex DOS Type Identifier
-  (e.g., SFS/00).
+- Disk Details: Click a drive node to see the disk name (vendor, product,
+  revision from SCSI inquiry), Bus Type, Geometry, Capacity, and RDB status.
+- Mounted Partitions: Click a mounted partition to see Volume Name, Used/Free
+  space, total Size, and DOS Type Identifier (e.g., SFS/00 (0x53465300)).
+- Unmounted Partitions: Click an unmounted partition to see its DOS device
+  name, size from RDB geometry, and filesystem type -- no mount required.
 
 6. Drive Health
 The Drive Health tab communicates directly with S.M.A.R.T.-enabled drives.
@@ -224,7 +227,14 @@ v2.3.7 (Current)
   (e.g., "Average: Median (Middle Value Only)") next to the Passes count.
 - Bulk tab Settings text: Queue summary now includes the averaging method name,
   e.g., Settings: Sprinter / 10 Passes (Median) / 4K.
-- Bug fixes.
+- Disk Info improved naming: Detail panel uses precise labels -- "Disk Name"
+  (SCSI identity), "Partition Name" (unmounted), "Volume Name" (mounted).
+- Disk Info unmounted partitions: Clicking an unmounted partition now shows its
+  device name, size (from RDB geometry), and filesystem type.
+- Disk Info underscore sanitization: Filesystem underscores shown as spaces.
+- Disk Info DOS type fix: 4th byte shown as ASCII where printable (e.g., SWAP
+  instead of SWA/50).
+- Bug fixes including DSI crash on Disk Info tab page switching.
 
 v2.3.4 - v2.3.6
 - Flexible Pass Averaging: Three averaging options -- All Passes, Trimmed Mean,

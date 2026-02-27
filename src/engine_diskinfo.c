@@ -11,6 +11,7 @@
 #include <libraries/expansion.h>
 #include <scsi/devtypes.h>
 
+#include <dos/filehandler.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/expansion.h>
@@ -89,7 +90,10 @@ const char *GetDosTypeString(uint32 dostype)
     char v = dostype & 0xFF;
 
     if (c1 >= 0x20 && c2 >= 0x20 && c3 >= 0x20) {
-        snprintf(buf, sizeof(buf), "%c%c%c/%02X", c1, c2, c3, (uint8)v);
+        if (v >= 0x20 && v <= 0x7E)
+            snprintf(buf, sizeof(buf), "%c%c%c%c", c1, c2, c3, v);
+        else
+            snprintf(buf, sizeof(buf), "%c%c%c/%02X", c1, c2, c3, (uint8)v);
     } else {
         snprintf(buf, sizeof(buf), "0x%08X", (unsigned int)dostype);
     }
@@ -591,6 +595,25 @@ struct List *ScanSystemDrives(void)
                                 } else {
                                     // Failed to lock (maybe not mounted?)
                                     snprintf(part->volume_name, sizeof(part->volume_name), "Not Mounted");
+
+                                    // Try to get geometry from DosEnvec (available even when not mounted)
+                                    if (fssm->fssm_Environ > 100) {
+                                        struct DosEnvec *env = (struct DosEnvec *)((uint32)fssm->fssm_Environ << 2);
+                                        if ((uint32)env > 0x1000 && env->de_TableSize >= DE_UPPERCYL) {
+                                            uint64 sector_bytes = (uint64)env->de_SectorSize * 4;
+                                            uint64 sectors = ((uint64)(env->de_HighCyl - env->de_LowCyl + 1))
+                                                             * env->de_Surfaces * env->de_SectorPerTrack;
+                                            part->size_bytes = sectors * sector_bytes;
+                                            part->block_size = (uint32)sector_bytes;
+                                            part->blocks_per_drive = (uint32)sectors;
+                                            if (env->de_TableSize >= DE_DOSTYPE) {
+                                                part->disk_environment_type = env->de_DosType;
+                                                part->dos_type = env->de_DosType;
+                                            }
+                                            LOG_DEBUG("ScanSystemDrives: DosEnvec size for '%s': %llu bytes",
+                                                      entryName, part->size_bytes);
+                                        }
+                                    }
                                 }
 
                                 IExec->AddTail((struct List *)&drive->partitions, (struct Node *)part);
