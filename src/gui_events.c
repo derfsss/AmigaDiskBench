@@ -113,6 +113,14 @@ void HandleWorkerReply(struct Message *m)
     LOG_DEBUG("GUI: Worker Msg received at %p. Type=%d", m, m->mn_Node.ln_Type);
     if (m->mn_Node.ln_Type == NT_REPLYMSG || m->mn_Node.ln_Type == NT_MESSAGE) {
         BenchStatus *st = (BenchStatus *)m;
+        if (st->msg_type == MSG_TYPE_LOG) {
+            /* Log line from worker subprocess — append and refresh */
+            BenchLogMsg *lm = (BenchLogMsg *)m;
+            LogAppendLine(lm->line);
+            RefreshLogDisplay();
+            IExec->FreeVec(lm);
+            return;
+        }
         if (st->msg_type == MSG_TYPE_STATUS) {
             /* Handle intermediate progress updates */
             if (!st->finished) {
@@ -168,6 +176,13 @@ void HandleWorkerReply(struct Message *m)
                     /* Reset Traffic Light to Green */
                     if (ui.traffic_light) {
                         IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
+                    }
+
+                    /* Log bulk/single queue completion */
+                    if (ui.total_jobs > 1) {
+                        /* Bulk run finished */
+                        LogUser("Bulk queue complete - %lu done", (unsigned long)ui.completed_jobs);
+                        LogUser("");
                     }
 
                     /* Reset Progress Counters */
@@ -538,9 +553,46 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         case GID_VIEW_REPORT:
             ShowGlobalReport();
             break;
+        case GID_LOG_CLEAR:
+            ClearUserLog();
+            break;
+        case GID_LOG_COPY:
+            CopyLogToClipboard();
+            break;
         }
         break;
     case WMHI_MENUPICK: {
+        uint32 menu_type = IMT_DEFAULT;
+        IIntuition->GetAttr(WINDOW_MenuType, ui.win_obj, &menu_type);
+
+        if (menu_type != IMT_DEFAULT) {
+            /* Context menu (gadget app-owned or window-owned) */
+            Object *ctx_menu = NULL;
+            IIntuition->GetAttr(WINDOW_MenuAddress, ui.win_obj, (uint32 *)&ctx_menu);
+            if (ctx_menu) {
+                uint32 ctx_id = NO_MENU_ID;
+                while ((ctx_id = IIntuition->IDoMethod(ctx_menu, MM_NEXTSELECT, 0, ctx_id)) != NO_MENU_ID) {
+                    switch (ctx_id) {
+                    case MID_LOG_SELECTALL:
+                        if (ui.log_editor && ui.window) {
+                            struct GP_TEXTEDITOR_MarkText mark;
+                            mark.MethodID     = GM_TEXTEDITOR_MarkText;
+                            mark.GInfo        = NULL;
+                            mark.start_crsr_x = 0;
+                            mark.start_crsr_y = 0;
+                            mark.stop_crsr_x  = 0xFFFFFFFF;
+                            mark.stop_crsr_y  = 0xFFFFFFFF;
+                            IIntuition->DoGadgetMethodA((struct Gadget *)ui.log_editor, ui.window, NULL, (Msg)&mark);
+                        }
+                        break;
+                    case MID_LOG_COPY:
+                        CopyLogToClipboard();
+                        break;
+                    }
+                }
+            }
+            break;
+        }
         uint32 mid = result & WMHI_MENUMASK;
         while (mid != MENUNULL) {
             struct MenuItem *mi = IIntuition->ItemAddress(ui.window->MenuStrip, mid);

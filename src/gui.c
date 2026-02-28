@@ -9,6 +9,7 @@
 #include <interfaces/locale.h>
 #include <proto/locale.h>
 #include <stdlib.h>
+#include <time.h>
 #include <utility/hooks.h>
 
 /* Traffic Light Render Hook */
@@ -123,6 +124,7 @@ int StartGUI(void)
     IExec->NewList(&ui.health_labels);
 
     InitBenchmarkQueue();
+    InitUserLogging();
 
     /* Initialize nodes for choosers */
     const char *blocks[] = {"4K", "16K", "32K", "64K", "128K", "256K", "1M"};
@@ -179,6 +181,7 @@ int StartGUI(void)
         IClickTab->AllocClickTabNode(TNA_Text, GetString(15, "Visualization"), TNA_Number, 3, TAG_DONE);
     struct Node *tab_health = IClickTab->AllocClickTabNode(TNA_Text, "Drive Health", TNA_Number, 4, TAG_DONE);
     struct Node *tab_bulk = IClickTab->AllocClickTabNode(TNA_Text, GetString(16, "Bulk"), TNA_Number, 5, TAG_DONE);
+    struct Node *tab_log  = IClickTab->AllocClickTabNode(TNA_Text, "Log", TNA_Number, 6, TAG_DONE);
     if (tab_bench)
         IExec->AddTail(&tab_list, tab_bench);
     if (tab_diskinfo)
@@ -191,6 +194,8 @@ int StartGUI(void)
         IExec->AddTail(&tab_list, tab_health);
     if (tab_bulk)
         IExec->AddTail(&tab_list, tab_bulk);
+    if (tab_log)
+        IExec->AddTail(&tab_list, tab_log);
 
     /* Register application */
     ui.app_id = ui.IApp->RegisterApplication(APP_TITLE, REGAPP_URLIdentifier, "diskbench.derfs.co.uk",
@@ -318,6 +323,11 @@ int StartGUI(void)
         uint32 wait_mask = win_sig | (1L << ui.gui_port->mp_SigBit) | (1L << ui.worker_reply_port->mp_SigBit) |
                            (ui.app_port ? (1L << ui.app_port->mp_SigBit) : 0) | (1L << ui.prefs_port->mp_SigBit) |
                            SIGBREAKF_CTRL_C;
+        /* Record session start time and emit session-start log message */
+        ui.log_session_start = (uint32)time(NULL);
+        LogUser("%s", APP_VER_TITLE);
+        LogUser("Session started");
+
         BOOL running = TRUE;
         while (running) {
             uint32 sig =
@@ -384,6 +394,17 @@ int StartGUI(void)
                     HandleCompareWindowEvent(ccode, cresult);
             }
         }
+        /* Log session end with duration */
+        {
+            uint32 elapsed = (uint32)time(NULL) - ui.log_session_start;
+            uint32 mins    = elapsed / 60;
+            uint32 secs    = elapsed % 60;
+            if (mins > 0)
+                LogUser("Session ended - duration %um %us", (unsigned int)mins, (unsigned int)secs);
+            else
+                LogUser("Session ended - duration %us", (unsigned int)secs);
+        }
+
         IClickTab->FreeClickTabList(&tab_list);
         /* Signal worker to quit and wait for it */
         BenchJob qj = {.type = (BenchTestType)-1, .msg.mn_ReplyPort = ui.worker_reply_port};
@@ -447,6 +468,10 @@ int StartGUI(void)
             ui.IApp->UnregisterApplication(ui.app_id, TAG_DONE);
         }
 
+        if (ui.log_context_menu) {
+            IIntuition->DisposeObject(ui.log_context_menu);
+            ui.log_context_menu = NULL;
+        }
         if (ui.win_obj)
             IIntuition->DisposeObject(ui.win_obj);
         if (ui.gui_port)
@@ -457,6 +482,7 @@ int StartGUI(void)
             IExec->FreeSysObject(ASOT_PORT, ui.prefs_port);
 
         CleanupVizFilterLabels();
+        CleanupUserLogging();
 
         if (icon)
             ui.IIcn->FreeDiskObject(icon);
@@ -466,6 +492,7 @@ int StartGUI(void)
         return 0;
     }
     CleanupVizFilterLabels();
+    CleanupUserLogging();
     CleanupSystemResources();
     CleanupBenchmarkQueue();
     return 1;

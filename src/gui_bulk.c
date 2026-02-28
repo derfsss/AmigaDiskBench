@@ -175,6 +175,7 @@ void LaunchBulkJobs(void)
         LOG_DEBUG("Bulk: No volumes selected for benchmarking.");
         ShowMessage("AmigaDiskBench", "Please select at least one volume\nin the bulk list.", "OK");
     } else {
+        LogUser("Bulk queue started - %u jobs queued", (unsigned int)job_count);
         /* Add to total_jobs to support appending to an active queue (cumulative progress) */
         ui.total_jobs += job_count;
         /* ui.completed_jobs preserves its value (starts at 0 if new run) */

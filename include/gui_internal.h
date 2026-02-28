@@ -38,10 +38,13 @@
 #include <proto/popupmenu.h>
 #include <proto/scroller.h>
 #include <proto/string.h>
+#include <proto/iffparse.h>
 #include <proto/texteditor.h>
 #include <proto/utility.h>
 
-#include <proto/utility.h>
+#include <libraries/iffparse.h>
+#include <datatypes/textclass.h>
+#include <devices/clipboard.h>
 
 /* Specific Class headers for tags and constants (e.g. WM_OPEN, CNA_Text) */
 #include <classes/window.h>
@@ -317,5 +320,37 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2);
  * @brief Close the comparison window.
  */
 void CloseCompareWindow(void);
+
+/* [gui_logging.c] - User-facing Log Tab */
+
+/** Initialise the log subsystem. Call once from gui.c before the window opens. */
+void InitUserLogging(void);
+
+/** Append a pre-formatted line directly to the main task's log buffer.
+ *  Call from main task only (used by HandleWorkerReply for MSG_TYPE_LOG). */
+void LogAppendLine(const char *line);
+
+/** Register the reply port for the worker subprocess.
+ *  Called by BenchmarkWorker at job start so LogUser() can PutMsg log lines. */
+void LogSetWorkerReplyPort(struct MsgPort *port);
+
+/** Append a formatted, timestamped line to the log. Thread-safe — may be called
+ *  from both the main GUI task and the BenchmarkWorker subprocess. */
+void LogUser(const char *fmt, ...);
+
+/** Refresh the Log tab texteditor display from the in-memory buffer.
+ *  Must be called from the main GUI task only. */
+void RefreshLogDisplay(void);
+
+/** Wipe the in-memory buffer and clear the texteditor display.
+ *  Call from the main GUI task only. */
+void ClearUserLog(void);
+
+/** Copy the full log text to the clipboard via texteditor SELECTALL + COPY.
+ *  Call from the main GUI task only. */
+void CopyLogToClipboard(void);
+
+/** Free all log resources. Call from gui.c on exit. */
+void CleanupUserLogging(void);
 
 #endif /* GUI_INTERNAL_H */

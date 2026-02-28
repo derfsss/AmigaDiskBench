@@ -73,7 +73,18 @@ Automate your benchmarking workflow:
 - Export: Export specific datasets to CSV for external analysis.
 - Reports: Generate global summary reports of all test activity.
 
-7. Detailed Disk Information
+7. Session Log
+Track exactly what AmigaDiskBench is doing in real time:
+- Timestamped Entries: Every event (benchmark start, per-pass result, completion,
+  failure) is logged with an [HH:MM:SS] timestamp.
+- Live Updates: New log lines appear automatically as benchmarks run -- no
+  manual refresh needed.
+- Context Menu: Right-click the log to access Select All and Copy.
+- Clear Log: Wipes the session transcript and starts a fresh log.
+- Copy to Clipboard: Copies the full log text to the system clipboard for
+  pasting into a text editor or email.
+
+8. Detailed Disk Information
 Inspect the physical and logical structure of your storage:
 - Tree View: Hierarchical display organized as Fixed Drives, USB Drives, and
   Optical Drives. Each physical controller appears once (e.g., a1ide.device);
@@ -154,7 +165,25 @@ benchmarks:
   - Median -- Uses only the middle pass value from a sorted set.
 - CSV Path: Location of the persistent history file.
 
-5. Disk Information
+5. Session Log
+The Log tab provides a live, timestamped record of everything that happens
+during a session.
+- Viewing: Switch to the Log tab at any time. New entries appear automatically
+  as benchmarks run -- no need to manually refresh.
+- Each line is prefixed with an [HH:MM:SS] timestamp.
+- Logged events include: benchmark start (test type, block size, target path),
+  per-pass progress updates, final result (MB/s, pass count), failures, and
+  bulk queue start/complete summaries.
+- Select All: Right-click the log area and choose "Select All" from the context
+  menu (or use the keyboard shortcut) to highlight all text.
+- Copy: Right-click and choose "Copy" to copy selected text to the clipboard,
+  or use the Copy to Clipboard button to copy the entire log regardless of
+  selection.
+- Clear Log: Click the "Clear Log" button to wipe the transcript and start
+  fresh. The session header is automatically re-inserted so the log is never
+  left completely blank.
+
+6. Disk Information
 The Disk Info tab provides deep hardware enumeration.
 - Navigation: Use the left-side tree view. Drives are categorized logically
   into Fixed Drives, USB Drives, and Optical Drives.
@@ -214,7 +243,21 @@ Authors
 Version History
 ---------------
 
-v2.3.7 (Current)
+v2.4.1 (Current)
+- Session Log tab: A new scrollable, timestamped log panel (7th tab) records
+  all benchmark activity in real time -- start, per-pass progress, results,
+  and failures -- with [HH:MM:SS] timestamps.
+- Log updates live during benchmarks via cross-process Exec message passing
+  (no polling or gadget access from the worker process).
+- Log context menu: Right-click for Select All and Copy.
+- Copy to Clipboard button: Writes the entire log to the system clipboard via
+  IFFParse (FORM FTXT/CHRS format), bypassing the read-only gadget.
+- Clear Log button: Wipes the transcript and re-inserts the session header.
+- Bug fix: Classic menu selections were silently swallowed when a context menu
+  was also present. Fixed by checking WINDOW_MenuType before routing the
+  WMHI_MENUPICK event.
+
+v2.3.7
 - S.M.A.R.T. column auto-fit: Attribute Name column now correctly expands to
   show full text without truncation.
 - Average method display: Benchmark Control row shows a single combined label

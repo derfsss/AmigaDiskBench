@@ -15,6 +15,7 @@
 #include "engine.h"
 #include <dos/dos.h>
 #include <exec/ports.h>
+#include <exec/tasks.h>
 #include <exec/types.h>
 #include <intuition/classes.h>   /* Class typedef */
 #include <intuition/classusr.h>  /* Object typedef */
@@ -25,7 +26,19 @@
 #define MINVERSION 53
 
 #define MSG_TYPE_STATUS 1
-#define MSG_TYPE_JOB 2
+#define MSG_TYPE_JOB    2
+#define MSG_TYPE_LOG    3
+
+/**
+ * @brief Log line message sent from BenchmarkWorker to the main GUI task.
+ * Carries a single pre-formatted log line through shared memory.
+ */
+typedef struct
+{
+    struct Message msg;
+    uint32 msg_type; /**< MSG_TYPE_LOG */
+    char   line[512];
+} BenchLogMsg;
 
 /**
  * @brief Message sent from GUI to Benchmark Process.
@@ -245,6 +258,17 @@ typedef struct
     Object *diskinfo_part_block_label;
     struct List diskinfo_labels;
     BOOL diskinfo_rethink_pending; /* Set by UpdateDetailsPage; cleared after deferred WM_RETHINK */
+
+    /* Log Tab */
+    Object                *log_editor;        /* texteditor.gadget for the Log tab */
+    Object                *log_vscroll;       /* Vertical scroller linked to log_editor */
+    Object                *log_context_menu;  /* Right-click context menu for log_editor */
+    char                  *log_buf;           /* Heap-allocated text buffer (all log lines) */
+    uint32                 log_buf_len;       /* Current length of log_buf content */
+    uint32                 log_buf_cap;       /* Allocated capacity of log_buf */
+    uint32                 log_buf_displayed; /* Bytes already inserted into the gadget */
+    struct Task           *log_main_task;     /* Set in InitUserLogging; NULL in worker BSS copy */
+    uint32                 log_session_start; /* Session start (unix seconds via time()) for duration calc */
 } GUIState;
 
 #include "benchmark_queue.h"
@@ -330,6 +354,10 @@ enum
     GID_DISKINFO_PART_FS,
     GID_DISKINFO_PART_BLOCK,
     GID_DISKINFO_REFRESH,
+    GID_LOG_EDITOR,
+    GID_LOG_VSCROLL,
+    GID_LOG_CLEAR,
+    GID_LOG_COPY,
     GID_COMPARE_CLOSE = 5000
 };
 
@@ -339,7 +367,9 @@ enum
 #define MID_DELETE_PREFS 4
 #define MID_EXPORT_TEXT 7
 #define MID_SHOW_DETAILS 5
-#define MID_DETAILS_COPY 6
+#define MID_DETAILS_COPY  6
+#define MID_LOG_SELECTALL 8
+#define MID_LOG_COPY      9
 
 #define COL_CHECK 0
 #define COL_DATE 1

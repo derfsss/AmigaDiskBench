@@ -35,6 +35,7 @@ static struct ColumnInfo bulk_cols[] = {{20, "", CIF_FIXED}, /* Checkbox */
                                         {1, "", CIF_FIXED},
                                         {-1, NULL, 0}};
 
+
 static struct ColumnInfo health_cols[] = {{30, "ID", CIF_SORTABLE | CIF_DRAGGABLE},                {200, "Attribute Name", CIF_SORTABLE | CIF_DRAGGABLE},
                                           {50, "Value", CIF_SORTABLE | CIF_DRAGGABLE},             {50, "Worst", CIF_SORTABLE | CIF_DRAGGABLE},
                                           {50, "Thresh", CIF_SORTABLE | CIF_DRAGGABLE},            {80, "Raw Value", CIF_SORTABLE | CIF_DRAGGABLE},
@@ -53,7 +54,7 @@ static struct ColumnInfo health_cols[] = {{30, "ID", CIF_SORTABLE | CIF_DRAGGABL
 Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
 {
     /* Helper macro to maintain readability for the deep nesting */
-    Object *page0, *page_diskinfo, *page1, *page2, *page3, *page4;
+    Object *page0, *page_diskinfo, *page1, *page2, *page3, *page4, *page5;
 
     /* Refactored Page 0 (Benchmark) using standard ReAction macros */
     page0 = VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_AddChild, VLayoutObject, LAYOUT_Label,
@@ -236,6 +237,56 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
      LISTBROWSER_ShowSelected, TRUE, LISTBROWSER_HorizontalProp, TRUE, End),
     CHILD_WeightedHeight, 100, End, End;
 
+    /* Page 5 (Log) — scrollable timestamped benchmark transcript */
+    page5 = VLayoutObject, LAYOUT_SpaceOuter, TRUE,
+    LAYOUT_AddChild, HLayoutObject, LAYOUT_ShrinkWrap, TRUE,
+        LAYOUT_AddChild, ButtonObject, GA_ID, GID_LOG_CLEAR, GA_RelVerify, TRUE,
+            GA_Text, "Clear Log", End,
+        LAYOUT_AddChild, ButtonObject, GA_ID, GID_LOG_COPY, GA_RelVerify, TRUE,
+            GA_Text, "Copy to Clipboard", End,
+    End, CHILD_WeightedHeight, 0,
+    LAYOUT_AddChild, HLayoutObject,
+        LAYOUT_AddChild,
+        (ui.log_editor = IIntuition->NewObject(ui.TextEditorClass, NULL,
+            GA_ID, GID_LOG_EDITOR, GA_RelVerify, TRUE,
+            GA_ReadOnly, TRUE,
+            GA_TEXTEDITOR_FixedFont, TRUE,
+            GA_TEXTEDITOR_Contents, (uint32)"",
+            TAG_DONE)),
+        LAYOUT_AddChild,
+        (ui.log_vscroll = IIntuition->NewObject(ui.ScrollerClass, NULL,
+            GA_ID, GID_LOG_VSCROLL, GA_RelVerify, TRUE,
+            SCROLLER_Orientation, SORIENT_VERT,
+            SCROLLER_Arrows, TRUE,
+            TAG_DONE)),
+        CHILD_WeightedWidth, 0,
+    End, CHILD_WeightedHeight, 100,
+    End;
+
+    /* Build context menu for log editor (right-click: Select All, Copy) */
+    ui.log_context_menu = IIntuition->NewObject(
+        NULL, "menuclass", MA_Type, T_ROOT, MA_AddChild,
+        IIntuition->NewObject(NULL, "menuclass", MA_Type, T_MENU, MA_Label, "Edit", MA_AddChild,
+            IIntuition->NewObject(NULL, "menuclass", MA_Type, T_ITEM,
+                MA_Label, "Select All", MA_ID, MID_LOG_SELECTALL, MA_Key, "A", TAG_DONE),
+            MA_AddChild,
+            IIntuition->NewObject(NULL, "menuclass", MA_Type, T_ITEM,
+                MA_Label, "Copy", MA_ID, MID_LOG_COPY, MA_Key, "C", TAG_DONE),
+            TAG_DONE),
+        TAG_DONE);
+
+    /* Link vertical scroller and context menu to log editor */
+    if (ui.log_editor && ui.log_vscroll) {
+        IIntuition->SetAttrs(ui.log_editor,
+                             GA_TEXTEDITOR_VertScroller, ui.log_vscroll,
+                             TAG_DONE);
+    }
+    if (ui.log_editor && ui.log_context_menu) {
+        IIntuition->SetAttrs(ui.log_editor,
+                             GA_ContextMenu, ui.log_context_menu,
+                             TAG_DONE);
+    }
+
     static struct NewMenu menu_data[] = {
         {NM_TITLE, (STRPTR) "Project", NULL, 0, 0, NULL},
         {NM_ITEM, (STRPTR) "About...", (STRPTR) "A", 0, 0, (APTR)MID_ABOUT},
@@ -250,18 +301,18 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     page_diskinfo = CreateDiskInfoPage();
 
     Object *main_content = NULL;
-    if (ui.PageAvailable && page0 && page_diskinfo && page1 && page2 && page3 && page4 && tab_list) {
+    if (ui.PageAvailable && page0 && page_diskinfo && page1 && page2 && page3 && page4 && page5 && tab_list) {
         ui.page_obj = IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page0, PAGE_Add,
                                             (uint32)page_diskinfo, PAGE_Add, (uint32)page1, PAGE_Add, (uint32)page2,
                                             PAGE_Add, (uint32)page4, /* Health before Bulk? Or same as tabs? */
-                                            PAGE_Add, (uint32)page3, TAG_DONE);
+                                            PAGE_Add, (uint32)page3, PAGE_Add, (uint32)page5, TAG_DONE);
         ui.tabs = ClickTabObject, GA_ID, GID_TABS, GA_RelVerify, TRUE, CLICKTAB_Labels, (uint32)tab_list,
         CLICKTAB_PageGroup, (uint32)ui.page_obj, End;
         main_content = ui.tabs;
     } else {
         LOG_DEBUG("CreateMainLayout: Using vertical fallback layout (components missing)");
         main_content = VLayoutObject, LAYOUT_AddChild, page0, LAYOUT_AddChild, page_diskinfo, LAYOUT_AddChild, page1,
-        LAYOUT_AddChild, page2, LAYOUT_AddChild, page4, LAYOUT_AddChild, page3, End;
+        LAYOUT_AddChild, page2, LAYOUT_AddChild, page4, LAYOUT_AddChild, page3, LAYOUT_AddChild, page5, End;
         ui.tabs = NULL;
         ui.page_obj = NULL;
     }

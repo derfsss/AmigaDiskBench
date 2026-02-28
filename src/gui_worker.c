@@ -30,6 +30,9 @@ static void SendProgressUpdate(const char *status_text, BOOL finished)
         IExec->PutMsg(s_gui_reply_port, &status->msg);
         LOG_DEBUG("Worker: Sent progress - %s", status_text);
     }
+
+    /* Mirror progress line to the user log */
+    LogUser("%s", status_text);
 }
 
 void BenchmarkWorker(void)
@@ -64,8 +67,21 @@ void BenchmarkWorker(void)
                         LOG_DEBUG("Worker: Type=%d, Passes=%u, BS=%u", job->type, (unsigned int)job->num_passes,
                                   (unsigned int)job->block_size);
 
-                        /* Store GUI reply port for progress callback */
+                        /* Store GUI reply port for progress callback and log messages */
                         s_gui_reply_port = job->msg.mn_ReplyPort;
+                        LogSetWorkerReplyPort(s_gui_reply_port);
+
+                        /* Log benchmark start */
+                        if (job->block_size > 0)
+                            LogUser("Starting: %s, %s blocks, %u passes",
+                                TestTypeToString(job->type),
+                                FormatPresetBlockSize(job->block_size),
+                                (unsigned int)job->num_passes);
+                        else
+                            LogUser("Starting: %s, %u passes",
+                                TestTypeToString(job->type),
+                                (unsigned int)job->num_passes);
+                        LogUser("           Target: %s", job->target_path);
 
                         status->success = RunBenchmark(job->type, job->target_path, job->num_passes, job->block_size,
                                                        job->averaging_method, job->flush_cache, SendProgressUpdate,
@@ -78,8 +94,14 @@ void BenchmarkWorker(void)
                         if (status->success) {
                             SaveResultToCSV(ui.csv_path, &status->result);
                             snprintf(status->status_text, sizeof(status->status_text), "Complete");
+                            LogUser("DONE: %s - %.2f MB/s (avg, %u pass)",
+                                TestTypeToString(job->type),
+                                status->result.mb_per_sec,
+                                (unsigned int)status->result.passes);
                         } else {
                             snprintf(status->status_text, sizeof(status->status_text), "Failed");
+                            LogUser("FAILED: %s - check target volume",
+                                TestTypeToString(job->type));
                         }
                         IExec->PutMsg(job->msg.mn_ReplyPort, &status->msg);
                     } else {
