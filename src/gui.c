@@ -4,6 +4,8 @@
  */
 
 #include "gui_internal.h"
+#include "gui_validate.h"
+#include "viz_profile.h"
 #include <graphics/gfxmacros.h>
 #include <interfaces/arexx.h>
 #include <interfaces/locale.h>
@@ -115,6 +117,32 @@ int StartGUI(void)
         return 1;
     }
 
+    /* Check for VALIDATE mode before building the benchmark GUI.
+     * Only call ReadArgs when launched from Shell (Output() != NULL).
+     * When launched from Workbench, ReadArgs opens a CON: window. */
+    {
+        BOOL validate = FALSE;
+        struct RDArgs *rd = NULL;
+        if (IDOS->Output() != ZERO) {
+            rd = IDOS->ReadArgs("VALIDATE/S", (int32 *)&validate, NULL);
+        }
+        if (!validate) {
+            struct DiskObject *dobj = ui.IIcn->GetDiskObject("PROGDIR:AmigaDiskBench");
+            if (dobj) {
+                if (ui.IIcn->FindToolType(dobj->do_ToolTypes, "VALIDATE"))
+                    validate = TRUE;
+                ui.IIcn->FreeDiskObject(dobj);
+            }
+        }
+        if (validate) {
+            RunValidation();
+            if (rd) IDOS->FreeArgs(rd);
+            CleanupSystemResources();
+            return 0;
+        }
+        if (rd) IDOS->FreeArgs(rd);
+    }
+
     IExec->NewList(&ui.history_labels);
     IExec->NewList(&ui.bench_labels);
     IExec->NewList(&ui.drive_list);
@@ -204,6 +232,17 @@ int StartGUI(void)
                                              REGAPP_LoadPrefs, TRUE, REGAPP_SavePrefs, TRUE, TAG_DONE);
     if (ui.app_id) {
         ui.IApp->GetApplicationAttrs(ui.app_id, APPATTR_Port, (uint32 *)&ui.app_port, TAG_DONE);
+    }
+
+    /* Load visualization profiles from PROGDIR:Visualizations/ */
+    if (!LoadVizProfiles()) {
+        struct EasyStruct easy = {sizeof(struct EasyStruct), 0, "AmigaDiskBench",
+            "Visualizations folder not found or\nno valid .viz files.\n\n"
+            "Please ensure the Visualizations folder\nexists and contains .viz profile files.",
+            "OK"};
+        IIntuition->EasyRequest(NULL, &easy, NULL, NULL);
+        CleanupSystemResources();
+        return 1;
     }
 
     /* Initialize visualization filter labels (must be before CreateMainLayout) */
@@ -333,8 +372,16 @@ int StartGUI(void)
             uint32 sig =
                 IExec->Wait(wait_mask | (ui.details_win_obj ? (1L << ui.details_window->UserPort->mp_SigBit) : 0) |
                             (ui.compare_win_obj ? (1L << ui.compare_window->UserPort->mp_SigBit) : 0));
-            if (sig & SIGBREAKF_CTRL_C)
-                running = FALSE;
+            if (sig & SIGBREAKF_CTRL_C) {
+                if (ui.worker_busy) {
+                    struct EasyStruct easy = { sizeof(struct EasyStruct), 0, "AmigaDiskBench",
+                        "A benchmark is still running.\nAre you sure you want to quit?", "Yes|No" };
+                    if (IIntuition->EasyRequest(ui.window, &easy, NULL, NULL) == 1)
+                        running = FALSE;
+                } else {
+                    running = FALSE;
+                }
+            }
 
             if (sig & (1L << ui.worker_reply_port->mp_SigBit)) {
                 struct Message *m;
@@ -406,11 +453,35 @@ int StartGUI(void)
         }
 
         IClickTab->FreeClickTabList(&tab_list);
-        /* Signal worker to quit and wait for it */
+
+        /* Drain pending benchmark queue before shutting down worker */
+        CleanupBenchmarkQueue();
+
+        /* If worker is busy, wait for the active benchmark to finish.
+         * The worker sends status messages (PutMsg) and replies the job
+         * (ReplyMsg).  We must drain ALL of them before sending the quit
+         * message, otherwise the worker replies to a freed port → crash. */
+        while (ui.worker_busy) {
+            IExec->WaitPort(ui.worker_reply_port);
+            struct Message *m;
+            while ((m = IExec->GetMsg(ui.worker_reply_port))) {
+                if (m->mn_Node.ln_Type == NT_REPLYMSG) {
+                    /* Replied job — worker finished and is now idle */
+                    IExec->FreeVec(m);
+                    ui.worker_busy = FALSE;
+                } else {
+                    /* Status, progress, or log message — free it */
+                    IExec->FreeVec(m);
+                }
+            }
+        }
+
+        /* Worker is now idle — send quit and wait for reply */
         BenchJob qj = {.type = (BenchTestType)-1, .msg.mn_ReplyPort = ui.worker_reply_port};
         IExec->PutMsg(ui.worker_port, &qj.msg);
         IExec->WaitPort(ui.worker_reply_port);
         IExec->GetMsg(ui.worker_reply_port);
+        /* qj is a stack variable — not freed */
 
         /* Node data cleanup */
         struct Node *n, *nx;

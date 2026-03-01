@@ -22,6 +22,7 @@ stats/
 plan/
 tmp/
 releases/
+dist/
 docs/
 
 # Agent specific

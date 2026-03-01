@@ -4,23 +4,12 @@
  */
 
 #include "gui_internal.h"
+#include "viz_profile.h"
 #include <proto/graphics.h>
 #include <stdlib.h>
 
 /* Maximum results to plot on the graph */
 #define MAX_PLOT_RESULTS 200
-
-/* Replace underscores with spaces in dst so chooser.gadget does not treat
- * them as keyboard-shortcut prefixes ("_X" underlines X). */
-static void SanitizeNameForChooser(const char *src, char *dst, size_t dst_size)
-{
-    size_t i = 0;
-    while (src[i] && i < dst_size - 1) {
-        dst[i] = (src[i] == '_') ? ' ' : src[i];
-        i++;
-    }
-    dst[i] = '\0';
-}
 
 /* Parse "YYYY-MM-DD HH:MM:SS" into year, month, day */
 static void ParseDate(const char *timestamp, int *y, int *m, int *d)
@@ -85,6 +74,51 @@ static BOOL IsDateInRange(const char *timestamp, VizDateRange range)
     return TRUE;
 }
 
+static int float_compare(const void *a, const void *b)
+{
+    float fa = *(const float *)a;
+    float fb = *(const float *)b;
+    if (fa < fb) return -1;
+    if (fa > fb) return 1;
+    return 0;
+}
+
+/**
+ * @brief Collapse an array of Y values into a single representative value.
+ */
+static float CollapseYValues(float *vals, uint32 count, VizCollapseMethod method)
+{
+    if (count == 0) return 0.0f;
+    if (count == 1) return vals[0];
+
+    switch (method) {
+    case VIZ_COLLAPSE_MEAN: {
+        float sum = 0.0f;
+        for (uint32 i = 0; i < count; i++) sum += vals[i];
+        return sum / (float)count;
+    }
+    case VIZ_COLLAPSE_MEDIAN: {
+        qsort(vals, count, sizeof(float), float_compare);
+        if (count % 2 == 1) return vals[count / 2];
+        return (vals[count / 2 - 1] + vals[count / 2]) / 2.0f;
+    }
+    case VIZ_COLLAPSE_MIN: {
+        float m = vals[0];
+        for (uint32 i = 1; i < count; i++)
+            if (vals[i] < m) m = vals[i];
+        return m;
+    }
+    case VIZ_COLLAPSE_MAX: {
+        float m = vals[0];
+        for (uint32 i = 1; i < count; i++)
+            if (vals[i] > m) m = vals[i];
+        return m;
+    }
+    default:
+        return vals[0];
+    }
+}
+
 /**
  * @brief Comparison function for qsort to sort results by block size.
  */
@@ -119,38 +153,85 @@ static VizSeries *GetSeries(VizData *vd, const char *label)
 }
 
 /**
- * @brief Collects and filters benchmark results from the history and session lists.
- *
- * This is the core data engine for the visualization tab. It applies all active
- * filters (Drive, Test, Date) and groups the resulting data into series based
- * on the "Color By" selection.
- *
- * @param vd Output structure to be populated with filtered and grouped data.
- * @return Number of data series generated.
+ * @brief Case-insensitive substring match helper for profile filters.
+ * Returns TRUE if the value passes the filter (is allowed through).
  */
-/**
- * @brief Comparison function for qsort to sort results by test type.
- * Used for "Workload" charts to group bars by operation (Read/Write, Seq/Rand).
- */
-static int compare_by_test_type(const void *a, const void *b)
+static BOOL ApplyFilterList(VizFilterList *f, const char *value)
 {
-    BenchResult *resA = *(BenchResult **)a;
-    BenchResult *resB = *(BenchResult **)b;
-    if (resA->type < resB->type)
-        return -1;
-    if (resA->type > resB->type)
-        return 1;
-    return 0;
+    if (f->count == 0)
+        return TRUE; /* No filter entries = pass everything */
+
+    for (uint32 i = 0; i < f->count; i++) {
+        /* Case-insensitive substring match */
+        const char *s = value;
+        const char *p = f->values[i];
+        uint32 plen = strlen(p);
+        uint32 slen = strlen(s);
+        BOOL found = FALSE;
+        if (plen <= slen) {
+            for (uint32 j = 0; j <= slen - plen; j++) {
+                BOOL eq = TRUE;
+                for (uint32 k = 0; k < plen; k++) {
+                    char a = s[j + k];
+                    char b = p[k];
+                    if (a >= 'A' && a <= 'Z') a += 32;
+                    if (b >= 'A' && b <= 'Z') b += 32;
+                    if (a != b) { eq = FALSE; break; }
+                }
+                if (eq) { found = TRUE; break; }
+            }
+        }
+        if (f->mode == VIZ_FILTER_INCLUDE && found)
+            return TRUE;
+        if (f->mode == VIZ_FILTER_EXCLUDE && found)
+            return FALSE;
+    }
+
+    /* Include mode: none matched = reject. Exclude mode: none matched = pass. */
+    return (f->mode == VIZ_FILTER_EXCLUDE) ? TRUE : FALSE;
 }
 
+/**
+ * @brief Get the averaging method as a string for filter matching.
+ */
+static const char *AveragingToString(uint32 method)
+{
+    switch (method) {
+    case AVERAGE_TRIMMED_MEAN: return "TrimmedMean";
+    case AVERAGE_MEDIAN:       return "Median";
+    default:                   return "AllPasses";
+    }
+}
+
+/**
+ * @brief Extract the Y-axis value from a result based on the profile's y_source.
+ */
+static float GetYValue(BenchResult *res, VizYSource src)
+{
+    switch (src) {
+    case VIZ_SRC_IOPS:          return (float)res->iops;
+    case VIZ_SRC_MIN_MBPS:      return res->min_mbps;
+    case VIZ_SRC_MAX_MBPS:      return res->max_mbps;
+    case VIZ_SRC_DURATION_SECS: return res->total_duration;
+    case VIZ_SRC_TOTAL_BYTES:   return (float)res->cumulative_bytes;
+    default:                    return res->mb_per_sec;
+    }
+}
+
+/**
+ * @brief Collects and filters benchmark results from the history and session lists.
+ *
+ * Profile-driven: uses the active VizProfile for grouping, filtering, Y source,
+ * and sorting. On-screen chooser filters (volume, test, date, version) are applied
+ * on top of profile-level filters.
+ */
 static uint32 CollectVizData(VizData *vd)
 {
     memset(vd, 0, sizeof(VizData));
-    uint32 filter_test = ui.viz_filter_test_idx;
-    uint32 filter_vol = ui.viz_filter_volume_idx;
-    uint32 filter_ver = ui.viz_filter_version_idx;
     VizDateRange filter_date = (VizDateRange)ui.viz_date_range_idx;
-    uint32 color_by = ui.viz_color_by_idx;
+
+    VizProfile *profile = (ui.viz_chart_type_idx < g_viz_profile_count)
+        ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
 
     struct List *lists[] = {&ui.history_labels, &ui.bench_labels};
     for (int l = 0; l < 2; l++) {
@@ -160,68 +241,84 @@ static uint32 CollectVizData(VizData *vd)
             IListBrowser->GetListBrowserNodeAttrs(node, LBNA_UserData, &res, TAG_DONE);
             if (res) {
                 BOOL match = TRUE;
+
+                /* On-screen date filter (history list only) */
                 if (l == 0 && !IsDateInRange(res->timestamp, filter_date))
                     match = FALSE;
 
-                if (filter_test > 0 && (uint32)res->type != (filter_test - 1))
-                    match = FALSE;
-
-                if (filter_vol > 0 && match) {
-                    struct Node *vol_node = IExec->GetHead(&ui.viz_volume_labels);
-                    uint32 idx = 0;
-                    const char *filter_name = NULL;
-                    while (vol_node) {
-                        if (idx == filter_vol) {
-                            IChooser->GetChooserNodeAttrs(vol_node, CNA_Text, &filter_name, TAG_DONE);
-                            break;
-                        }
-                        vol_node = IExec->GetSucc(vol_node);
-                        idx++;
-                    }
-                    if (filter_name) {
-                        char san_vol[32];
-                        SanitizeNameForChooser(res->volume_name, san_vol, sizeof(san_vol));
-                        if (strcmp(san_vol, filter_name) != 0)
-                            match = FALSE;
-                    }
-                }
-
-                if (filter_ver > 0 && match) {
-                    struct Node *ver_node = IExec->GetHead(&ui.viz_version_labels);
-                    uint32 idx = 0;
-                    const char *filter_name = NULL;
-                    while (ver_node) {
-                        if (idx == filter_ver) {
-                            IChooser->GetChooserNodeAttrs(ver_node, CNA_Text, &filter_name, TAG_DONE);
-                            break;
-                        }
-                        ver_node = IExec->GetSucc(ver_node);
-                        idx++;
-                    }
-                    if (filter_name && strcmp(res->app_version, filter_name) != 0)
+                /* Profile-level filters */
+                if (match && profile) {
+                    if (!ApplyFilterList(&profile->filter_test, TestTypeToString(res->type)))
+                        match = FALSE;
+                    if (match && !ApplyFilterList(&profile->filter_block_size, FormatPresetBlockSize(res->block_size)))
+                        match = FALSE;
+                    if (match && !ApplyFilterList(&profile->filter_volume, res->volume_name))
+                        match = FALSE;
+                    if (match && !ApplyFilterList(&profile->filter_filesystem, res->fs_type))
+                        match = FALSE;
+                    if (match && !ApplyFilterList(&profile->filter_hardware, res->device_name))
+                        match = FALSE;
+                    if (match && !ApplyFilterList(&profile->filter_vendor, res->vendor))
+                        match = FALSE;
+                    if (match && !ApplyFilterList(&profile->filter_product, res->product))
+                        match = FALSE;
+                    if (match && !ApplyFilterList(&profile->filter_averaging, AveragingToString(res->averaging_method)))
+                        match = FALSE;
+                    if (match && !ApplyFilterList(&profile->filter_version, res->app_version))
+                        match = FALSE;
+                    /* Numeric threshold filters */
+                    if (match && profile->min_passes > 0 && res->passes < profile->min_passes)
+                        match = FALSE;
+                    if (match && profile->min_mbs > 0.0f && res->mb_per_sec < profile->min_mbs)
+                        match = FALSE;
+                    if (match && profile->max_mbs > 0.0f && res->mb_per_sec > profile->max_mbs)
+                        match = FALSE;
+                    if (match && profile->min_duration_secs > 0.0f && res->total_duration < profile->min_duration_secs)
+                        match = FALSE;
+                    if (match && profile->max_duration_secs > 0.0f && res->total_duration > profile->max_duration_secs)
                         match = FALSE;
                 }
 
                 if (match) {
-                    /* Determine series label */
+                    /* Determine series label from profile's group_by */
                     char label[64];
-                    if (color_by == 0) /* Drive */
-                        snprintf(label, sizeof(label), "%s", res->volume_name);
-                    else if (color_by == 1) /* Test Type */
+                    VizGroupBy group = profile ? profile->group_by : VIZ_GROUP_DRIVE;
+                    switch (group) {
+                    case VIZ_GROUP_TEST_TYPE:
                         snprintf(label, sizeof(label), "%s", TestTypeToDisplayName(res->type));
-                    else if (color_by == 2) /* Block Size */
+                        break;
+                    case VIZ_GROUP_BLOCK_SIZE:
                         snprintf(label, sizeof(label), "%s", FormatPresetBlockSize(res->block_size));
-                    else
-                        snprintf(label, sizeof(label), "Default");
+                        break;
+                    case VIZ_GROUP_FILESYSTEM:
+                        snprintf(label, sizeof(label), "%s", res->fs_type);
+                        break;
+                    case VIZ_GROUP_HARDWARE:
+                        snprintf(label, sizeof(label), "%s", res->device_name);
+                        break;
+                    case VIZ_GROUP_VENDOR:
+                        snprintf(label, sizeof(label), "%s", res->vendor);
+                        break;
+                    case VIZ_GROUP_APP_VERSION:
+                        snprintf(label, sizeof(label), "%s", res->app_version);
+                        break;
+                    case VIZ_GROUP_AVERAGING:
+                        snprintf(label, sizeof(label), "%s", AveragingToString(res->averaging_method));
+                        break;
+                    default: /* VIZ_GROUP_DRIVE */
+                        snprintf(label, sizeof(label), "%s", res->volume_name);
+                        break;
+                    }
 
                     VizSeries *s = GetSeries(vd, label);
                     if (s && s->count < 200) {
                         s->results[s->count++] = res;
                         vd->total_points++;
-                        if (res->mb_per_sec > s->max_val)
-                            s->max_val = res->mb_per_sec;
-                        if (res->mb_per_sec > vd->global_max_y1)
-                            vd->global_max_y1 = res->mb_per_sec;
+                        float yval = profile ? GetYValue(res, profile->y_source) : res->mb_per_sec;
+                        if (yval > s->max_val)
+                            s->max_val = yval;
+                        if (yval > vd->global_max_y1)
+                            vd->global_max_y1 = yval;
                         if ((float)res->iops > vd->global_max_y2)
                             vd->global_max_y2 = (float)res->iops;
                     }
@@ -231,15 +328,107 @@ static uint32 CollectVizData(VizData *vd)
         }
     }
 
-    /* Sort results within each series based on chart type (X-axis) */
+    /* Apply max_series cap from profile */
+    if (profile && profile->max_series > 0 && vd->series_count > profile->max_series)
+        vd->series_count = profile->max_series;
+
+    /* Sort results within each series based on profile X-axis source */
     for (uint32 i = 0; i < vd->series_count; i++) {
-        if (ui.viz_chart_type_idx == 1) { /* Trend (Time) */
-            // History is usually sorted by time, but benchmarking might be random.
-            // For now assume chronological order is fine or implement sort by timestamp if needed.
-        } else if (ui.viz_chart_type_idx == 3) { /* Workload (Test Type) */
-            qsort(vd->series[i].results, vd->series[i].count, sizeof(BenchResult *), compare_by_test_type);
-        } else { /* Scaling (Block Size) or others */
+        if (profile && profile->sort_x_by_value) {
             qsort(vd->series[i].results, vd->series[i].count, sizeof(BenchResult *), compare_by_block_size);
+        } else if (profile && profile->x_source == VIZ_SRC_BLOCK_SIZE) {
+            qsort(vd->series[i].results, vd->series[i].count, sizeof(BenchResult *), compare_by_block_size);
+        }
+        /* VIZ_SRC_TIMESTAMP / VIZ_SRC_TEST_INDEX: keep chronological insertion order */
+    }
+
+    /* Apply collapse aggregation if profile requests it */
+    if (profile && profile->collapse_method != VIZ_COLLAPSE_NONE) {
+        VizYSource ysrc = profile->y_source;
+        /* Static buffer for collapsed result copies (avoids mutating shared results) */
+        static BenchResult collapsed_buf[MAX_SERIES * 200];
+        uint32 buf_idx = 0;
+
+        for (uint32 si = 0; si < vd->series_count; si++) {
+            VizSeries *s = &vd->series[si];
+            if (s->count < 2) continue;
+
+            if (profile->x_source != VIZ_SRC_BLOCK_SIZE) {
+                /* Non-block_size X: collapse entire series into one point */
+                if (buf_idx >= MAX_SERIES * 200) continue;
+                float y_vals[200];
+                uint32 n = (s->count < 200) ? s->count : 200;
+                for (uint32 k = 0; k < n; k++)
+                    y_vals[k] = GetYValue(s->results[k], ysrc);
+                float collapsed_y = CollapseYValues(y_vals, n, profile->collapse_method);
+                collapsed_buf[buf_idx] = *s->results[0];
+                switch (ysrc) {
+                case VIZ_SRC_IOPS:          collapsed_buf[buf_idx].iops = (uint32)collapsed_y; break;
+                case VIZ_SRC_MIN_MBPS:      collapsed_buf[buf_idx].min_mbps = collapsed_y; break;
+                case VIZ_SRC_MAX_MBPS:      collapsed_buf[buf_idx].max_mbps = collapsed_y; break;
+                case VIZ_SRC_DURATION_SECS: collapsed_buf[buf_idx].total_duration = collapsed_y; break;
+                case VIZ_SRC_TOTAL_BYTES:   collapsed_buf[buf_idx].cumulative_bytes = (uint64)collapsed_y; break;
+                default:                    collapsed_buf[buf_idx].mb_per_sec = collapsed_y; break;
+                }
+                vd->total_points -= (s->count - 1);
+                s->results[0] = &collapsed_buf[buf_idx];
+                s->count = 1;
+                buf_idx++;
+            } else {
+                /* Block size X: collapse runs of same block size */
+                uint32 out = 0;
+                uint32 j = 0;
+                while (j < s->count) {
+                    uint32 run_start = j;
+                    uint32 x_key = s->results[j]->block_size;
+                    uint32 run_end = j + 1;
+                    while (run_end < s->count && s->results[run_end]->block_size == x_key)
+                        run_end++;
+                    uint32 run_len = run_end - run_start;
+
+                    if (run_len == 1 || buf_idx >= MAX_SERIES * 200) {
+                        s->results[out++] = s->results[j];
+                        j = run_end;
+                        continue;
+                    }
+
+                    float y_vals[200];
+                    for (uint32 k = 0; k < run_len && k < 200; k++)
+                        y_vals[k] = GetYValue(s->results[run_start + k], ysrc);
+                    float collapsed_y = CollapseYValues(y_vals, run_len, profile->collapse_method);
+                    collapsed_buf[buf_idx] = *s->results[run_start];
+                    switch (ysrc) {
+                    case VIZ_SRC_IOPS:          collapsed_buf[buf_idx].iops = (uint32)collapsed_y; break;
+                    case VIZ_SRC_MIN_MBPS:      collapsed_buf[buf_idx].min_mbps = collapsed_y; break;
+                    case VIZ_SRC_MAX_MBPS:      collapsed_buf[buf_idx].max_mbps = collapsed_y; break;
+                    case VIZ_SRC_DURATION_SECS: collapsed_buf[buf_idx].total_duration = collapsed_y; break;
+                    case VIZ_SRC_TOTAL_BYTES:   collapsed_buf[buf_idx].cumulative_bytes = (uint64)collapsed_y; break;
+                    default:                    collapsed_buf[buf_idx].mb_per_sec = collapsed_y; break;
+                    }
+                    s->results[out++] = &collapsed_buf[buf_idx];
+                    buf_idx++;
+                    j = run_end;
+                }
+                vd->total_points -= (s->count - out);
+                s->count = out;
+            }
+        }
+
+        /* Recompute global max after collapse */
+        vd->global_max_y1 = 0.0f;
+        vd->global_max_y2 = 0.0f;
+        for (uint32 si = 0; si < vd->series_count; si++) {
+            vd->series[si].max_val = 0.0f;
+            for (uint32 ri = 0; ri < vd->series[si].count; ri++) {
+                BenchResult *r = vd->series[si].results[ri];
+                float yval = GetYValue(r, ysrc);
+                if (yval > vd->series[si].max_val)
+                    vd->series[si].max_val = yval;
+                if (yval > vd->global_max_y1)
+                    vd->global_max_y1 = yval;
+                if ((float)r->iops > vd->global_max_y2)
+                    vd->global_max_y2 = (float)r->iops;
+            }
         }
     }
 
@@ -296,132 +485,37 @@ uint32 VizRenderHook(struct Hook *hook, Object *space_obj, struct gpRender *gpr)
  */
 void InitVizFilterLabels(void)
 {
-    IExec->NewList(&ui.viz_volume_labels);
-    IExec->NewList(&ui.viz_test_labels);
     IExec->NewList(&ui.viz_metric_labels);
-    IExec->NewList(&ui.viz_version_labels);
     IExec->NewList(&ui.viz_chart_type_labels);
-    IExec->NewList(&ui.viz_color_by_labels);
-
-    /* Volume filter: "All Volumes" + populate from history on refresh */
-    struct Node *n;
-    n = IChooser->AllocChooserNode(CNA_Text, "All Volumes", CNA_CopyText, TRUE, TAG_DONE);
-    if (n)
-        IExec->AddTail(&ui.viz_volume_labels, n);
-
-    /* Test type filter: "All Tests" + each test type */
-    n = IChooser->AllocChooserNode(CNA_Text, "All Tests", CNA_CopyText, TRUE, TAG_DONE);
-    if (n)
-        IExec->AddTail(&ui.viz_test_labels, n);
-
-    for (int i = 0; i < TEST_COUNT; i++) {
-        n = IChooser->AllocChooserNode(CNA_Text, TestTypeToDisplayName((BenchTestType)i), CNA_CopyText, TRUE, TAG_DONE);
-        if (n)
-            IExec->AddTail(&ui.viz_test_labels, n);
-    }
-
-    /* Version filter: "All Versions" */
-    n = IChooser->AllocChooserNode(CNA_Text, "All Versions", CNA_CopyText, TRUE, TAG_DONE);
-    if (n)
-        IExec->AddTail(&ui.viz_version_labels, n);
 
     /* Date Range Filter Options (Today, Last Week, etc.) */
+    struct Node *n;
     const char *date_opts[] = {"Today", "Last Week", "Last Month", "Last Year", "All Time"};
     for (int i = 0; i < 5; i++) {
         n = IChooser->AllocChooserNode(CNA_Text, date_opts[i], CNA_CopyText, TRUE, TAG_DONE);
         if (n)
-            IExec->AddTail(&ui.viz_metric_labels, n); // Using existing list for Date Range
+            IExec->AddTail(&ui.viz_metric_labels, n);
     }
 
-    /* Chart Type Labels */
-    const char *chart_types[] = {"Scaling (Line)", "Trend (Time Line)", "Battle (Drive Bar)", "Workload (Test Bar)",
-                                 "Hybrid (MB/s+IOPS)"};
-    for (int i = 0; i < 5; i++) {
-        n = IChooser->AllocChooserNode(CNA_Text, chart_types[i], CNA_CopyText, TRUE, TAG_DONE);
+    /* Chart Type Labels — populated from loaded .viz profiles */
+    for (uint32 i = 0; i < g_viz_profile_count; i++) {
+        n = IChooser->AllocChooserNode(CNA_Text, g_viz_profiles[i].name, CNA_CopyText, TRUE, TAG_DONE);
         if (n)
             IExec->AddTail(&ui.viz_chart_type_labels, n);
     }
 
-    /* Color By Labels */
-    const char *color_by_opts[] = {"Drive", "Test Type", "Block Size"};
-    for (int i = 0; i < 3; i++) {
-        n = IChooser->AllocChooserNode(CNA_Text, color_by_opts[i], CNA_CopyText, TRUE, TAG_DONE);
-        if (n)
-            IExec->AddTail(&ui.viz_color_by_labels, n);
-    }
-
-    ui.viz_filter_volume_idx = 0;
-    ui.viz_filter_test_idx = 0;
-    ui.viz_date_range_idx = 4;     // Default to All Time
-    ui.viz_filter_version_idx = 0; // Default to All Versions
-    ui.viz_chart_type_idx = 0;     // Default to Scaling
-    ui.viz_color_by_idx = 0;       // Default to Drive
+    ui.viz_date_range_idx = 4;  /* Default to All Time */
+    ui.viz_chart_type_idx = 0;  /* Default to first profile */
 }
 
 /**
  * RefreshVizVolumeFilter
  *
- * Scans history to find unique volume names and rebuilds the volume filter Chooser.
- * Called after RefreshHistory to keep the filter list current.
+ * Stub — volume filter removed in v2.5.1. Profile [Filters] handle this.
  */
 void RefreshVizVolumeFilter(void)
 {
-    if (!ui.viz_filter_volume || !ui.window)
-        return;
-
-    /* Detach labels from chooser */
-    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_volume, ui.window, NULL, CHOOSER_Labels, (ULONG)-1,
-                               TAG_DONE);
-
-    /* Free existing nodes */
-    struct Node *node, *next;
-    node = IExec->GetHead(&ui.viz_volume_labels);
-    while (node) {
-        next = IExec->GetSucc(node);
-        IChooser->FreeChooserNode(node);
-        node = next;
-    }
-    IExec->NewList(&ui.viz_volume_labels);
-
-    /* Re-add "All Volumes" */
-    struct Node *n;
-    n = IChooser->AllocChooserNode(CNA_Text, "All Volumes", CNA_CopyText, TRUE, TAG_DONE);
-    if (n)
-        IExec->AddTail(&ui.viz_volume_labels, n);
-
-    /* Collect unique volume names from history */
-    char seen_volumes[50][32];
-    int seen_count = 0;
-
-    struct Node *hnode = IExec->GetHead(&ui.history_labels);
-    while (hnode && seen_count < 50) {
-        BenchResult *res = NULL;
-        IListBrowser->GetListBrowserNodeAttrs(hnode, LBNA_UserData, &res, TAG_DONE);
-        if (res) {
-            BOOL found = FALSE;
-            for (int i = 0; i < seen_count; i++) {
-                if (strcmp(seen_volumes[i], res->volume_name) == 0) {
-                    found = TRUE;
-                    break;
-                }
-            }
-            if (!found) {
-                snprintf(seen_volumes[seen_count], sizeof(seen_volumes[seen_count]), "%s", res->volume_name);
-                seen_count++;
-                char disp_vol[32];
-                SanitizeNameForChooser(res->volume_name, disp_vol, sizeof(disp_vol));
-                n = IChooser->AllocChooserNode(CNA_Text, disp_vol, CNA_CopyText, TRUE, TAG_DONE);
-                if (n)
-                    IExec->AddTail(&ui.viz_volume_labels, n);
-            }
-        }
-        hnode = IExec->GetSucc(hnode);
-    }
-
-    /* Reattach labels and reset selection */
-    ui.viz_filter_volume_idx = 0;
-    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_volume, ui.window, NULL, CHOOSER_Labels,
-                               (uint32)&ui.viz_volume_labels, CHOOSER_Selected, 0, TAG_DONE);
+    /* No-op: volume filtering is now profile-driven */
 }
 
 /**
@@ -433,22 +527,6 @@ void RefreshVizVolumeFilter(void)
 void CleanupVizFilterLabels(void)
 {
     struct Node *node, *next;
-
-    node = IExec->GetHead(&ui.viz_volume_labels);
-    while (node) {
-        next = IExec->GetSucc(node);
-        IChooser->FreeChooserNode(node);
-        node = next;
-    }
-    IExec->NewList(&ui.viz_volume_labels);
-
-    node = IExec->GetHead(&ui.viz_test_labels);
-    while (node) {
-        next = IExec->GetSucc(node);
-        IChooser->FreeChooserNode(node);
-        node = next;
-    }
-    IExec->NewList(&ui.viz_test_labels);
 
     node = IExec->GetHead(&ui.viz_metric_labels);
     while (node) {
@@ -466,77 +544,81 @@ void CleanupVizFilterLabels(void)
     }
     IExec->NewList(&ui.viz_chart_type_labels);
 
-    IExec->NewList(&ui.viz_color_by_labels);
+    FreeVizProfiles();
+}
 
-    node = IExec->GetHead(&ui.viz_version_labels);
+/**
+ * ReloadVizProfiles
+ *
+ * Re-scans PROGDIR:Visualizations/ and rebuilds the chart type chooser.
+ * Non-fatal on failure — keeps previous profiles.
+ */
+void ReloadVizProfiles(void)
+{
+    if (!ui.viz_chart_type || !ui.window)
+        return;
+
+    /* Detach labels from chooser */
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_chart_type, ui.window, NULL,
+                               CHOOSER_Labels, (ULONG)-1, TAG_DONE);
+
+    /* Free existing chooser nodes */
+    struct Node *node, *next;
+    node = IExec->GetHead(&ui.viz_chart_type_labels);
     while (node) {
         next = IExec->GetSucc(node);
         IChooser->FreeChooserNode(node);
         node = next;
     }
-    IExec->NewList(&ui.viz_version_labels);
+    IExec->NewList(&ui.viz_chart_type_labels);
+
+    /* Reload profiles */
+    FreeVizProfiles();
+    if (!LoadVizProfiles()) {
+        ShowMessage("Reload Failed",
+                    "No valid .viz files found in\nPROGDIR:Visualizations/\n\nPrevious profiles retained.",
+                    "OK");
+        /* Re-add placeholder */
+        struct Node *n = IChooser->AllocChooserNode(CNA_Text, "(no profiles)", CNA_CopyText, TRUE, TAG_DONE);
+        if (n) IExec->AddTail(&ui.viz_chart_type_labels, n);
+    } else {
+        /* Rebuild chooser from new profiles */
+        for (uint32 i = 0; i < g_viz_profile_count; i++) {
+            struct Node *n = IChooser->AllocChooserNode(CNA_Text, g_viz_profiles[i].name,
+                                                         CNA_CopyText, TRUE, TAG_DONE);
+            if (n) IExec->AddTail(&ui.viz_chart_type_labels, n);
+        }
+    }
+
+    /* Reattach and reset */
+    ui.viz_chart_type_idx = 0;
+    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_chart_type, ui.window, NULL,
+                               CHOOSER_Labels, (uint32)&ui.viz_chart_type_labels,
+                               CHOOSER_Selected, 0, TAG_DONE);
+
+    /* Update Color By display for new profile */
+    if (g_viz_profile_count > 0 && ui.viz_color_by_display) {
+        static const char *group_names[] = {"Drive", "Test Type", "Block Size", "Filesystem",
+                                            "Hardware", "Vendor", "App Version", "Averaging"};
+        VizProfile *p = &g_viz_profiles[0];
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_color_by_display, ui.window, NULL,
+                                   GA_Text, (uint32)group_names[p->group_by], TAG_DONE);
+
+        /* Reset date range to profile default */
+        ui.viz_date_range_idx = (uint32)p->default_date_range;
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_metric, ui.window, NULL,
+                                   CHOOSER_Selected, ui.viz_date_range_idx, TAG_DONE);
+    }
+
+    UpdateVisualization();
 }
 
 /**
  * RefreshVizVersionFilter
  *
- * Scans history to find unique app version strings and rebuilds the version filter Chooser.
- * Called after RefreshHistory to keep the filter list current.
+ * Stub — version filter removed in v2.5.1. Profile [Filters] handle this.
  */
 void RefreshVizVersionFilter(void)
 {
-    if (!ui.viz_filter_version || !ui.window)
-        return;
-
-    /* Detach labels from chooser */
-    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_version, ui.window, NULL, CHOOSER_Labels, (ULONG)-1,
-                               TAG_DONE);
-
-    /* Free existing nodes */
-    struct Node *node, *next;
-    node = IExec->GetHead(&ui.viz_version_labels);
-    while (node) {
-        next = IExec->GetSucc(node);
-        IChooser->FreeChooserNode(node);
-        node = next;
-    }
-    IExec->NewList(&ui.viz_version_labels);
-
-    /* Re-add "All Versions" */
-    struct Node *n;
-    n = IChooser->AllocChooserNode(CNA_Text, "All Versions", CNA_CopyText, TRUE, TAG_DONE);
-    if (n)
-        IExec->AddTail(&ui.viz_version_labels, n);
-
-    /* Collect unique version strings from history */
-    char seen_versions[50][16];
-    int seen_count = 0;
-
-    struct Node *hnode = IExec->GetHead(&ui.history_labels);
-    while (hnode && seen_count < 50) {
-        BenchResult *res = NULL;
-        IListBrowser->GetListBrowserNodeAttrs(hnode, LBNA_UserData, &res, TAG_DONE);
-        if (res && res->app_version[0]) {
-            BOOL found = FALSE;
-            for (int i = 0; i < seen_count; i++) {
-                if (strcmp(seen_versions[i], res->app_version) == 0) {
-                    found = TRUE;
-                    break;
-                }
-            }
-            if (!found) {
-                snprintf(seen_versions[seen_count], sizeof(seen_versions[seen_count]), "%s", res->app_version);
-                seen_count++;
-                n = IChooser->AllocChooserNode(CNA_Text, res->app_version, CNA_CopyText, TRUE, TAG_DONE);
-                if (n)
-                    IExec->AddTail(&ui.viz_version_labels, n);
-            }
-        }
-        hnode = IExec->GetSucc(hnode);
-    }
-
-    /* Reattach labels and reset selection */
-    ui.viz_filter_version_idx = 0;
-    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_version, ui.window, NULL, CHOOSER_Labels,
-                               (uint32)&ui.viz_version_labels, CHOOSER_Selected, 0, TAG_DONE);
+    /* No-op: version filtering is now profile-driven */
 }

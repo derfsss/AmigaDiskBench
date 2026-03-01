@@ -1,0 +1,23 @@
+# Throughput bars + IOPS overlay
+[Profile]
+Name        = "Hybrid"
+Description = "Throughput bars with IOPS line overlay for bottleneck analysis"
+ChartType   = hybrid
+
+[XAxis]
+Source      = test_index
+Label       = "Test Run"
+Format      = integer
+
+[YAxis]
+Source      = mb_per_sec
+Label       = "MB/s"
+AutoScale   = yes
+
+[Overlay]
+SecondarySource = iops
+SecondaryLabel  = "IOPS"
+
+[Series]
+GroupBy     = test_type
+SortX       = no

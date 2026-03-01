@@ -4,6 +4,7 @@
  */
 
 #include "gui_internal.h"
+#include "viz_profile.h"
 #include <graphics/rpattr.h>
 #include <proto/graphics.h>
 #include <stdlib.h>
@@ -36,6 +37,18 @@ static const uint32 series_colors[] = {
     0x0088CC88, /* Sage */
 };
 #define NUM_SERIES_COLORS (sizeof(series_colors) / sizeof(series_colors[0]))
+
+/**
+ * @brief Get the color for a series, using profile custom colors if available.
+ */
+static uint32 GetSeriesColor(uint32 idx)
+{
+    VizProfile *p = (ui.viz_chart_type_idx < g_viz_profile_count)
+        ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
+    if (p && p->color_count > 0)
+        return p->colors[idx % p->color_count];
+    return series_colors[idx % NUM_SERIES_COLORS];
+}
 
 /* Stored points for hover detection */
 typedef struct
@@ -102,6 +115,40 @@ static void DrawSmallText(struct RastPort *rp, int x, int y, const char *text)
 }
 
 /**
+ * @brief Draw annotation reference lines from the profile.
+ */
+static void DrawAnnotations(struct RastPort *rp, int px, int py, int pw, int ph, float max_y)
+{
+    VizProfile *ap = (ui.viz_chart_type_idx < g_viz_profile_count)
+        ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
+    if (!ap || ap->ref_line_count == 0 || max_y <= 0.0f)
+        return;
+
+    LONG ref_pen = ObtainColorPen(rp, 0x00FFFFFF); /* White dashed lines */
+    LONG label_pen = ObtainColorPen(rp, 0x00DDDDEE);
+
+    for (uint32 i = 0; i < ap->ref_line_count; i++) {
+        float val = ap->ref_line_values[i];
+        int y = py + ph - (int)((val / max_y) * (float)ph);
+        /* Only draw if within chart bounds */
+        if (y >= py && y <= py + ph) {
+            IGraphics->SetAPen(rp, ref_pen);
+            DrawDashedHLine(rp, px, px + pw - 1, y, 6);
+            /* Draw label right-aligned */
+            if (ap->ref_line_labels[i][0]) {
+                IGraphics->SetAPen(rp, label_pen);
+                struct TextExtent te;
+                IGraphics->TextExtent(rp, ap->ref_line_labels[i], strlen(ap->ref_line_labels[i]), &te);
+                DrawSmallText(rp, px + pw - te.te_Width - 2, y - 2, ap->ref_line_labels[i]);
+            }
+        }
+    }
+
+    ReleaseColorPen(rp, ref_pen);
+    ReleaseColorPen(rp, label_pen);
+}
+
+/**
  * @brief Renders the grid, axes, and Y-axis labels.
  */
 static void DrawGridAndAxes(struct RastPort *rp, int px, int py, int pw, int ph, float max_y, LONG grid_pen,
@@ -130,29 +177,14 @@ static void DrawGridAndAxes(struct RastPort *rp, int px, int py, int pw, int ph,
         DrawSmallText(rp, px - te.te_Width - 4, ly + 4, label);
     }
 
-    /* Y-Axis Title */
-    /* Moved up to py - 12 (with Margin Top 24) to avoid overlap with top label */
-    DrawSmallText(rp, px - MARGIN_LEFT + 4, py - 12, "MB/s");
+    /* Y-Axis Title — use profile label if available */
+    VizProfile *axis_profile = (ui.viz_chart_type_idx < g_viz_profile_count)
+        ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
+    const char *y_title = (axis_profile && axis_profile->y_label[0]) ? axis_profile->y_label : "MB/s";
+    DrawSmallText(rp, px - MARGIN_LEFT + 4, py - 12, y_title);
 
-    /* X-Axis Title */
-    const char *x_title = "Index";
-    switch (ui.viz_chart_type_idx) {
-    case 0:
-        x_title = "Block Size";
-        break;
-    case 1:
-        x_title = "Time";
-        break;
-    case 2:
-        x_title = "Volume";
-        break;
-    case 3:
-        x_title = "Workload";
-        break;
-    case 4:
-        x_title = "Block Size";
-        break;
-    }
+    /* X-Axis Title — use profile label if available */
+    const char *x_title = (axis_profile && axis_profile->x_label[0]) ? axis_profile->x_label : "Index";
     struct TextExtent te;
     IGraphics->TextExtent(rp, x_title, strlen(x_title), &te);
     /* Draw title at bottom-right, below the X-axis labels area */
@@ -163,36 +195,203 @@ static void DrawGridAndAxes(struct RastPort *rp, int px, int py, int pw, int ph,
 /**
  * @brief Renders X-axis labels (Block Sizes or Category names).
  */
+/**
+ * @brief Get an X-axis label for a result based on the profile's x_source.
+ */
+static const char *GetXLabel(BenchResult *res, VizXSource src, uint32 index, char *buf, uint32 buf_size)
+{
+    switch (src) {
+    case VIZ_SRC_BLOCK_SIZE:
+        return FormatPresetBlockSize(res->block_size);
+    case VIZ_SRC_TIMESTAMP:
+        /* Show date portion only (first 10 chars of "YYYY-MM-DD HH:MM:SS") */
+        snprintf(buf, buf_size, "%.10s", res->timestamp);
+        return buf;
+    default: /* VIZ_SRC_TEST_INDEX */
+        snprintf(buf, buf_size, "#%u", (unsigned int)(index + 1));
+        return buf;
+    }
+}
+
 static void DrawXAxisLabels(struct RastPort *rp, int px, int py, int pw, int ph, VizData *vd, BOOL is_trend,
                             LONG text_pen)
 {
     IGraphics->SetAPen(rp, text_pen);
     int label_y = py + ph + 12;
-    struct TextExtent te; // Fix: Declare te variable here
+    struct TextExtent te;
+
+    VizProfile *xp = (ui.viz_chart_type_idx < g_viz_profile_count)
+        ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
+    VizXSource xsrc = xp ? xp->x_source : VIZ_SRC_BLOCK_SIZE;
 
     if (vd->series_count > 0 && vd->series[0].count > 0) {
-        /* Draw First, Middle, and Last labels if space permits */
         uint32 count = vd->series[0].count;
-        // LOG_DEBUG("DrawXAxisLabels: Count=%lu, PX=%d, PY=%d, PW=%d, LabelY=%d", count, px, py, pw, label_y);
+        char buf[32], first_buf[32], last_buf[32];
 
         /* First */
-        const char *label = FormatPresetBlockSize(vd->series[0].results[0]->block_size);
-        // LOG_DEBUG("DrawXAxisLabels: First Label='%s'", label);
-        DrawSmallText(rp, px, label_y, label);
+        const char *label = GetXLabel(vd->series[0].results[0], xsrc, 0, buf, sizeof(buf));
+        snprintf(first_buf, sizeof(first_buf), "%s", label);
+        DrawSmallText(rp, px, label_y, first_buf);
 
-        /* Last */
+        /* Last (skip if same text as first) */
         if (count > 1) {
-            label = FormatPresetBlockSize(vd->series[0].results[count - 1]->block_size);
-            IGraphics->TextExtent(rp, label, strlen(label), &te);
-            DrawSmallText(rp, px + pw - te.te_Width, label_y, label);
+            label = GetXLabel(vd->series[0].results[count - 1], xsrc, count - 1, buf, sizeof(buf));
+            snprintf(last_buf, sizeof(last_buf), "%s", label);
+            if (strcmp(last_buf, first_buf) != 0) {
+                IGraphics->TextExtent(rp, last_buf, strlen(last_buf), &te);
+                DrawSmallText(rp, px + pw - te.te_Width, label_y, last_buf);
+            }
         }
 
-        /* Middle */
+        /* Middle (skip if same text as first or last) */
         if (count > 2) {
-            label = FormatPresetBlockSize(vd->series[0].results[count / 2]->block_size);
-            IGraphics->TextExtent(rp, label, strlen(label), &te);
-            DrawSmallText(rp, px + pw / 2 - te.te_Width / 2, label_y, label);
+            label = GetXLabel(vd->series[0].results[count / 2], xsrc, count / 2, buf, sizeof(buf));
+            if (strcmp(label, first_buf) != 0 && strcmp(label, last_buf) != 0) {
+                IGraphics->TextExtent(rp, label, strlen(label), &te);
+                DrawSmallText(rp, px + pw / 2 - te.te_Width / 2, label_y, label);
+            }
         }
+    }
+}
+
+/**
+ * @brief Extract the Y-axis value from a result based on the profile's y_source.
+ */
+static float GetYValue(BenchResult *res, VizYSource src)
+{
+    switch (src) {
+    case VIZ_SRC_IOPS:          return (float)res->iops;
+    case VIZ_SRC_MIN_MBPS:      return res->min_mbps;
+    case VIZ_SRC_MAX_MBPS:      return res->max_mbps;
+    case VIZ_SRC_DURATION_SECS: return res->total_duration;
+    case VIZ_SRC_TOTAL_BYTES:   return (float)res->cumulative_bytes;
+    default:                    return res->mb_per_sec;
+    }
+}
+
+/* --- Trend Lines --- */
+
+/**
+ * @brief Clamp an integer value to [lo, hi].
+ */
+static int ClampInt(int val, int lo, int hi)
+{
+    if (val < lo) return lo;
+    if (val > hi) return hi;
+    return val;
+}
+
+/**
+ * @brief Lighten a color by averaging each channel with 255.
+ */
+static uint32 LightenColor(uint32 argb)
+{
+    uint8 r = ((argb >> 16) & 0xFF);
+    uint8 g = ((argb >> 8) & 0xFF);
+    uint8 b = (argb & 0xFF);
+    r = (uint8)((r + 255) / 2);
+    g = (uint8)((g + 255) / 2);
+    b = (uint8)((b + 255) / 2);
+    return ((uint32)r << 16) | ((uint32)g << 8) | (uint32)b;
+}
+
+/**
+ * @brief Draw trend line(s) for the chart based on profile settings.
+ * Called after the main chart data is plotted, before legend.
+ */
+static void DrawTrendLines(struct RastPort *rp, int px, int py, int pw, int ph,
+                           VizData *vd, float max_y)
+{
+    VizProfile *tp = (ui.viz_chart_type_idx < g_viz_profile_count)
+        ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
+    if (!tp || tp->trend_style == VIZ_TREND_NONE || max_y <= 0.0f)
+        return;
+
+    /* Collect x positions and y values, either per-series or aggregated */
+    float x_data[200], y_data[200], y_fit[200];
+    uint32 n;
+
+    if (tp->trend_per_series) {
+        /* Draw one trend line per series */
+        for (uint32 s = 0; s < vd->series_count; s++) {
+            n = vd->series[s].count;
+            if (n < 2) continue;
+            if (n > 200) n = 200;
+
+            for (uint32 i = 0; i < n; i++) {
+                x_data[i] = (float)i;
+                y_data[i] = GetYValue(vd->series[s].results[i], tp->y_source);
+            }
+
+            switch (tp->trend_style) {
+            case VIZ_TREND_LINEAR:
+                ComputeLinearFit(x_data, y_data, n, y_fit);
+                break;
+            case VIZ_TREND_MOVING_AVERAGE:
+                ComputeMovingAverage(y_data, n, tp->trend_window, y_fit);
+                break;
+            case VIZ_TREND_POLYNOMIAL:
+                ComputePolynomialFit(x_data, y_data, n, tp->trend_degree, y_fit);
+                break;
+            default:
+                continue;
+            }
+
+            uint32 color = LightenColor(GetSeriesColor(s));
+            LONG tpen = ObtainColorPen(rp, color);
+            IGraphics->SetAPen(rp, tpen);
+
+            for (uint32 i = 0; i < n; i++) {
+                int dx = px + (int)((float)i * (float)pw / (float)(n > 1 ? n - 1 : 1));
+                int dy = py + ph - (int)((y_fit[i] / max_y) * (float)ph);
+                dx = ClampInt(dx, px, px + pw);
+                dy = ClampInt(dy, py, py + ph);
+                if (i > 0)
+                    IGraphics->Draw(rp, dx, dy);
+                IGraphics->Move(rp, dx, dy);
+            }
+            ReleaseColorPen(rp, tpen);
+        }
+    } else {
+        /* Single aggregate trend line across all series */
+        n = 0;
+        for (uint32 s = 0; s < vd->series_count && n < 200; s++) {
+            for (uint32 i = 0; i < vd->series[s].count && n < 200; i++) {
+                x_data[n] = (float)n;
+                y_data[n] = GetYValue(vd->series[s].results[i], tp->y_source);
+                n++;
+            }
+        }
+        if (n < 2) return;
+
+        switch (tp->trend_style) {
+        case VIZ_TREND_LINEAR:
+            ComputeLinearFit(x_data, y_data, n, y_fit);
+            break;
+        case VIZ_TREND_MOVING_AVERAGE:
+            ComputeMovingAverage(y_data, n, tp->trend_window, y_fit);
+            break;
+        case VIZ_TREND_POLYNOMIAL:
+            ComputePolynomialFit(x_data, y_data, n, tp->trend_degree, y_fit);
+            break;
+        default:
+            return;
+        }
+
+        uint32 color = LightenColor(0x00FFFFFF); /* White-ish for aggregate */
+        LONG tpen = ObtainColorPen(rp, color);
+        IGraphics->SetAPen(rp, tpen);
+
+        for (uint32 i = 0; i < n; i++) {
+            int dx = px + (int)((float)i * (float)pw / (float)(n > 1 ? n - 1 : 1));
+            int dy = py + ph - (int)((y_fit[i] / max_y) * (float)ph);
+            dx = ClampInt(dx, px, px + pw);
+            dy = ClampInt(dy, py, py + ph);
+            if (i > 0)
+                IGraphics->Draw(rp, dx, dy);
+            IGraphics->Move(rp, dx, dy);
+        }
+        ReleaseColorPen(rp, tpen);
     }
 }
 
@@ -222,7 +421,7 @@ static void RenderLegend(struct RastPort *rp, struct IBox *box, VizData *vd, int
             cur_y += row_h + 4;
         }
 
-        LONG pen = ObtainColorPen(rp, series_colors[i % NUM_SERIES_COLORS]);
+        LONG pen = ObtainColorPen(rp, GetSeriesColor(i));
         IGraphics->SetAPen(rp, pen);
         IGraphics->RectFill(rp, cur_x, cur_y - 6, cur_x + 6, cur_y);
         IGraphics->SetAPen(rp, text_pen);
@@ -248,16 +447,24 @@ static void RenderLineChart(struct RastPort *rp, struct IBox *box, VizData *vd, 
     int pw = box->Width - MARGIN_LEFT - MARGIN_RIGHT;
     int ph = box->Height - MARGIN_TOP - MARGIN_BOTTOM;
 
+    /* Get active profile for Y source and scale */
+    VizProfile *lp = (ui.viz_chart_type_idx < g_viz_profile_count)
+        ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
+    VizYSource ysrc = lp ? lp->y_source : VIZ_SRC_MB_PER_SEC;
+    float max_y = vd->global_max_y1;
+    if (lp && !lp->y_autoscale && lp->y_fixed_max > 0.0f)
+        max_y = lp->y_fixed_max;
+
     LONG grid_pen = ObtainColorPen(rp, 0x00444466);
     LONG axis_pen = ObtainColorPen(rp, 0x00AAAACC);
     LONG text_pen = ObtainColorPen(rp, 0x00CCCCDD);
 
-    DrawGridAndAxes(rp, px, py, pw, ph, vd->global_max_y1, grid_pen, axis_pen, text_pen);
+    DrawGridAndAxes(rp, px, py, pw, ph, max_y, grid_pen, axis_pen, text_pen);
     DrawXAxisLabels(rp, px, py, pw, ph, vd, is_trend, text_pen);
 
     /* Plot Series */
     for (uint32 s = 0; s < vd->series_count; s++) {
-        LONG spen = ObtainColorPen(rp, series_colors[s % NUM_SERIES_COLORS]);
+        LONG spen = ObtainColorPen(rp, GetSeriesColor(s));
         IGraphics->SetAPen(rp, spen);
         int last_x = -1;
 
@@ -268,9 +475,19 @@ static void RenderLineChart(struct RastPort *rp, struct IBox *box, VizData *vd, 
             /* Calculate X position based on data point index */
             dx = px + (int)((float)i * (float)pw / (float)(vd->series[s].count > 1 ? vd->series[s].count - 1 : 1));
 
-            /* Calculate Y position normalized to global MB/s maximum */
-            float v = res->mb_per_sec;
-            int dy = py + ph - (int)((v / (vd->global_max_y1 > 0 ? vd->global_max_y1 : 1)) * (float)ph);
+            /* Calculate Y position normalized to global maximum */
+            float v;
+            switch (ysrc) {
+            case VIZ_SRC_IOPS:          v = (float)res->iops; break;
+            case VIZ_SRC_MIN_MBPS:      v = res->min_mbps; break;
+            case VIZ_SRC_MAX_MBPS:      v = res->max_mbps; break;
+            case VIZ_SRC_DURATION_SECS: v = res->total_duration; break;
+            case VIZ_SRC_TOTAL_BYTES:   v = (float)res->cumulative_bytes; break;
+            default:                    v = res->mb_per_sec; break;
+            }
+            int dy = py + ph - (int)((v / (max_y > 0 ? max_y : 1)) * (float)ph);
+            dx = ClampInt(dx, px, px + pw);
+            dy = ClampInt(dy, py, py + ph);
 
             if (last_x != -1)
                 IGraphics->Draw(rp, dx, dy);
@@ -289,6 +506,8 @@ static void RenderLineChart(struct RastPort *rp, struct IBox *box, VizData *vd, 
         ReleaseColorPen(rp, spen);
     }
 
+    DrawAnnotations(rp, px, py, pw, ph, max_y);
+    DrawTrendLines(rp, px, py, pw, ph, vd, max_y);
     RenderLegend(rp, box, vd, px, py, pw, ph, text_pen);
     ReleaseColorPen(rp, grid_pen);
     ReleaseColorPen(rp, axis_pen);
@@ -308,11 +527,19 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
     int pw = box->Width - MARGIN_LEFT - MARGIN_RIGHT;
     int ph = box->Height - MARGIN_TOP - MARGIN_BOTTOM;
 
+    /* Get active profile for Y source and scale */
+    VizProfile *bp = (ui.viz_chart_type_idx < g_viz_profile_count)
+        ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
+    VizYSource bysrc = bp ? bp->y_source : VIZ_SRC_MB_PER_SEC;
+    float bar_max_y = vd->global_max_y1;
+    if (bp && !bp->y_autoscale && bp->y_fixed_max > 0.0f)
+        bar_max_y = bp->y_fixed_max;
+
     LONG grid_pen = ObtainColorPen(rp, 0x00444466);
     LONG axis_pen = ObtainColorPen(rp, 0x00AAAACC);
     LONG text_pen = ObtainColorPen(rp, 0x00CCCCDD);
 
-    DrawGridAndAxes(rp, px, py, pw, ph, vd->global_max_y1, grid_pen, axis_pen, text_pen);
+    DrawGridAndAxes(rp, px, py, pw, ph, bar_max_y, grid_pen, axis_pen, text_pen);
 
     int total_bars = vd->total_points;
     int bar_pw = pw / (total_bars > 0 ? total_bars : 1);
@@ -320,10 +547,7 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
         bar_pw = 40;
     int cur_x = px + (pw - (total_bars * bar_pw)) / 2;
 
-    // LOG_DEBUG("RenderBarChart: TotalBars=%d, BarPW=%d, StartX=%d, PW=%d", total_bars, bar_pw, cur_x, pw);
-
     /* Dynamic padding to prevent invalid rects on small bars */
-    /* Standard padding is 2px, but for bars < 10px we reduce it to 1px, and for < 6px we remove it entirely */
     int pad = 2;
     if (bar_pw < 6)
         pad = 0;
@@ -331,12 +555,22 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
         pad = 1;
 
     for (uint32 s = 0; s < vd->series_count; s++) {
-        LONG spen = ObtainColorPen(rp, series_colors[s % NUM_SERIES_COLORS]);
+        LONG spen = ObtainColorPen(rp, GetSeriesColor(s));
         IGraphics->SetAPen(rp, spen);
         for (uint32 i = 0; i < vd->series[s].count; i++) {
             BenchResult *res = vd->series[s].results[i];
-            float v = res->mb_per_sec;
-            int h = (int)((v / (vd->global_max_y1 > 0 ? vd->global_max_y1 : 1)) * (float)ph);
+            float v;
+            switch (bysrc) {
+            case VIZ_SRC_IOPS:          v = (float)res->iops; break;
+            case VIZ_SRC_MIN_MBPS:      v = res->min_mbps; break;
+            case VIZ_SRC_MAX_MBPS:      v = res->max_mbps; break;
+            case VIZ_SRC_DURATION_SECS: v = res->total_duration; break;
+            case VIZ_SRC_TOTAL_BYTES:   v = (float)res->cumulative_bytes; break;
+            default:                    v = res->mb_per_sec; break;
+            }
+            int h = (int)((v / (bar_max_y > 0 ? bar_max_y : 1)) * (float)ph);
+            if (h > ph) h = ph;
+            if (h < 0) h = 0;
 
             IGraphics->RectFill(rp, cur_x + pad, py + ph - h, cur_x + bar_pw - pad, py + ph);
 
@@ -351,6 +585,8 @@ static void RenderBarChart(struct RastPort *rp, struct IBox *box, VizData *vd, B
         ReleaseColorPen(rp, spen);
     }
 
+    DrawAnnotations(rp, px, py, pw, ph, bar_max_y);
+    DrawTrendLines(rp, px, py, pw, ph, vd, bar_max_y);
     RenderLegend(rp, box, vd, px, py, pw, ph, text_pen);
     ReleaseColorPen(rp, grid_pen);
     ReleaseColorPen(rp, axis_pen);
@@ -378,8 +614,11 @@ static void DrawSecondaryYAxis(struct RastPort *rp, int px, int py, int pw, int 
         IGraphics->TextExtent(rp, label, strlen(label), &te);
         DrawSmallText(rp, px + pw + 4, ly + 4, label);
     }
-    /* Y2-Axis Title - Aligned with MB/s label (py - 12) */
-    DrawSmallText(rp, px + pw - 24, py - 12, "IOPS");
+    /* Y2-Axis Title - Aligned with primary Y label (py - 12) */
+    VizProfile *y2p = (ui.viz_chart_type_idx < g_viz_profile_count)
+        ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
+    const char *y2_title = (y2p && y2p->y2_label[0]) ? y2p->y2_label : "IOPS";
+    DrawSmallText(rp, px + pw - 24, py - 12, y2_title);
 }
 
 /**
@@ -417,7 +656,7 @@ static void RenderHybridChart(struct RastPort *rp, struct IBox *box, VizData *vd
         int cur_x = start_x;
 
         for (uint32 s = 0; s < vd->series_count; s++) {
-            LONG line_pen = ObtainColorPen(rp, series_colors[s % NUM_SERIES_COLORS]); /* Use series color for line */
+            LONG line_pen = ObtainColorPen(rp, GetSeriesColor(s)); /* Use series/profile color for line */
             IGraphics->SetAPen(rp, line_pen);
 
             int last_x = -1;
@@ -427,6 +666,8 @@ static void RenderHybridChart(struct RastPort *rp, struct IBox *box, VizData *vd
                 int dx = cur_x + bar_pw / 2;
                 int dy =
                     py + ph - (int)(((float)res->iops / (vd->global_max_y2 > 0 ? vd->global_max_y2 : 1)) * (float)ph);
+                dx = ClampInt(dx, px, px + pw);
+                dy = ClampInt(dy, py, py + ph);
 
                 if (last_x != -1)
                     IGraphics->Draw(rp, dx, dy);
@@ -478,18 +719,21 @@ void RenderGraph(struct RastPort *rp, struct IBox *box, VizData *vd)
         IGraphics->Move(rp, box->Left + (box->Width - te.te_Width) / 2, box->Top + (box->Height - te.te_Height) / 2);
         IGraphics->Text(rp, msg, strlen(msg));
     } else {
-        LOG_DEBUG("RenderGraph: Rendering %lu series. MaxY=%.2f. Type=%ld", vd->series_count, vd->global_max_y1,
-                  ui.viz_chart_type_idx);
-        switch (ui.viz_chart_type_idx) {
-        case 2:
-        case 3:
-            RenderBarChart(rp, box, vd, (ui.viz_chart_type_idx == 3));
+        VizProfile *rp_profile = (ui.viz_chart_type_idx < g_viz_profile_count)
+            ? &g_viz_profiles[ui.viz_chart_type_idx] : NULL;
+        VizChartType ctype = rp_profile ? rp_profile->chart_type : VIZ_CHART_LINE;
+
+        LOG_DEBUG("RenderGraph: Rendering %lu series. MaxY=%.2f. Profile=%s", vd->series_count, vd->global_max_y1,
+                  rp_profile ? rp_profile->name : "none");
+        switch (ctype) {
+        case VIZ_CHART_BAR:
+            RenderBarChart(rp, box, vd, FALSE);
             break;
-        case 4:
+        case VIZ_CHART_HYBRID:
             RenderHybridChart(rp, box, vd);
             break;
         default:
-            RenderLineChart(rp, box, vd, (ui.viz_chart_type_idx == 1));
+            RenderLineChart(rp, box, vd, (rp_profile && rp_profile->x_source == VIZ_SRC_TIMESTAMP));
             break;
         }
     }

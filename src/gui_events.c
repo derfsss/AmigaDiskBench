@@ -5,6 +5,7 @@
 
 #include "engine_internal.h" /* For GetFileSystemName, GetDeviceFromVolume */
 #include "gui_internal.h"
+#include "viz_profile.h"
 #include <time.h>
 
 /**
@@ -268,7 +269,14 @@ void HandleWorkbenchMessage(struct ApplicationMsg *amsg, BOOL *running)
 {
     switch (amsg->type) {
     case APPLIBMT_Quit:
-        *running = FALSE;
+        if (ui.worker_busy) {
+            struct EasyStruct easy = { sizeof(struct EasyStruct), 0, "AmigaDiskBench",
+                "A benchmark is still running.\nAre you sure you want to quit?", "Yes|No" };
+            if (IIntuition->EasyRequest(ui.window, &easy, NULL, NULL) == 1)
+                *running = FALSE;
+        } else {
+            *running = FALSE;
+        }
         break;
     case APPLIBMT_Hide:
         if (IIntuition->IDoMethod(ui.win_obj, WM_ICONIFY))
@@ -298,7 +306,14 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
     uint32 gid = result & WMHI_GADGETMASK;
     switch (result & WMHI_CLASSMASK) {
     case WMHI_CLOSEWINDOW:
-        *running = FALSE;
+        if (ui.worker_busy) {
+            struct EasyStruct easy = { sizeof(struct EasyStruct), 0, "AmigaDiskBench",
+                "A benchmark is still running.\nAre you sure you want to quit?", "Yes|No" };
+            if (IIntuition->EasyRequest(ui.window, &easy, NULL, NULL) == 1)
+                *running = FALSE;
+        } else {
+            *running = FALSE;
+        }
         break;
     case WMHI_GADGETUP:
         switch (gid) {
@@ -368,29 +383,28 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
             UpdateBulkTabInfo();
             break;
         /* Visualization Tab Filters */
-        case GID_VIZ_FILTER_VOLUME:
-            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_volume, &ui.viz_filter_volume_idx);
-            UpdateVisualization();
-            break;
-        case GID_VIZ_FILTER_TEST:
-            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_test, &ui.viz_filter_test_idx);
-            UpdateVisualization();
-            break;
-        case GID_VIZ_FILTER_METRIC: /* Reused as Date Range Filter */
+        case GID_VIZ_FILTER_METRIC: /* Date Range Filter */
             IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_metric, &ui.viz_date_range_idx);
-            UpdateVisualization();
-            break;
-        case GID_VIZ_FILTER_VERSION:
-            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_filter_version, &ui.viz_filter_version_idx);
             UpdateVisualization();
             break;
         case GID_VIZ_CHART_TYPE:
             IIntuition->GetAttr(CHOOSER_Selected, ui.viz_chart_type, &ui.viz_chart_type_idx);
+            /* Update Color By display and date range from profile */
+            if (ui.viz_chart_type_idx < g_viz_profile_count) {
+                VizProfile *p = &g_viz_profiles[ui.viz_chart_type_idx];
+                static const char *group_names[] = {"Drive", "Test Type", "Block Size", "Filesystem",
+                                                    "Hardware", "Vendor", "App Version", "Averaging"};
+                if (ui.viz_color_by_display)
+                    IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_color_by_display, ui.window, NULL,
+                                               GA_Text, (uint32)group_names[p->group_by], TAG_DONE);
+                ui.viz_date_range_idx = (uint32)p->default_date_range;
+                IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_filter_metric, ui.window, NULL,
+                                           CHOOSER_Selected, ui.viz_date_range_idx, TAG_DONE);
+            }
             UpdateVisualization();
             break;
-        case GID_VIZ_COLOR_BY:
-            IIntuition->GetAttr(CHOOSER_Selected, ui.viz_color_by, &ui.viz_color_by_idx);
-            UpdateVisualization();
+        case GID_VIZ_RELOAD:
+            ReloadVizProfiles();
             break;
 
         case GID_BLOCK_SIZE: {

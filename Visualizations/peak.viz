@@ -1,0 +1,23 @@
+# Best-case burst performance with reference lines
+[Profile]
+Name        = "Peak Performance"
+Description = "Best single-pass throughput with interface speed reference lines"
+ChartType   = line
+
+[XAxis]
+Source      = test_index
+Label       = "Test Run"
+Format      = integer
+
+[YAxis]
+Source      = max_mbps
+Label       = "Peak MB/s"
+AutoScale   = yes
+
+[Series]
+GroupBy     = test_type
+SortX       = no
+
+[Annotations]
+ReferenceLine = 600, "SATA III limit"
+ReferenceLine = 150, "USB 2.0 limit"

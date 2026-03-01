@@ -1,0 +1,23 @@
+# Head-to-head drive comparison
+[Profile]
+Name        = "Battle"
+Description = "Side-by-side drive comparison — averaged across runs"
+ChartType   = bar
+
+[XAxis]
+Source      = test_index
+Label       = "Drive"
+Format      = integer
+
+[YAxis]
+Source      = mb_per_sec
+Label       = "MB/s"
+AutoScale   = yes
+
+[Series]
+GroupBy     = drive
+SortX       = no
+Collapse    = mean
+
+[Filters]
+ExcludeHardware = ramdrive.device

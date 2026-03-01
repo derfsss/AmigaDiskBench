@@ -149,24 +149,14 @@ typedef struct
     /* Visualization Tab - Trend Graph */
     Object *viz_canvas;         /* SpaceObject for custom graph rendering */
     Object *viz_details_label;  /* Label for hover info */
-    Object *viz_filter_volume;  /* Chooser: filter by volume */
-    Object *viz_filter_test;    /* Chooser: filter by test type */
-    Object *viz_filter_metric;  /* Chooser: MB/s or IOPS */
-    Object *viz_filter_version; /* Chooser: filter by app version */
+    Object *viz_filter_metric;  /* Chooser: date range filter */
     Object *viz_chart_type;
-    Object *viz_color_by;
-    struct List viz_volume_labels; /* Chooser labels for volume filter */
-    struct List viz_test_labels;   /* Chooser labels for test type filter */
-    struct List viz_metric_labels; /* Chooser labels for metric filter */
-    struct List viz_version_labels;
+    Object *viz_color_by_display;  /* Read-only display of profile GroupBy */
+    Object *viz_reload_button;     /* Reload Profiles button */
+    struct List viz_metric_labels; /* Chooser labels for date range */
     struct List viz_chart_type_labels;
-    struct List viz_color_by_labels;
-    uint32 viz_filter_volume_idx;
-    uint32 viz_filter_test_idx;
-    uint32 viz_date_range_idx; // Replaces metric_idx
-    uint32 viz_filter_version_idx;
+    uint32 viz_date_range_idx;
     uint32 viz_chart_type_idx;
-    uint32 viz_color_by_idx;
 
     /* Job Tracking */
     uint32 total_jobs;
@@ -358,6 +348,7 @@ enum
     GID_LOG_VSCROLL,
     GID_LOG_CLEAR,
     GID_LOG_COPY,
+    GID_VIZ_RELOAD,
     GID_COMPARE_CLOSE = 5000
 };
 

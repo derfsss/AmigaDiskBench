@@ -1,0 +1,19 @@
+# Performance vs. block size
+[Profile]
+Name        = "Scaling"
+Description = "How throughput changes as block size increases"
+ChartType   = line
+
+[XAxis]
+Source      = block_size
+Label       = "Block Size"
+Format      = block_size_label
+
+[YAxis]
+Source      = mb_per_sec
+Label       = "MB/s"
+AutoScale   = yes
+
+[Series]
+GroupBy     = test_type
+SortX       = yes

@@ -1,0 +1,24 @@
+# Compare test types
+[Profile]
+Name        = "Workload"
+Description = "Compare Read, Write, Random and other test types"
+ChartType   = bar
+
+[XAxis]
+Source      = test_index
+Label       = "Test Type"
+Format      = integer
+
+[YAxis]
+Source      = mb_per_sec
+Label       = "MB/s"
+AutoScale   = yes
+
+[Series]
+GroupBy     = test_type
+SortX       = no
+
+[Filters]
+ExcludeTest = profiler
+ExcludeTest = sprinter
+MinPasses   = 3

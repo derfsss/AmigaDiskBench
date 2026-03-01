@@ -47,7 +47,7 @@ static BOOL Run_Sequential(void *data, uint32 *bytes_processed, uint32 *op_count
     IDOS->Delete(temp_file);
 
     *bytes_processed = total_bytes;
-    *op_count = 1;
+    *op_count = (sd->block_size > 0) ? (total_bytes / sd->block_size) : 1;
     return (total_bytes > 0);
 }
 

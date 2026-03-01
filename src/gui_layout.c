@@ -139,36 +139,34 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     /* Page 2 (Visualization) - History Trend Graph */
     page2 = VLayoutObject, LAYOUT_SpaceOuter, TRUE,
 
-    /* Filter Controls - 2x3 Grid Layout (Row 1: Volume, Test, Date; Row 2: Version, Chart, Color By) */
+    /* Filter Controls: Chart, Date, Color By, Reload */
         LAYOUT_AddChild, VLayoutObject, LAYOUT_Label, "Filters", LAYOUT_BevelStyle, BVS_GROUP,
-    /* Row 1: Volume, Test, Date */
-        LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild,
-    (ui.viz_filter_volume = ChooserObject, GA_ID, GID_VIZ_FILTER_VOLUME, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_volume_labels, GA_HintInfo, "Filter by Volume.", End),
-    CHILD_Label, LabelObject, LABEL_Text, "Volume:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33,
-    LAYOUT_AddChild,
-    (ui.viz_filter_test = ChooserObject, GA_ID, GID_VIZ_FILTER_TEST, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_test_labels, GA_HintInfo, "Filter by Test Type.", End),
-    CHILD_Label, LabelObject, LABEL_Text, "Test:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33,
-    LAYOUT_AddChild,
-    (ui.viz_filter_metric = ChooserObject, GA_ID, GID_VIZ_FILTER_METRIC, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_metric_labels, CHOOSER_Selected, ui.viz_date_range_idx, GA_HintInfo, "Filter by Date Range.", End),
-    CHILD_Label, LabelObject, LABEL_Text, "Date:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33, End,
-    CHILD_WeightedHeight, 0,
-    /* Row 2: Version, Chart, Color By */
-        LAYOUT_AddChild, HLayoutObject, LAYOUT_AddChild,
-    (ui.viz_filter_version = ChooserObject, GA_ID, GID_VIZ_FILTER_VERSION, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_version_labels, GA_HintInfo, "Filter by App Version.", End),
-    CHILD_Label, LabelObject, LABEL_Text, "Version:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33,
+    /* Row 1: Chart, Date, Color By */
+        LAYOUT_AddChild, HLayoutObject,
     LAYOUT_AddChild,
     (ui.viz_chart_type = ChooserObject, GA_ID, GID_VIZ_CHART_TYPE, GA_RelVerify, TRUE, CHOOSER_Labels,
      (uint32)&ui.viz_chart_type_labels, GA_HintInfo, "Select Chart Type.", End),
     CHILD_Label, LabelObject, LABEL_Text, "Chart:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33,
     LAYOUT_AddChild,
-    (ui.viz_color_by = ChooserObject, GA_ID, GID_VIZ_COLOR_BY, GA_RelVerify, TRUE, CHOOSER_Labels,
-     (uint32)&ui.viz_color_by_labels, GA_HintInfo, "Color Data By.", End),
+    (ui.viz_filter_metric = ChooserObject, GA_ID, GID_VIZ_FILTER_METRIC, GA_RelVerify, TRUE, CHOOSER_Labels,
+     (uint32)&ui.viz_metric_labels, CHOOSER_Selected, ui.viz_date_range_idx, GA_HintInfo, "Filter by Date Range.", End),
+    CHILD_Label, LabelObject, LABEL_Text, "Date:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33,
+    LAYOUT_AddChild,
+    (ui.viz_color_by_display = ButtonObject, GA_ID, GID_VIZ_COLOR_BY, GA_ReadOnly, TRUE,
+     GA_Text, "Drive", GA_HintInfo, "Series grouping is determined by the selected profile.", End),
     CHILD_Label, LabelObject, LABEL_Text, "Color By:", LABEL_Justification, LJ_RIGHT, End, CHILD_WeightedWidth, 33, End,
-    CHILD_WeightedHeight, 0, End, CHILD_WeightedHeight, 0,
+    CHILD_WeightedHeight, 0,
+    /* Row 2: Reload Profiles button (right-aligned) */
+    LAYOUT_AddChild, HLayoutObject,
+        LAYOUT_AddChild, SpaceObject, End,
+        CHILD_WeightedWidth, 67,
+        LAYOUT_AddChild,
+        (ui.viz_reload_button = ButtonObject, GA_ID, GID_VIZ_RELOAD,
+         GA_RelVerify, TRUE, GA_Text, "Reload Profiles",
+         GA_HintInfo, "Re-scan Visualizations folder for updated .viz files.", End),
+        CHILD_WeightedWidth, 33,
+    End, CHILD_WeightedHeight, 0,
+    End, CHILD_WeightedHeight, 0,
 
     /* Details Label (Hover Info) */
         LAYOUT_AddChild,

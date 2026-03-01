@@ -265,6 +265,7 @@ void InitVizFilterLabels(void);
 void RefreshVizVolumeFilter(void);
 void RefreshVizVersionFilter(void);
 void CleanupVizFilterLabels(void);
+void ReloadVizProfiles(void);
 uint32 VizRenderHook(struct Hook *hook, Object *space_obj, struct gpRender *gpr);
 
 /* [gui_viz_render.c] - Graph Rendering */

@@ -1,0 +1,36 @@
+# Noisy IOPS data smoothed with moving average
+[Profile]
+Name        = "IOPS Smoothed"
+Description = "Random read IOPS with 5-point moving average trend"
+ChartType   = line
+
+[XAxis]
+Source      = test_index
+Label       = "Test Run"
+Format      = integer
+
+[YAxis]
+Source      = iops
+Label       = "IOPS"
+AutoScale   = yes
+
+[Series]
+GroupBy     = test_type
+SortX       = no
+
+[Filters]
+IncludeTest = Random4KRead
+IncludeTest = Random4K
+
+[TrendLine]
+Style     = moving_average
+Window    = 5
+PerSeries = no
+
+[Colors]
+Color = 42A5F5
+Color = EF5350
+Color = 66BB6A
+Color = FFA726
+Color = AB47BC
+Color = 26A69A

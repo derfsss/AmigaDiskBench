@@ -21,16 +21,32 @@ Choose how multi-pass results are combined, via **Preferences**:
 - **Trimmed Mean**: Excludes the single best and worst pass, averages the rest (requires 3+ passes).
 - **Median**: Sorts all passes and picks the single middle value — eliminates outliers without distorting the average.
 
-### 3. Advanced Visualization
-Analyze your data with a powerful, interactive graphing engine:
-- **Chart Types**:
-  - **Scaling**: Visualize performance vs. Block Size.
-  - **Trend**: Track performance stability over time.
-  - **Workload**: Compare different Test Types (Read vs Write, Seq vs Rand).
-  - **Hybrid**: Professional diagnostic view overlaying **Throughput (MB/s)** bars with **IOPS** lines to identify bottlenecks.
-  - **Battle**: Head-to-head comparison of multiple drives.
-- **Filtering**: Drill down into data by **Volume**, **Test Type**, **Date Range**, and **App Version**.
-- **Grouping**: Color-code results by **Drive**, **Test Type**, or **Block Size** (up to 16 distinct series).
+### 3. Pluggable Visualization Profiles
+Analyze your data with a powerful, profile-driven graphing engine. Chart definitions are loaded from `.viz` files in the `Visualizations/` folder — no recompilation needed to add or customize charts.
+
+- **9 Built-in Profiles**:
+  - **Scaling**: Performance vs. block size — see how chunk size affects throughput.
+  - **Trend**: Track performance stability over time with linear trend lines.
+  - **Battle**: Head-to-head comparison of multiple drives (collapsed to mean per block size).
+  - **Workload**: Compare different test types (Read vs Write, Sequential vs Random).
+  - **Hybrid**: Professional diagnostic view overlaying Throughput (MB/s) bars with IOPS lines.
+  - **Peak Performance**: Maximum throughput per drive with SATA III and USB 2.0 reference lines.
+  - **IOPS Smoothed**: Random I/O operations per second with moving average trend line.
+  - **Scaling Curve**: Polynomial curve fit showing how throughput scales with block size.
+  - **Filesystem**: Compare filesystem performance across all drives (grouped by filesystem type).
+- **Profile Features**:
+  - Chart type selection (line, bar, hybrid).
+  - Configurable X/Y axes with custom labels and auto-scaling or fixed ranges.
+  - Series grouping by drive, test type, block size, filesystem, hardware, vendor, app version, or averaging method.
+  - Data collapse aggregation (mean, median, min, max) to reduce multiple runs to one data point.
+  - Trend lines: linear regression, moving average, or polynomial curve fit.
+  - Reference line annotations with labels.
+  - Custom color palettes (up to 16 colors per profile).
+  - Per-profile filters: include/exclude by test type, block size, volume, filesystem, hardware, vendor, product, averaging method, and app version.
+  - Minimum pass count, MB/s range, and duration range filters.
+- **Filtering**: On-screen filters for Volume, Test Type, Date Range, and App Version remain active on top of profile filters.
+- **Reload Profiles**: Button to rescan the `Visualizations/` folder without restarting the application.
+- **VALIDATE Mode**: Run with `VALIDATE` as a Shell argument or icon tooltype to check all `.viz` files for errors without launching the benchmark GUI. Reports line numbers and severity.
 - **Interactive**: Hover over data points for precise values.
 
 ### 4. Drive Health Monitoring
@@ -51,7 +67,14 @@ Automate your benchmarking workflow:
 - **Export**: Export specific datasets to CSV for external analysis.
 - **Reports**: Generate global summary reports of all test activity.
 
-### 7. Detailed Disk Information
+### 7. Session Log
+Track exactly what AmigaDiskBench is doing in real time:
+- **Timestamped Entries**: Every event is logged with an `[HH:MM:SS]` timestamp.
+- **Live Updates**: New log lines appear automatically as benchmarks run.
+- **Context Menu**: Right-click the log to access Select All and Copy.
+- **Clear Log / Copy to Clipboard**: Dedicated buttons to manage the session transcript.
+
+### 8. Detailed Disk Information
 Inspect the physical and logical structure of your storage:
 - **Tree View**: Hierarchical display organized as *Fixed Drives*, *USB Drives*, and *Optical Drives*. Each physical controller appears once (e.g., `a1ide.device`); partitions show their volume/device name and unit (e.g., `System (Unit 0)`, `DH3 (Unit 2)`).
 - **Disk Details**: Click a drive node to see the disk's human-readable identity (vendor + product + revision from SCSI inquiry), bus type, capacity, geometry, and whether an RDB is present.
@@ -67,7 +90,51 @@ Inspect the physical and logical structure of your storage:
 
 No special installation is required.
 1.  Extract the archive to a location of your choice (e.g., `Work:Utilities/AmigaDiskBench`).
-2.  Launch `AmigaDiskBench` from the icon.
+2.  Ensure the `Visualizations/` folder (containing `.viz` profile files) is in the same directory as the executable. The application requires at least one valid `.viz` file to start.
+3.  Launch `AmigaDiskBench` from the icon.
+
+## Visualization Profile Format
+
+Each `.viz` file is an INI-style text file with sections:
+
+```ini
+[Profile]
+Name        = "Scaling"
+Description = "Performance vs. block size"
+ChartType   = line
+
+[XAxis]
+Source      = block_size
+Label       = "Block Size"
+
+[YAxis]
+Source      = mb_per_sec
+Label       = "MB/s"
+AutoScale   = yes
+
+[Series]
+GroupBy     = drive
+MaxSeries   = 16
+SortX       = yes
+Collapse    = none
+
+[Filters]
+ExcludeTest = profiler
+MinPasses   = 1
+
+[TrendLine]
+Style       = linear
+PerSeries   = yes
+
+[Annotations]
+ReferenceLine = 600, "SATA III"
+
+[Colors]
+Color = 0x00FF00
+Color = 0xFF6600
+```
+
+See the included `.viz` files in `Visualizations/` for working examples. Add your own profiles by creating new `.viz` files — they are picked up automatically on next launch or when clicking "Reload Profiles".
 
 ## Comprehensive Guide
 
@@ -79,6 +146,7 @@ The **Benchmark** tab is where performance testing happens.
   - *Profiles*: Use preset profiles like "Sprinter" for quick I/O checks, "Marathon" for sustained thermal testing, or "Daily Grind" for everyday usage simulation.
 - **Parameters**: Adjust the **Block Size** (e.g., 4K, 32K, 1M) and the number of **Passes**. Higher passes yield more reliable averages.
 - **Execution**: Click **Run Benchmark**. Monitor the **Traffic Light** (green/yellow/red) for current status, and the **Fuel Gauge** for overall progress.
+- **Quit Safety**: If you attempt to close the application while a benchmark is running, a confirmation dialog will ask whether you really want to quit.
 
 ### 2. Bulk Testing / Queue
 For extensive testing sessions, use the Batch Queue.
@@ -88,13 +156,10 @@ For extensive testing sessions, use the Batch Queue.
 
 ### 3. Visualizing Results
 The **Visualization** tab brings your data to life.
-- **Filters**: Located at the top. Use them to narrow down results by Volume, Test Type, or Date.
-- **Chart Modes**:
-  - *Hybrid*: Shows throughput (MB/s) as bars and IOPS as an overlaid line graph. Ideal for performance tuning.
-  - *Scaling*: Demonstrates how block size impacts performance.
-  - *Trend*: Shows historical performance decay or improvement over time.
-  - *Battle*: Select datasets to compare different drives head-to-head.
-- **Color Coding**: Group data series by Drive, Test Type, or Block Size for immediate visual clarity.
+- **Profile Chooser**: Select a visualization profile from the dropdown. Each profile defines its own chart type, axes, grouping, filters, trend lines, and colors.
+- **Filters**: On-screen filters for Volume, Test Type, and Date Range further narrow the displayed data.
+- **Color By**: Automatically set by the selected profile's GroupBy setting (e.g., Drive, Filesystem, Test Type). Shown as a read-only label.
+- **Reload Profiles**: Click to rescan the `Visualizations/` folder for new or modified `.viz` files.
 - **Hover**: Move your mouse over any data point on the graph to reveal precise MB/s and IOPS metrics.
 
 ### 4. Preferences
@@ -126,6 +191,11 @@ The **Drive Health** tab communicates directly with S.M.A.R.T.-enabled drives.
 - **Comparison**: Select any two rows and click **Compare Selected** to generate a delta report showing percentage improvements or regressions.
 - **Exporting**: Use **Export to CSV** to save the raw data for analysis in external spreadsheet software.
 
+### 8. VALIDATE Mode
+Run AmigaDiskBench with the `VALIDATE` argument (from Shell) or add `VALIDATE` as an icon tooltype to check all `.viz` profile files for syntax errors, unknown keys, invalid values, and missing required fields. The benchmark GUI does not open — only a validation report is shown.
+- **Shell**: Outputs a formatted report with line numbers and severity to stdout.
+- **Workbench**: Opens a standalone window with a scrollable list of findings.
+
 ## Building from Source
 
 AmigaDiskBench is open source and can be cross-compiled using a Docker-based toolchain (GCC 11).
@@ -152,7 +222,35 @@ This will produce the `AmigaDiskBench` executable in the `build/` folder.
 
 ## Version History
 
-### v2.3.7 (Current)
+### v2.5.2 (Current)
+- **Pluggable Visualization Profiles**: Chart definitions are now loaded from `.viz` files in the `Visualizations/` folder. Nine built-in profiles ship with the application: Scaling, Trend, Battle, Workload, Hybrid, Peak Performance, IOPS Smoothed, Scaling Curve, and Filesystem.
+- **Profile-driven rendering**: Each profile defines chart type (line/bar/hybrid), X/Y axes, series grouping, data filters, trend lines, reference line annotations, custom color palettes, and collapse aggregation — all without recompilation.
+- **Trend lines**: Linear regression, moving average, and polynomial curve fitting, rendered per-series or globally. Coordinate clamping prevents drawing outside the chart area.
+- **Collapse aggregation**: Reduce multiple runs at the same X value to a single data point using mean, median, min, or max.
+- **Reference line annotations**: Horizontal dashed lines with labels at user-defined Y values (e.g., SATA III @ 600 MB/s).
+- **Custom color palettes**: Up to 16 hex colors per profile.
+- **Reload Profiles button**: Rescan the `Visualizations/` folder for new or modified profiles without restarting.
+- **VALIDATE mode**: Shell argument or icon tooltype to validate all `.viz` files and report errors with line numbers and severity.
+- **Quit confirmation dialog**: Attempting to close the application while a benchmark is running now shows a Yes/No confirmation prompt.
+- **IOPS calculation corrected**: IOPS is now computed as total I/O operations divided by total elapsed time (true ops/second). Previously, workloads reported a fixed operation count of 1, and the engine averaged ops per pass rather than per second.
+- **Bug fixes**:
+  - Crash on exit while benchmarks are running (pending worker messages not drained before freeing reply port).
+  - Blank window on Workbench launch (`ReadArgs` called unconditionally, failing when launched from icon).
+  - Crash in `CollapseSeriesPoints` when series had no data points.
+  - Chart lines drawn outside the graph area (missing coordinate clamping in line/hybrid renderers).
+  - Duplicate X-axis labels when all data points share the same block size.
+  - Color By dropdown removed — now a read-only label driven by the active profile's GroupBy setting.
+  - Unused filter dropdowns removed from the visualization tab.
+
+### v2.4.1
+- **Session Log tab**: A new scrollable, timestamped log panel records all benchmark activity in real time — start, per-pass progress, results, and failures — with `[HH:MM:SS]` timestamps.
+- **Live log updates**: Cross-process Exec message passing delivers log entries from the worker process to the GUI without polling or unsafe gadget access.
+- **Log context menu**: Right-click for Select All and Copy.
+- **Copy to Clipboard button**: Writes the entire log to the system clipboard via IFFParse (FORM FTXT/CHRS format).
+- **Clear Log button**: Wipes the transcript and re-inserts the session header.
+- **Bug fix**: Classic menu selections were silently swallowed when a context menu was also present. Fixed by checking `WINDOW_MenuType` before routing the `WMHI_MENUPICK` event.
+
+### v2.3.7
 - **S.M.A.R.T. column auto-fit**: The Attribute Name column in the Drive Health tab now correctly auto-expands to show full attribute names without truncation.
 - **Average method display**: The Benchmark Control row now shows a single combined label (e.g. `Average: Median (Middle Value Only)`) next to the Passes count, removing the previous two-gadget layout that caused spacing issues.
 - **Bulk tab Settings text**: The Queued Job Settings line now includes the averaging method name, e.g. `Settings: Sprinter / 10 Passes (Median) / 4K`.

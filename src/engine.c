@@ -352,7 +352,7 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     }
 
 
-    out_result->iops = sum_iops / valid_passes;
+    out_result->iops = (total_duration > 0.0f) ? (uint32)((float)sum_iops / total_duration) : 0;
     IExec->FreeVec(results);
 
     LOG_DEBUG("Multi-pass benchmark (n=%u) completed. MB/s: %.2f", (unsigned int)valid_passes, out_result->mb_per_sec);
