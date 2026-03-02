@@ -75,7 +75,7 @@ static BOOL Setup_Random4K(const char *path, uint32 block_size, void **data)
 static BOOL Run_Random4K(void *data, uint32 *bytes_processed, uint32 *op_count)
 {
     struct RandomData *rd = (struct RandomData *)data;
-    uint32 total_bytes = 0;
+    uint64 total_bytes = 0;
     uint32 max_offset = rd->file_size - rd->block_size;
 
     for (uint32 i = 0; i < rd->num_ios; i++) {
@@ -90,7 +90,8 @@ static BOOL Run_Random4K(void *data, uint32 *bytes_processed, uint32 *op_count)
         }
     }
 
-    *bytes_processed = total_bytes;
+    /* Cap to uint32 max to avoid overflow — total_bytes can exceed 4GB with large block sizes */
+    *bytes_processed = (total_bytes > 0xFFFFFFFFULL) ? 0xFFFFFFFFU : (uint32)total_bytes;
     *op_count = rd->num_ios;
     return (total_bytes > 0);
 }

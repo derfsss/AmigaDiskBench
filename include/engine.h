@@ -129,6 +129,14 @@ BenchTestType StringToTestType(const char *name);
  */
 typedef void (*ProgressCallback)(const char *status_text, BOOL finished);
 
+/**
+ * @brief Log a message to the user-visible log tab (if active).
+ *
+ * Safe to call from engine modules running in the worker process.
+ * If no log port is active, the message is silently dropped.
+ */
+void LogUser(const char *fmt, ...);
+
 /* Engine functions */
 
 /**

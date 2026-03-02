@@ -761,7 +761,17 @@ void VizCheckHover(int mx, int my)
 
     if (hit) {
         char buf[256];
-        snprintf(buf, sizeof(buf), "[%s] %s, %s, %s: %.2f MB/s (%u IOPS)", hit->timestamp, hit->volume_name,
+        /* Sanitize underscores in volume name for display */
+        char vol_display[32];
+        const char *src = hit->volume_name;
+        char *dst = vol_display;
+        char *end = vol_display + sizeof(vol_display) - 1;
+        while (*src && dst < end) {
+            *dst++ = (*src == '_') ? ' ' : *src;
+            src++;
+        }
+        *dst = '\0';
+        snprintf(buf, sizeof(buf), "[%s] %s, %s, %s: %.2f MB/s (%u IOPS)", hit->timestamp, vol_display,
                  TestTypeToDisplayName(hit->type), FormatPresetBlockSize(hit->block_size), hit->mb_per_sec,
                  (unsigned int)hit->iops);
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.viz_details_label, ui.window, NULL, GA_Text, (uint32)buf,

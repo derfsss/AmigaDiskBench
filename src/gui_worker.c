@@ -100,8 +100,8 @@ void BenchmarkWorker(void)
                                 (unsigned int)status->result.passes);
                         } else {
                             snprintf(status->status_text, sizeof(status->status_text), "Failed");
-                            LogUser("FAILED: %s - check target volume",
-                                TestTypeToString(job->type));
+                            LogUser("FAILED: %s on %s (see errors above for details)",
+                                TestTypeToString(job->type), job->target_path);
                         }
                         IExec->PutMsg(job->msg.mn_ReplyPort, &status->msg);
                     } else {

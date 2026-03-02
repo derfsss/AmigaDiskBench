@@ -112,28 +112,42 @@ int StartGUI(void)
     snprintf(ui.csv_path, sizeof(ui.csv_path), "%s", DEFAULT_CSV_PATH);
     ui.delete_prefs_needed = FALSE;
 
+    LOG_DEBUG("StartGUI: entry");
     if (!InitSystemResources()) {
+        LOG_DEBUG("StartGUI: InitSystemResources FAILED");
         CleanupSystemResources();
         return 1;
     }
+    LOG_DEBUG("StartGUI: InitSystemResources OK");
 
     /* Check for VALIDATE mode before building the benchmark GUI.
-     * Only call ReadArgs when launched from Shell (Output() != NULL).
-     * When launched from Workbench, ReadArgs opens a CON: window. */
+     * Use Cli() to detect Shell — Output() can be non-NULL from Workbench
+     * (e.g. default console), causing ReadArgs to open a blocking CON: window. */
     {
         BOOL validate = FALSE;
         struct RDArgs *rd = NULL;
-        if (IDOS->Output() != ZERO) {
+        struct CommandLineInterface *cli = IDOS->Cli();
+        LOG_DEBUG("StartGUI: Cli()=%p", (void *)cli);
+        if (cli) {
             rd = IDOS->ReadArgs("VALIDATE/S", (int32 *)&validate, NULL);
+            LOG_DEBUG("StartGUI: ReadArgs returned rd=%p, validate=%d", (void *)rd, (int)validate);
         }
         if (!validate) {
             struct DiskObject *dobj = ui.IIcn->GetDiskObject("PROGDIR:AmigaDiskBench");
+            LOG_DEBUG("StartGUI: GetDiskObject=%p", (void *)dobj);
             if (dobj) {
+                STRPTR *tt = dobj->do_ToolTypes;
+                LOG_DEBUG("StartGUI: ToolTypes=%p", (void *)tt);
+                if (tt) {
+                    for (int i = 0; tt[i]; i++)
+                        LOG_DEBUG("  TT[%d]='%s'", i, tt[i]);
+                }
                 if (ui.IIcn->FindToolType(dobj->do_ToolTypes, "VALIDATE"))
                     validate = TRUE;
                 ui.IIcn->FreeDiskObject(dobj);
             }
         }
+        LOG_DEBUG("StartGUI: validate=%d (final)", (int)validate);
         if (validate) {
             RunValidation();
             if (rd) IDOS->FreeArgs(rd);
@@ -235,7 +249,9 @@ int StartGUI(void)
     }
 
     /* Load visualization profiles from PROGDIR:Visualizations/ */
+    LOG_DEBUG("StartGUI: calling LoadVizProfiles");
     if (!LoadVizProfiles()) {
+        LOG_DEBUG("StartGUI: LoadVizProfiles FAILED");
         struct EasyStruct easy = {sizeof(struct EasyStruct), 0, "AmigaDiskBench",
             "Visualizations folder not found or\nno valid .viz files.\n\n"
             "Please ensure the Visualizations folder\nexists and contains .viz profile files.",
@@ -244,13 +260,19 @@ int StartGUI(void)
         CleanupSystemResources();
         return 1;
     }
+    LOG_DEBUG("StartGUI: LoadVizProfiles OK, %lu profiles", (unsigned long)g_viz_profile_count);
 
     /* Initialize visualization filter labels (must be before CreateMainLayout) */
+    LOG_DEBUG("StartGUI: calling InitVizFilterLabels");
     InitVizFilterLabels();
+    LOG_DEBUG("StartGUI: InitVizFilterLabels done");
 
+    LOG_DEBUG("StartGUI: calling CreateMainLayout");
     ui.win_obj = CreateMainLayout(icon, &tab_list);
+    LOG_DEBUG("StartGUI: CreateMainLayout returned %p", (void *)ui.win_obj);
 
     if (!ui.win_obj) {
+        LOG_DEBUG("StartGUI: CreateMainLayout FAILED - no window object");
         IClickTab->FreeClickTabList(&tab_list);
         /* Signal worker to quit */
         BenchJob qj = {.type = (BenchTestType)-1, .msg.mn_ReplyPort = ui.worker_reply_port};
@@ -261,7 +283,9 @@ int StartGUI(void)
         return 1;
     }
 
+    LOG_DEBUG("StartGUI: calling WM_OPEN");
     if ((ui.window = (struct Window *)IIntuition->IDoMethod(ui.win_obj, WM_OPEN))) {
+        LOG_DEBUG("StartGUI: WM_OPEN OK, window=%p", (void *)ui.window);
         char pv[MAX_PATH_LEN];
         if (IDOS->NameFromLock(IDOS->GetProgramDir(), pv, sizeof(pv))) {
             char *c = strchr(pv, ':');

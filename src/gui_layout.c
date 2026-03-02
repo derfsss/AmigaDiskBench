@@ -298,6 +298,17 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     /* Page DiskInfo */
     page_diskinfo = CreateDiskInfoPage();
 
+    LOG_DEBUG("CreateMainLayout: page0=%p page_diskinfo=%p page1=%p page2=%p page3=%p page4=%p page5=%p",
+              (void *)page0, (void *)page_diskinfo, (void *)page1, (void *)page2,
+              (void *)page3, (void *)page4, (void *)page5);
+    LOG_DEBUG("CreateMainLayout: PageAvailable=%d tab_list=%p (head=%p)",
+              (int)ui.PageAvailable, (void *)tab_list, (void *)IExec->GetHead(tab_list));
+    LOG_DEBUG("CreateMainLayout: TextEditorClass=%p log_editor=%p log_vscroll=%p",
+              (void *)ui.TextEditorClass, (void *)ui.log_editor, (void *)ui.log_vscroll);
+    LOG_DEBUG("CreateMainLayout: viz_chart_type=%p viz_canvas=%p viz_reload=%p viz_color_by=%p",
+              (void *)ui.viz_chart_type, (void *)ui.viz_canvas,
+              (void *)ui.viz_reload_button, (void *)ui.viz_color_by_display);
+
     Object *main_content = NULL;
     if (ui.PageAvailable && page0 && page_diskinfo && page1 && page2 && page3 && page4 && page5 && tab_list) {
         ui.page_obj = IIntuition->NewObject(NULL, "page.gadget", PAGE_Add, (uint32)page0, PAGE_Add,
@@ -307,8 +318,9 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
         ui.tabs = ClickTabObject, GA_ID, GID_TABS, GA_RelVerify, TRUE, CLICKTAB_Labels, (uint32)tab_list,
         CLICKTAB_PageGroup, (uint32)ui.page_obj, End;
         main_content = ui.tabs;
+        LOG_DEBUG("CreateMainLayout: page_obj=%p tabs=%p", (void *)ui.page_obj, (void *)ui.tabs);
     } else {
-        LOG_DEBUG("CreateMainLayout: Using vertical fallback layout (components missing)");
+        LOG_DEBUG("CreateMainLayout: FALLBACK - Using vertical layout (components missing)");
         main_content = VLayoutObject, LAYOUT_AddChild, page0, LAYOUT_AddChild, page_diskinfo, LAYOUT_AddChild, page1,
         LAYOUT_AddChild, page2, LAYOUT_AddChild, page4, LAYOUT_AddChild, page3, LAYOUT_AddChild, page5, End;
         ui.tabs = NULL;

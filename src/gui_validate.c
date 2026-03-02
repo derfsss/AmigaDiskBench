@@ -23,11 +23,12 @@ static const char *xaxis_keys[] = {"Source", "Label", "Format", NULL};
 static const char *yaxis_keys[] = {"Source", "Label", "AutoScale", "Min", "Max", NULL};
 static const char *series_keys[] = {"GroupBy", "MaxSeries", "DefaultDateRange", "SortX", "Collapse", NULL};
 static const char *filters_keys[] = {
+    "DefaultDateRange",
     "ExcludeTest", "IncludeTest", "ExcludeBlockSize", "IncludeBlockSize",
     "ExcludeVolume", "IncludeVolume", "ExcludeFilesystem", "IncludeFilesystem",
     "ExcludeHardware", "IncludeHardware", "ExcludeVendor", "IncludeVendor",
     "ExcludeProduct", "IncludeProduct", "ExcludeAveraging", "IncludeAveraging",
-    "ExcludeVersion", "IncludeVersion",
+    "ExcludeVersion", "IncludeVersion", "MinVersion",
     "MinPasses", "MinMBs", "MaxMBs", "MinDurationSecs", "MaxDurationSecs", NULL
 };
 static const char *overlay_keys[] = {"SecondaryAxis", "SecondarySource", "SecondaryLabel", NULL};
@@ -326,9 +327,9 @@ static void ValidateVizDirectory(struct List *findings, uint32 *total_files,
     while ((data = IDOS->ExamineDir(context)) != NULL) {
         if (EXD_IS_FILE(data)) {
             uint32 nlen = strlen(data->Name);
-            if (nlen > 4 && strcmp(&data->Name[nlen - 4], ".viz") == 0) {
+            if (nlen > 4 && nlen < 230 && strcmp(&data->Name[nlen - 4], ".viz") == 0) {
                 char fullpath[256];
-                snprintf(fullpath, sizeof(fullpath), "PROGDIR:Visualizations/%s", data->Name);
+                snprintf(fullpath, sizeof(fullpath), "PROGDIR:Visualizations/%.230s", data->Name);
                 (*total_files)++;
                 ValidateVizFile(fullpath, findings, total_errors, total_warnings);
             }
@@ -401,10 +402,10 @@ static void ShowValidateWindow(struct List *findings, uint32 total_files,
         fnode = IExec->GetSucc(fnode);
     }
 
-    /* Create column info */
+    /* Create column info — proportional widths */
     struct ColumnInfo ci[] = {
-        {40, "Type", 0},
-        {260, "Message", 0},
+        {10, "Type", 0},
+        {90, "Message", 0},
         {-1, NULL, 0}
     };
 
@@ -428,6 +429,8 @@ static void ShowValidateWindow(struct List *findings, uint32 total_files,
                 LISTBROWSER_ColumnInfo, ci,
                 LISTBROWSER_ColumnTitles, TRUE,
                 LISTBROWSER_Striping, LBS_ROWS,
+                LISTBROWSER_AutoFit, TRUE,
+                LISTBROWSER_HorizontalProp, TRUE,
             End,
         End,
     End;
@@ -474,9 +477,9 @@ void RunValidation(void)
 
     ValidateVizDirectory(&findings, &total_files, &total_errors, &total_warnings);
 
-    /* Detect context: Shell vs Workbench */
-    BPTR output = IDOS->Output();
-    if (output) {
+    /* Detect context: Shell vs Workbench (Cli() is reliable; Output() can be
+     * non-NULL from Workbench if a default console is configured) */
+    if (IDOS->Cli()) {
         /* Shell mode */
         PrintShellReport(&findings, total_files, total_errors, total_warnings);
     } else {

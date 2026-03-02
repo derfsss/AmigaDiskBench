@@ -307,6 +307,10 @@ static uint32 CollectVizData(VizData *vd)
                         break;
                     default: /* VIZ_GROUP_DRIVE */
                         snprintf(label, sizeof(label), "%s", res->volume_name);
+                        /* Replace underscores with spaces for display */
+                        for (char *p = label; *p; p++) {
+                            if (*p == '_') *p = ' ';
+                        }
                         break;
                     }
 

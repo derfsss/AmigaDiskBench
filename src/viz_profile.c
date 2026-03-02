@@ -203,7 +203,7 @@ static BOOL ParseVizFile(const char *path, VizProfile *profile)
     strncpy(profile->x_label, "X", sizeof(profile->x_label) - 1);
     strncpy(profile->y_label, "MB/s", sizeof(profile->y_label) - 1);
     strncpy(profile->y2_label, "IOPS", sizeof(profile->y2_label) - 1);
-    strncpy(profile->filepath, path, VIZ_PROFILE_PATH_LEN - 1);
+    snprintf(profile->filepath, VIZ_PROFILE_PATH_LEN, "%s", path);
 
     fp = fopen(path, "r");
     if (!fp) return FALSE;
@@ -438,8 +438,9 @@ BOOL LoadVizProfiles(void)
 
             if (!EXD_IS_FILE(data)) continue;
             if (!StrEndsWith(data->Name, ".viz")) continue;
+            if (strlen(data->Name) >= sizeof(fullpath) - 24) continue; /* name too long */
 
-            snprintf(fullpath, sizeof(fullpath), "PROGDIR:Visualizations/%s", data->Name);
+            snprintf(fullpath, sizeof(fullpath), "PROGDIR:Visualizations/%.230s", data->Name);
 
             if (ParseVizFile(fullpath, &g_viz_profiles[g_viz_profile_count]))
             {

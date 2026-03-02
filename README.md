@@ -24,7 +24,7 @@ Choose how multi-pass results are combined, via **Preferences**:
 ### 3. Pluggable Visualization Profiles
 Analyze your data with a powerful, profile-driven graphing engine. Chart definitions are loaded from `.viz` files in the `Visualizations/` folder — no recompilation needed to add or customize charts.
 
-- **9 Built-in Profiles**:
+- **Nine Built-in Profiles**:
   - **Scaling**: Performance vs. block size — see how chunk size affects throughput.
   - **Trend**: Track performance stability over time with linear trend lines.
   - **Battle**: Head-to-head comparison of multiple drives (collapsed to mean per block size).
@@ -95,7 +95,9 @@ No special installation is required.
 
 ## Visualization Profile Format
 
-Each `.viz` file is an INI-style text file with sections:
+Each `.viz` file is an INI-style text file placed in the `Visualizations/` folder. Files are loaded alphabetically on startup. Lines starting with `#` are comments. All key names and enum values are case-insensitive. String values may be quoted (`"like this"`) or unquoted. Filters use case-insensitive substring matching.
+
+### Quick Example
 
 ```ini
 [Profile]
@@ -134,7 +136,127 @@ Color = 0x00FF00
 Color = 0xFF6600
 ```
 
-See the included `.viz` files in `Visualizations/` for working examples. Add your own profiles by creating new `.viz` files — they are picked up automatically on next launch or when clicking "Reload Profiles".
+### Complete Section Reference
+
+#### `[Profile]` (required)
+
+| Key | Values | Default | Description |
+|-----|--------|---------|-------------|
+| `Name` | Any string (required) | - | Display name in the profile chooser. Profile is skipped if missing. |
+| `Description` | Any string | - | Tooltip / description text. |
+| `ChartType` | `line`, `bar`, `hybrid` | `line` | Chart rendering mode. `hybrid` automatically enables the secondary Y-axis. |
+
+#### `[XAxis]`
+
+| Key | Values | Default | Description |
+|-----|--------|---------|-------------|
+| `Source` | `block_size`, `timestamp`, `test_index` | `test_index` | What drives the X-axis. `block_size` sorts numerically; `timestamp` and `test_index` plot chronologically. |
+| `Label` | Any string | `"X"` | X-axis title displayed below the chart. |
+
+#### `[YAxis]`
+
+| Key | Values | Default | Description |
+|-----|--------|---------|-------------|
+| `Source` | `mb_per_sec`, `iops`, `min_mbps`, `max_mbps`, `duration_secs`, `total_bytes` | `mb_per_sec` | Which result field to plot on the Y-axis. |
+| `Label` | Any string | `"MB/s"` | Y-axis title displayed on the left side. |
+| `AutoScale` | `yes` / `no` | `yes` | When `no`, uses `Min` and `Max` for fixed Y range. |
+| `Min` | Decimal number | `0` | Fixed Y-axis minimum (only when `AutoScale = no`). |
+| `Max` | Decimal number | `0` | Fixed Y-axis maximum (only when `AutoScale = no`). |
+
+#### `[Series]`
+
+| Key | Values | Default | Description |
+|-----|--------|---------|-------------|
+| `GroupBy` | `drive`, `test_type`, `block_size`, `filesystem`, `hardware`, `vendor`, `app_version`, `averaging_method` | `drive` | How data points are grouped into separate colored series. |
+| `SortX` | `yes` / `no` | `yes` for `block_size`, `no` otherwise | Sort data points by X value within each series. |
+| `MaxSeries` | Integer (0 = unlimited) | `0` | Cap the number of series shown. Extra series are silently dropped. |
+| `Collapse` | `none`, `mean`, `median`, `min`, `max` | `none` | When multiple data points share the same X value, reduce them to a single point using the chosen method. |
+
+#### `[Filters]`
+
+Filters control which benchmark results are included in the chart. Each `Exclude*` / `Include*` key can appear multiple times to add values to the filter list. Matching is case-insensitive substring.
+
+**Test type filters** (matched against canonical CSV names):
+
+| Key | Description |
+|-----|-------------|
+| `ExcludeTest` | Exclude results matching this test type. |
+| `IncludeTest` | Include only results matching these test types. |
+
+Valid test type names: `Sprinter`, `HeavyLifter`, `Legacy`, `DailyGrind`, `Sequential`, `Random4K`, `Profiler`, `SequentialRead`, `Random4KRead`, `MixedRW70/30`
+
+**Block size filters** (matched against display strings):
+
+| Key | Description |
+|-----|-------------|
+| `ExcludeBlockSize` | Exclude results with this block size. |
+| `IncludeBlockSize` | Include only results with these block sizes. |
+
+Valid block size names: `4K`, `16K`, `32K`, `64K`, `256K`, `1M`, `Mixed`
+
+**Other data filters:**
+
+| Key | Matched against | Description |
+|-----|-----------------|-------------|
+| `ExcludeVolume` / `IncludeVolume` | Volume name (e.g., `System`, `DH0`) | Filter by partition. |
+| `ExcludeFilesystem` / `IncludeFilesystem` | Filesystem type (e.g., `SFS/00`, `NGF/00`) | Filter by filesystem. |
+| `ExcludeHardware` / `IncludeHardware` | Device name (e.g., `ahci.device`) | Filter by device driver. |
+| `ExcludeVendor` / `IncludeVendor` | Drive vendor string | Filter by manufacturer. |
+| `ExcludeProduct` / `IncludeProduct` | Drive product string | Filter by drive model. |
+| `ExcludeAveraging` / `IncludeAveraging` | Averaging method | Filter by pass averaging. |
+| `ExcludeVersion` / `MinVersion` | App version string | Filter by AmigaDiskBench version. |
+
+Valid averaging method names: `AllPasses`, `TrimmedMean`, `Median`
+
+**Numeric threshold filters:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `MinPasses` | Integer | Minimum number of passes a result must have. |
+| `MinMBs` | Decimal | Minimum MB/s to include. |
+| `MaxMBs` | Decimal | Maximum MB/s to include. |
+| `MinDurationSecs` | Decimal | Minimum test duration in seconds. |
+| `MaxDurationSecs` | Decimal | Maximum test duration in seconds. |
+| `DefaultDateRange` | `today`, `week`, `month`, `year`, `all` | Initial date range filter when this profile is selected. Default: `all`. |
+
+#### `[Overlay]`
+
+| Key | Values | Default | Description |
+|-----|--------|---------|-------------|
+| `SecondarySource` | Any value | - | Enables the secondary Y-axis (right side). Currently used by `hybrid` charts to overlay IOPS. |
+| `SecondaryLabel` | Any string | `"IOPS"` | Label for the secondary (right) Y-axis. |
+
+#### `[TrendLine]`
+
+| Key | Values | Default | Description |
+|-----|--------|---------|-------------|
+| `Style` | `none`, `linear`, `moving_average`, `polynomial` | `none` | Trend line algorithm. |
+| `Window` | Integer | `3` | Window size for moving average (number of points on each side). |
+| `Degree` | `2` or `3` | `2` | Polynomial degree (clamped to 2-3). Uses Gaussian elimination. |
+| `PerSeries` | `yes` / `no` | `no` | Draw a separate trend line for each series, or one global trend. |
+
+#### `[Annotations]`
+
+| Key | Format | Description |
+|-----|--------|-------------|
+| `ReferenceLine` | `value, "Label"` | Draws a horizontal dashed line at the given Y value with a text label. Up to 8 reference lines per profile. |
+
+Example: `ReferenceLine = 600, "SATA III Max"` draws a dashed line at 600 MB/s.
+
+#### `[Colors]`
+
+| Key | Format | Description |
+|-----|--------|-------------|
+| `Color` | `0xRRGGBB` | Hex color for series (in order). Up to 16 per profile. When omitted, the built-in 8-color palette is used. |
+
+### Notes
+
+- A profile **must** have a `[Profile]` section with a `Name` key to be loaded.
+- Boolean values accept `yes`/`true`/`1` for true; anything else is false.
+- The `Exclude*` / `Include*` filter modes are mutually exclusive per category. If you use `IncludeTest`, only those tests are shown. If you use `ExcludeTest`, everything except those tests is shown. Do not mix both for the same category.
+- On-screen GUI filters (Volume, Test Type, Date Range, App Version) are applied on top of profile filters.
+- Use the `VALIDATE` mode (Shell argument or icon tooltype) to check your `.viz` files for errors before launching.
+- See the 9 included `.viz` files in `Visualizations/` for working examples covering all features.
 
 ## Comprehensive Guide
 
@@ -222,7 +344,16 @@ This will produce the `AmigaDiskBench` executable in the `build/` folder.
 
 ## Version History
 
-### v2.5.2 (Current)
+### v2.5.3 (Current)
+- **VALIDATE mode improvements**: Workbench validation window now displays columns at correct proportions. Message column auto-fits to window width with horizontal scrolling for long messages.
+- **VALIDATE usage**: Run `AmigaDiskBench VALIDATE` from Shell, or add the tooltype `VALIDATE` to the program's icon in the Information editor. The benchmark GUI does not open — only a validation report is shown (text report in Shell, ReAction window from Workbench).
+- **Bug fixes**:
+  - Blank window on Workbench launch: `ReadArgs()` was guarded by `Output() != NULL`, but `Output()` can return a valid handle from Workbench when a default console is configured. `ReadArgs` then blocked waiting for interactive input, displaying an empty CON: window. Fixed by using `IDOS->Cli()` (the canonical AmigaOS 4 method) to detect Shell vs Workbench launch.
+  - VALIDATE mode Shell/Workbench detection used the same unreliable `Output()` check. Fixed to use `IDOS->Cli()`.
+  - Profile validator falsely warned about `DefaultDateRange` and `MinVersion` keys in the `[Filters]` section. Both are valid parser-recognized keys that were missing from the validator's known-key list.
+  - Visualization hover tooltip and chart legend now replace underscores with spaces in volume names (e.g., `FFS2_DH8_2` displays as `FFS2 DH8 2`), consistent with all other text gadgets in the application.
+
+### v2.5.2
 - **Pluggable Visualization Profiles**: Chart definitions are now loaded from `.viz` files in the `Visualizations/` folder. Nine built-in profiles ship with the application: Scaling, Trend, Battle, Workload, Hybrid, Peak Performance, IOPS Smoothed, Scaling Curve, and Filesystem.
 - **Profile-driven rendering**: Each profile defines chart type (line/bar/hybrid), X/Y axes, series grouping, data filters, trend lines, reference line annotations, custom color palettes, and collapse aggregation — all without recompilation.
 - **Trend lines**: Linear regression, moving average, and polynomial curve fitting, rendered per-series or globally. Coordinate clamping prevents drawing outside the chart area.
@@ -234,6 +365,9 @@ This will produce the `AmigaDiskBench` executable in the `build/` folder.
 - **Quit confirmation dialog**: Attempting to close the application while a benchmark is running now shows a Yes/No confirmation prompt.
 - **IOPS calculation corrected**: IOPS is now computed as total I/O operations divided by total elapsed time (true ops/second). Previously, workloads reported a fixed operation count of 1, and the engine averaged ops per pass rather than per second.
 - **Bug fixes**:
+  - Random 4K Write/Read and Mixed R/W benchmarks failed at 1M block size: `uint32 total_bytes` overflowed (4096 ops x 1M = exactly 2^32, wrapping to 0). Fixed by using `uint64` internally with a cap to `UINT32_MAX`.
+  - CSV history records silently truncated when field data exceeded the 1024-byte line buffer (producing malformed rows). Increased to 2048 bytes with overflow detection — oversized records are now skipped with a warning in the session log.
+  - Benchmark failure messages in the session log were generic ("check target volume"). Now reports the specific failure reason: setup failure (file creation, device open, or buffer allocation), unknown test type, or all passes producing zero bytes — with test name, target path, and block size.
   - Crash on exit while benchmarks are running (pending worker messages not drained before freeing reply port).
   - Blank window on Workbench launch (`ReadArgs` called unconditionally, failing when launched from icon).
   - Crash in `CollapseSeriesPoints` when series had no data points.

@@ -39,7 +39,7 @@ Analyze your data with a powerful, profile-driven graphing engine. Chart
 definitions are loaded from .viz files in the Visualizations/ folder -- no
 recompilation needed to add or customize charts.
 
-9 Built-in Profiles:
+Nine Built-in Profiles:
   - Scaling: Performance vs. block size -- see how chunk size affects throughput.
   - Trend: Track performance stability over time with linear trend lines.
   - Battle: Head-to-head comparison of multiple drives (collapsed to mean per
@@ -147,7 +147,12 @@ No special installation is required.
 
 Visualization Profile Format
 -----------------------------
-Each .viz file is an INI-style text file with sections:
+Each .viz file is an INI-style text file placed in the Visualizations/ folder.
+Files are loaded alphabetically on startup. Lines starting with # are comments.
+All key names and enum values are case-insensitive. String values may be quoted
+("like this") or unquoted. Filters use case-insensitive substring matching.
+
+Quick Example:
 
   [Profile]
   Name        = "Scaling"
@@ -184,9 +189,133 @@ Each .viz file is an INI-style text file with sections:
   Color = 0x00FF00
   Color = 0xFF6600
 
-See the included .viz files in Visualizations/ for working examples. Add your
-own profiles by creating new .viz files -- they are picked up automatically on
-next launch or when clicking "Reload Profiles".
+
+Complete Section Reference
+..........................
+
+[Profile] (required)
+  Name         = string (required)  Display name in profile chooser.
+                                    Profile is skipped if missing.
+  Description  = string             Tooltip / description text.
+  ChartType    = line | bar | hybrid
+                 Default: line. "hybrid" auto-enables the secondary Y-axis.
+
+[XAxis]
+  Source       = block_size | timestamp | test_index
+                 Default: test_index. "block_size" sorts numerically;
+                 "timestamp" and "test_index" plot chronologically.
+  Label        = string             Default: "X". X-axis title below the chart.
+
+[YAxis]
+  Source       = mb_per_sec | iops | min_mbps | max_mbps |
+                 duration_secs | total_bytes
+                 Default: mb_per_sec. Which result field to plot.
+  Label        = string             Default: "MB/s". Y-axis title on the left.
+  AutoScale    = yes | no           Default: yes. When "no", uses Min/Max
+                                    for a fixed Y range.
+  Min          = decimal            Fixed Y minimum (only when AutoScale = no).
+  Max          = decimal            Fixed Y maximum (only when AutoScale = no).
+
+[Series]
+  GroupBy      = drive | test_type | block_size | filesystem | hardware |
+                 vendor | app_version | averaging_method
+                 Default: drive. How data points are grouped into colored
+                 series.
+  SortX        = yes | no           Default: yes for block_size, no otherwise.
+                                    Sort data points by X value within each
+                                    series.
+  MaxSeries    = integer            Default: 0 (unlimited). Cap the number of
+                                    series shown.
+  Collapse     = none | mean | median | min | max
+                 Default: none. When multiple data points share the same X
+                 value, reduce them to a single point using the chosen method.
+
+[Filters]
+  Filters control which benchmark results are included in the chart. Each
+  Exclude*/Include* key can appear multiple times. Matching is case-insensitive
+  substring.
+
+  Test type filters (matched against canonical CSV names):
+    ExcludeTest = name              Exclude results matching this test type.
+    IncludeTest = name              Include only results matching these types.
+
+    Valid test type names:
+      Sprinter, HeavyLifter, Legacy, DailyGrind, Sequential, Random4K,
+      Profiler, SequentialRead, Random4KRead, MixedRW70/30
+
+  Block size filters (matched against display strings):
+    ExcludeBlockSize = name         Exclude results with this block size.
+    IncludeBlockSize = name         Include only these block sizes.
+
+    Valid block size names:
+      4K, 16K, 32K, 64K, 256K, 1M, Mixed
+
+  Other data filters:
+    ExcludeVolume / IncludeVolume
+      Matched against volume name (e.g., System, DH0).
+    ExcludeFilesystem / IncludeFilesystem
+      Matched against filesystem type (e.g., SFS/00, NGF/00).
+    ExcludeHardware / IncludeHardware
+      Matched against device name (e.g., ahci.device).
+    ExcludeVendor / IncludeVendor
+      Matched against drive vendor string.
+    ExcludeProduct / IncludeProduct
+      Matched against drive product string.
+    ExcludeAveraging / IncludeAveraging
+      Matched against averaging method.
+    ExcludeVersion / MinVersion
+      Matched against app version string.
+
+    Valid averaging method names:
+      AllPasses, TrimmedMean, Median
+
+  Numeric threshold filters:
+    MinPasses        = integer      Minimum passes a result must have.
+    MinMBs           = decimal      Minimum MB/s to include.
+    MaxMBs           = decimal      Maximum MB/s to include.
+    MinDurationSecs  = decimal      Minimum test duration in seconds.
+    MaxDurationSecs  = decimal      Maximum test duration in seconds.
+    DefaultDateRange = today | week | month | year | all
+                       Default: all. Initial date range when profile selected.
+
+[Overlay]
+  SecondarySource  = any value      Enables the secondary Y-axis (right side).
+                                    Used by hybrid charts for IOPS overlay.
+  SecondaryLabel   = string         Default: "IOPS". Right Y-axis label.
+
+[TrendLine]
+  Style        = none | linear | moving_average | polynomial
+                 Default: none. Trend line algorithm.
+  Window       = integer            Default: 3. Window size for moving average
+                                    (points on each side).
+  Degree       = 2 | 3              Default: 2. Polynomial degree (clamped to
+                                    2-3). Uses Gaussian elimination.
+  PerSeries    = yes | no           Default: no. Draw a separate trend line for
+                                    each series, or one global trend.
+
+[Annotations]
+  ReferenceLine = value, "Label"    Draws a horizontal dashed line at the given
+                                    Y value with a text label. Up to 8 per
+                                    profile.
+                                    Example: ReferenceLine = 600, "SATA III Max"
+
+[Colors]
+  Color        = 0xRRGGBB           Hex color for series (in order). Up to 16
+                                    per profile. When omitted, the built-in
+                                    8-color palette is used.
+
+Notes:
+- A profile must have a [Profile] section with a Name key to be loaded.
+- Boolean values accept yes/true/1 for true; anything else is false.
+- Exclude*/Include* modes are mutually exclusive per category. If you use
+  IncludeTest, only those tests are shown. If you use ExcludeTest, everything
+  except those tests is shown. Do not mix both for the same category.
+- On-screen GUI filters (Volume, Test Type, Date Range, App Version) are
+  applied on top of profile filters.
+- Use VALIDATE mode (Shell argument or icon tooltype) to check your .viz files
+  for errors before launching.
+- See the 9 included .viz files in Visualizations/ for working examples
+  covering all features.
 
 
 Comprehensive Guide
@@ -329,7 +458,29 @@ Authors
 Version History
 ---------------
 
-v2.5.2 (Current)
+v2.5.3 (Current)
+- VALIDATE mode improvements: Workbench validation window now displays columns
+  at correct proportions. Message column auto-fits to window width with
+  horizontal scrolling for long messages.
+- VALIDATE usage: Run "AmigaDiskBench VALIDATE" from Shell, or add the tooltype
+  VALIDATE to the program's icon in the Information editor. The benchmark GUI
+  does not open -- only a validation report is shown (text report in Shell,
+  ReAction window from Workbench).
+- Bug fixes:
+  - Blank window on Workbench launch: ReadArgs() was guarded by
+    Output() != NULL, but Output() can return a valid handle from Workbench
+    when a default console is configured. ReadArgs then blocked waiting for
+    interactive input, displaying an empty CON: window. Fixed by using
+    IDOS->Cli() (the canonical AmigaOS 4 method) to detect Shell vs Workbench.
+  - VALIDATE mode Shell/Workbench detection used the same unreliable Output()
+    check. Fixed to use IDOS->Cli().
+  - Profile validator falsely warned about DefaultDateRange and MinVersion keys
+    in the [Filters] section. Both are valid parser-recognized keys that were
+    missing from the validator's known-key list.
+  - Visualization hover tooltip and chart legend now replace underscores with
+    spaces in volume names (e.g., FFS2_DH8_2 displays as FFS2 DH8 2).
+
+v2.5.2
 - Pluggable Visualization Profiles: Chart definitions are now loaded from .viz
   files in the Visualizations/ folder. Nine built-in profiles ship with the
   application: Scaling, Trend, Battle, Workload, Hybrid, Peak Performance,
@@ -357,6 +508,17 @@ v2.5.2 (Current)
   reported a fixed operation count of 1, and the engine averaged ops per pass
   rather than per second.
 - Bug fixes:
+  - Random 4K Write/Read and Mixed R/W benchmarks failed at 1M block size:
+    uint32 total_bytes overflowed (4096 ops x 1M = exactly 2^32, wrapping to
+    0). Fixed by using uint64 internally with a cap to UINT32_MAX.
+  - CSV history records silently truncated when field data exceeded the
+    1024-byte line buffer (producing malformed rows). Increased to 2048 bytes
+    with overflow detection -- oversized records are now skipped with a warning
+    in the session log.
+  - Benchmark failure messages in the session log were generic ("check target
+    volume"). Now reports the specific failure reason: setup failure (file
+    creation, device open, or buffer allocation), unknown test type, or all
+    passes producing zero bytes -- with test name, target path, and block size.
   - Crash on exit while benchmarks are running (pending worker messages not
     drained before freeing reply port).
   - Blank window on Workbench launch (ReadArgs called unconditionally, failing

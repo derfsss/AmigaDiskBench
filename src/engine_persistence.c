@@ -25,30 +25,31 @@ BOOL SaveResultToCSV(const char *filename, BenchResult *result)
     }
 
     if (file) {
-        char line[1024];
+        char line[2048];
         char *ptr = line;
         size_t remaining = sizeof(line);
         int written;
+        BOOL overflow = FALSE;
 
-        /* Helper macro to append to buffer */
+        /* Helper macro to append to buffer with overflow detection */
 #define APPEND_CSV(fmt, ...)                                                                                           \
     do {                                                                                                               \
         written = snprintf(ptr, remaining, fmt, __VA_ARGS__);                                                          \
         if (written > 0 && written < (int)remaining) {                                                                 \
             ptr += written;                                                                                            \
             remaining -= written;                                                                                      \
+        } else {                                                                                                       \
+            overflow = TRUE;                                                                                           \
         }                                                                                                              \
     } while (0)
 
         /* Construct CSV line incrementally to avoid massive varargs crash */
-        /* and to make debugging easier if a specific field is problematic */
 
         // 1. ID, Timestamp, Type, Volume, FS
         APPEND_CSV("%s,%s,%s,%s,%s", result->result_id, result->timestamp, TestTypeToString(result->type),
                    result->volume_name, result->fs_type);
 
         // 2. Metrics (MB/s, IOPS)
-        // Fixed: IOPS is uint32 (%u)
         APPEND_CSV(",%.2f,%lu", result->mb_per_sec, (unsigned long)result->iops);
 
         // 3. Device Info (Name, Unit, Version)
@@ -63,18 +64,23 @@ BOOL SaveResultToCSV(const char *filename, BenchResult *result)
         // 5. Detailed Stats (Min, Max, Duration)
         APPEND_CSV(",%.2f,%.2f,%.2f", result->min_mbps, result->max_mbps, result->total_duration);
 
-        // 6. Cumulative Bytes (uint64) - Potential trouble spot
+        // 6. Cumulative Bytes (uint64)
         APPEND_CSV(",%llu", (unsigned long long)result->cumulative_bytes);
 
         // 7. Hardware Details (Vendor, Product, Firmware, Serial)
-        // Ensure pointers are valid (though arrays should be)
         APPEND_CSV(",%s,%s,%s,%s\n", result->vendor, result->product, result->firmware_rev, result->serial_number);
 
 #undef APPEND_CSV
 
-        IDOS->FPuts(file, line);
+        if (overflow) {
+            LOG_DEBUG("SaveResultToCSV: CSV line buffer overflow (>2048 bytes) for result %s — record skipped",
+                      result->result_id);
+            LogUser("WARNING: CSV record too large to save (result %s)", result->result_id);
+        } else {
+            IDOS->FPuts(file, line);
+        }
         IDOS->FClose(file);
-        return TRUE;
+        return !overflow;
     }
 
     return FALSE;

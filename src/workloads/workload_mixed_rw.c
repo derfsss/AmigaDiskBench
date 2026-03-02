@@ -76,7 +76,7 @@ static BOOL Setup_MixedRW(const char *path, uint32 block_size, void **data)
 static BOOL Run_MixedRW(void *data, uint32 *bytes_processed, uint32 *op_count)
 {
     struct MixedRWData *md = (struct MixedRWData *)data;
-    uint32 total_bytes = 0;
+    uint64 total_bytes = 0;
     uint32 max_offset = md->file_size - md->block_size;
 
     for (uint32 i = 0; i < md->num_ops; i++) {
@@ -103,7 +103,8 @@ static BOOL Run_MixedRW(void *data, uint32 *bytes_processed, uint32 *op_count)
         }
     }
 
-    *bytes_processed = total_bytes;
+    /* Cap to uint32 max to avoid overflow — total_bytes can exceed 4GB with large block sizes */
+    *bytes_processed = (total_bytes > 0xFFFFFFFFULL) ? 0xFFFFFFFFU : (uint32)total_bytes;
     *op_count = md->num_ops;
     return (total_bytes > 0);
 }

@@ -177,13 +177,16 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     const BenchWorkload *workload = GetWorkloadByType(type);
     if (!workload) {
         LOG_DEBUG("FAILED to find workload for type %d", type);
+        LogUser("ERROR: Unknown test type %d - no workload registered", type);
         IExec->FreeVec(results);
         return FALSE;
     }
 
     void *workload_data = NULL;
     if (!workload->Setup(target_path, block_size, &workload_data)) {
-        LOG_DEBUG("FAILED to setup workload %s", workload->name);
+        LOG_DEBUG("FAILED to setup workload '%s' on '%s'", workload->name, target_path);
+        LogUser("ERROR: %s setup failed on '%s' - could not create test file, open device, or allocate %u-byte buffer",
+                workload->name, target_path, (unsigned int)block_size);
         IExec->FreeVec(results);
         return FALSE;
     }
@@ -230,6 +233,8 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     workload->Cleanup(workload_data);
 
     if (valid_passes == 0) {
+        LogUser("ERROR: %s - all %u passes produced zero bytes on '%s' (block %u)",
+                workload->name, (unsigned int)passes, target_path, (unsigned int)block_size);
         IExec->FreeVec(results);
         return FALSE;
     }
