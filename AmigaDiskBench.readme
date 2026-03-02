@@ -137,11 +137,11 @@ Requirements
 Installation
 ------------
 No special installation is required.
-1. Extract the archive to a location of your choice
-   (e.g., Work:Utilities/AmigaDiskBench).
-2. Ensure the Visualizations/ folder (containing .viz profile files) is in the
-   same directory as the executable. The application requires at least one valid
-   .viz file to start.
+1. Extract the archive to a location of your choice (e.g., Work:Utilities/).
+   This creates an AmigaDiskBench drawer containing the executable, icons,
+   readme, and Visualizations/ folder.
+2. The application requires at least one valid .viz file in the Visualizations/
+   folder to start.
 3. Launch AmigaDiskBench from the icon.
 
 
@@ -479,6 +479,11 @@ v2.5.3 (Current)
     missing from the validator's known-key list.
   - Visualization hover tooltip and chart legend now replace underscores with
     spaces in volume names (e.g., FFS2_DH8_2 displays as FFS2 DH8 2).
+- Icon cleanup: Program icon now ships with a single (VALIDATE) tooltype
+  (commented out by default). Old template tooltypes removed. Drawer and
+  folder icons included for the distribution archive.
+- Makefile "install" target: Now produces a complete distribution layout with
+  drawer icon, program icon, Visualizations folder icon, and readme.
 
 v2.5.2
 - Pluggable Visualization Profiles: Chart definitions are now loaded from .viz

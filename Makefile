@@ -30,11 +30,14 @@ $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 install: all
-	mkdir -p $(DIST_DIR)
-	cp $(TARGET) $(DIST_DIR)/AmigaDiskBench
-	cp AmigaDiskBench.info $(DIST_DIR)/AmigaDiskBench.info
-	cp -r Visualizations $(DIST_DIR)/Visualizations
-	@echo "Installation complete to $(DIST_DIR)/"
+	mkdir -p $(DIST_DIR)/AmigaDiskBench
+	cp icons/AmigaDiskBench_drawer.info $(DIST_DIR)/AmigaDiskBench.info
+	cp $(TARGET) $(DIST_DIR)/AmigaDiskBench/AmigaDiskBench
+	cp AmigaDiskBench.info $(DIST_DIR)/AmigaDiskBench/AmigaDiskBench.info
+	cp AmigaDiskBench.readme $(DIST_DIR)/AmigaDiskBench/AmigaDiskBench.readme
+	cp -r Visualizations $(DIST_DIR)/AmigaDiskBench/Visualizations
+	cp Visualizations.info $(DIST_DIR)/AmigaDiskBench/Visualizations.info
+	@echo "Installation complete to $(DIST_DIR)/AmigaDiskBench/"
 
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)

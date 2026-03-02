@@ -89,8 +89,8 @@ Inspect the physical and logical structure of your storage:
 ## Installation
 
 No special installation is required.
-1.  Extract the archive to a location of your choice (e.g., `Work:Utilities/AmigaDiskBench`).
-2.  Ensure the `Visualizations/` folder (containing `.viz` profile files) is in the same directory as the executable. The application requires at least one valid `.viz` file to start.
+1.  Extract the archive to a location of your choice (e.g., `Work:Utilities/`). This creates an `AmigaDiskBench` drawer containing the executable, icons, readme, and `Visualizations/` folder.
+2.  The application requires at least one valid `.viz` file in the `Visualizations/` folder to start.
 3.  Launch `AmigaDiskBench` from the icon.
 
 ## Visualization Profile Format
@@ -352,6 +352,8 @@ This will produce the `AmigaDiskBench` executable in the `build/` folder.
   - VALIDATE mode Shell/Workbench detection used the same unreliable `Output()` check. Fixed to use `IDOS->Cli()`.
   - Profile validator falsely warned about `DefaultDateRange` and `MinVersion` keys in the `[Filters]` section. Both are valid parser-recognized keys that were missing from the validator's known-key list.
   - Visualization hover tooltip and chart legend now replace underscores with spaces in volume names (e.g., `FFS2_DH8_2` displays as `FFS2 DH8 2`), consistent with all other text gadgets in the application.
+- **Icon cleanup**: Program icon now ships with a single `(VALIDATE)` tooltype (commented out by default). Old template tooltypes removed. Drawer and folder icons included for the distribution archive.
+- **Makefile `install` target**: Now produces a complete distribution layout with drawer icon, program icon, Visualizations folder icon, and readme.
 
 ### v2.5.2
 - **Pluggable Visualization Profiles**: Chart definitions are now loaded from `.viz` files in the `Visualizations/` folder. Nine built-in profiles ship with the application: Scaling, Trend, Battle, Workload, Hybrid, Peak Performance, IOPS Smoothed, Scaling Curve, and Filesystem.
