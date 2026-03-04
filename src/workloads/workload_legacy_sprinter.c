@@ -58,10 +58,31 @@ static void GetDefaultSettings_Sprinter(uint32 *block_size, uint32 *passes)
     *passes = 1;
 }
 
-const BenchWorkload Workload_Legacy_Sprinter = {.type = TEST_SPRINTER,
-                                                .name = "Sprinter (Legacy)",
-                                                .description = "Metadata stress: 100x 4KB file creations/deletions",
-                                                .Setup = Setup_Sprinter,
-                                                .Run = Run_Sprinter,
-                                                .Cleanup = Cleanup_Sprinter,
-                                                .GetDefaultSettings = GetDefaultSettings_Sprinter};
+const BenchWorkload Workload_Legacy_Sprinter = {
+    .type = TEST_SPRINTER,
+    .name = "Sprinter (Legacy)",
+    .description = "Metadata stress: 100x 4KB file creations/deletions",
+    .detailed_info =
+        "Sprinter (Legacy)\n"
+        "\n"
+        "A quick metadata performance test that measures how fast the\n"
+        "filesystem can create and delete small files.\n"
+        "\n"
+        "  Operations:     100 file creates + 100 file deletes\n"
+        "  File size:      4 KB each\n"
+        "  Metric:         IOPS (operations per second)\n"
+        "  Block size:     Fixed (4 KB)\n"
+        "  Default passes: 1\n"
+        "\n"
+        "This test exercises the filesystem's metadata handling -- the\n"
+        "overhead of allocating and freeing directory entries, updating\n"
+        "the bitmap, and flushing journal data. It is particularly\n"
+        "sensitive to filesystem type (FFS vs SFS vs JXFS) and whether\n"
+        "the volume has directory caching enabled.\n"
+        "\n"
+        "Good for: Quick assessment of filesystem responsiveness.\n"
+        "Simulates: Application installers, temp file activity.\n",
+    .Setup = Setup_Sprinter,
+    .Run = Run_Sprinter,
+    .Cleanup = Cleanup_Sprinter,
+    .GetDefaultSettings = GetDefaultSettings_Sprinter};

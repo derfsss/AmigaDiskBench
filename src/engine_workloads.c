@@ -52,6 +52,14 @@ const BenchWorkload *GetWorkloadByType(BenchTestType type)
     return NULL;
 }
 
+const char *GetWorkloadDetailedInfo(BenchTestType type)
+{
+    const BenchWorkload *w = GetWorkloadByType(type);
+    if (w && w->detailed_info)
+        return w->detailed_info;
+    return "No description available.";
+}
+
 /* Internal helper for Phase 2+ */
 void RegisterWorkload(const BenchWorkload *workload)
 {

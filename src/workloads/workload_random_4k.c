@@ -115,10 +115,32 @@ static void GetDefaultSettings_Random4K(uint32 *block_size, uint32 *passes)
     *passes = 3;
 }
 
-const BenchWorkload Workload_Random4K = {.type = TEST_RANDOM_WRITE,
-                                         .name = "Random Write I/O",
-                                         .description = "Seek performance: Random writes (User Block Size)",
-                                         .Setup = Setup_Random4K,
-                                         .Run = Run_Random4K,
-                                         .Cleanup = Cleanup_Random4K,
-                                         .GetDefaultSettings = GetDefaultSettings_Random4K};
+const BenchWorkload Workload_Random4K = {
+    .type = TEST_RANDOM_WRITE,
+    .name = "Random Write I/O",
+    .description = "Seek performance: Random writes (User Block Size)",
+    .detailed_info =
+        "Random Write I/O\n"
+        "\n"
+        "Measures random write performance by seeking to pseudo-random\n"
+        "positions within a pre-created file and writing data blocks.\n"
+        "\n"
+        "  File size:      64 MB (8 MB on RAM:)\n"
+        "  Operations:     4096 random writes (1024 on RAM:)\n"
+        "  Block size:     Configurable (default 4 KB)\n"
+        "  Seek alignment: 512-byte sectors\n"
+        "  Metric:         IOPS (I/O operations per second)\n"
+        "  Default passes: 3\n"
+        "\n"
+        "Random I/O is the most demanding workload for mechanical\n"
+        "drives because each operation requires a physical head seek.\n"
+        "SSDs perform dramatically better here due to the absence of\n"
+        "seek latency. This test reveals the true random-access\n"
+        "capability of the storage device.\n"
+        "\n"
+        "Good for: Measuring drive responsiveness under random load.\n"
+        "Simulates: Database writes, swap file activity.\n",
+    .Setup = Setup_Random4K,
+    .Run = Run_Random4K,
+    .Cleanup = Cleanup_Random4K,
+    .GetDefaultSettings = GetDefaultSettings_Random4K};

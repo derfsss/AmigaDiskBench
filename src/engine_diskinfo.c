@@ -480,15 +480,15 @@ struct List *ScanSystemDrives(void)
             struct FileSysStartupMsg *fssm =
                 (struct FileSysStartupMsg *)((uint32)entry->dol_misc.dol_handler.dol_Startup << 2);
 
-            // Validate fssm pointer range (avoid Page 0)
-            if ((uint32)fssm > 0x1000) {
+            // Validate fssm pointer range (avoid Page 0 and unmapped memory)
+            if ((uint32)fssm > 0x1000 && IExec->TypeOfMem(fssm)) {
                 // Check fssm->fssm_Device is valid BPTR
                 if (fssm->fssm_Device > 100) {
                     // Device is a BSTR (BPTR to Length-Prefixed String)
                     UBYTE *bstr = (UBYTE *)((uint32)fssm->fssm_Device << 2);
 
-                    // Validate bstr pointer
-                    if ((uint32)bstr > 0x1000) {
+                    // Validate bstr pointer (TypeOfMem catches unmapped addresses)
+                    if ((uint32)bstr > 0x1000 && IExec->TypeOfMem(bstr)) {
                         uint32 len = *bstr;
                         char devName[32];
 
@@ -599,7 +599,7 @@ struct List *ScanSystemDrives(void)
                                     // Try to get geometry from DosEnvec (available even when not mounted)
                                     if (fssm->fssm_Environ > 100) {
                                         struct DosEnvec *env = (struct DosEnvec *)((uint32)fssm->fssm_Environ << 2);
-                                        if ((uint32)env > 0x1000 && env->de_TableSize >= DE_UPPERCYL) {
+                                        if ((uint32)env > 0x1000 && IExec->TypeOfMem(env) && env->de_TableSize >= DE_UPPERCYL) {
                                             uint64 sector_bytes = (uint64)env->de_SectorSize * 4;
                                             uint64 sectors = ((uint64)(env->de_HighCyl - env->de_LowCyl + 1))
                                                              * env->de_Surfaces * env->de_SectorPerTrack;

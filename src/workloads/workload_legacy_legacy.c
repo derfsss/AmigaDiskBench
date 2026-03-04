@@ -55,10 +55,31 @@ static void GetDefaultSettings_Legacy(uint32 *block_size, uint32 *passes)
     *passes = 1;
 }
 
-const BenchWorkload Workload_Legacy_Legacy = {.type = TEST_LEGACY,
-                                              .name = "Legacy",
-                                              .description = "Old standard: 50MB file with 512B chunks",
-                                              .Setup = Setup_Legacy,
-                                              .Run = Run_Legacy,
-                                              .Cleanup = Cleanup_Legacy,
-                                              .GetDefaultSettings = GetDefaultSettings_Legacy};
+const BenchWorkload Workload_Legacy_Legacy = {
+    .type = TEST_LEGACY,
+    .name = "Legacy",
+    .description = "Old standard: 50MB file with 512B chunks",
+    .detailed_info =
+        "Legacy\n"
+        "\n"
+        "Writes a 50 MB file using very small 512-byte chunks,\n"
+        "simulating the I/O pattern of older Amiga applications that\n"
+        "used minimal buffer sizes.\n"
+        "\n"
+        "  File size:      50 MB\n"
+        "  Block size:     Fixed (512 bytes)\n"
+        "  Metric:         MB/s (megabytes per second)\n"
+        "  Default passes: 1\n"
+        "\n"
+        "With 512-byte writes, each I/O operation carries significant\n"
+        "per-call overhead relative to the data transferred. This test\n"
+        "highlights the cost of small-buffer I/O and is useful for\n"
+        "comparing how different filesystems and device drivers handle\n"
+        "high-frequency write requests.\n"
+        "\n"
+        "Good for: Worst-case throughput analysis.\n"
+        "Simulates: Classic Amiga software, sector-level access.\n",
+    .Setup = Setup_Legacy,
+    .Run = Run_Legacy,
+    .Cleanup = Cleanup_Legacy,
+    .GetDefaultSettings = GetDefaultSettings_Legacy};

@@ -602,6 +602,9 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
                     case MID_LOG_COPY:
                         CopyLogToClipboard();
                         break;
+                    case MID_TEST_DESCRIBE:
+                        OpenDescribeWindow(ui.current_test_type);
+                        break;
                     }
                 }
             }

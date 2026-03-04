@@ -115,10 +115,32 @@ static void GetDefaultSettings_Random4KRead(uint32 *block_size, uint32 *passes)
     *passes = 3;
 }
 
-const BenchWorkload Workload_Random4KRead = {.type = TEST_RANDOM_READ,
-                                             .name = "Random Read I/O",
-                                             .description = "Seek performance: Random reads (User Block Size)",
-                                             .Setup = Setup_Random4KRead,
-                                             .Run = Run_Random4KRead,
-                                             .Cleanup = Cleanup_Random4KRead,
-                                             .GetDefaultSettings = GetDefaultSettings_Random4KRead};
+const BenchWorkload Workload_Random4KRead = {
+    .type = TEST_RANDOM_READ,
+    .name = "Random Read I/O",
+    .description = "Seek performance: Random reads (User Block Size)",
+    .detailed_info =
+        "Random Read I/O\n"
+        "\n"
+        "Measures random read performance by seeking to pseudo-random\n"
+        "positions within a pre-created file and reading data blocks.\n"
+        "\n"
+        "  File size:      64 MB (8 MB on RAM:)\n"
+        "  Operations:     4096 random reads (1024 on RAM:)\n"
+        "  Block size:     Configurable (default 4 KB)\n"
+        "  Seek alignment: 512-byte sectors\n"
+        "  Metric:         IOPS (I/O operations per second)\n"
+        "  Default passes: 3\n"
+        "\n"
+        "Random reads are the bread and butter of application loading\n"
+        "and multitasking. When the OS needs to load libraries, read\n"
+        "configuration files, or access scattered data, it performs\n"
+        "random reads. This test directly measures how responsive\n"
+        "the drive feels during everyday use.\n"
+        "\n"
+        "Good for: Predicting real-world system responsiveness.\n"
+        "Simulates: Application startup, library loading.\n",
+    .Setup = Setup_Random4KRead,
+    .Run = Run_Random4KRead,
+    .Cleanup = Cleanup_Random4KRead,
+    .GetDefaultSettings = GetDefaultSettings_Random4KRead};

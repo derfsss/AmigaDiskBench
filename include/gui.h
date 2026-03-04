@@ -249,6 +249,13 @@ typedef struct
     struct List diskinfo_labels;
     BOOL diskinfo_rethink_pending; /* Set by UpdateDetailsPage; cleared after deferred WM_RETHINK */
 
+    /* Test Description Context Menu & Window */
+    Object *test_context_menu;  /* Right-click context menu for test chooser */
+    Object *describe_win_obj;   /* Test description popup window */
+    struct Window *describe_window;
+    Object *describe_editor;    /* Read-only texteditor in describe window */
+    Object *describe_vscroll;   /* Vertical scroller for describe editor */
+
     /* Log Tab */
     Object                *log_editor;        /* texteditor.gadget for the Log tab */
     Object                *log_vscroll;       /* Vertical scroller linked to log_editor */
@@ -349,6 +356,8 @@ enum
     GID_LOG_CLEAR,
     GID_LOG_COPY,
     GID_VIZ_RELOAD,
+    GID_DESCRIBE_EDITOR,
+    GID_DESCRIBE_VSCROLL,
     GID_COMPARE_CLOSE = 5000
 };
 
@@ -361,6 +370,7 @@ enum
 #define MID_DETAILS_COPY  6
 #define MID_LOG_SELECTALL 8
 #define MID_LOG_COPY      9
+#define MID_TEST_DESCRIBE 10
 
 #define COL_CHECK 0
 #define COL_DATE 1

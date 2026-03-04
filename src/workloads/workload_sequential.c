@@ -64,10 +64,33 @@ static void GetDefaultSettings_Sequential(uint32 *block_size, uint32 *passes)
     *passes = 3;
 }
 
-const BenchWorkload Workload_Sequential = {.type = TEST_SEQUENTIAL_WRITE,
-                                           .name = "Sequential Write",
-                                           .description = "Sustained throughput: 256MB file",
-                                           .Setup = Setup_Sequential,
-                                           .Run = Run_Sequential,
-                                           .Cleanup = Cleanup_Sequential,
-                                           .GetDefaultSettings = GetDefaultSettings_Sequential};
+const BenchWorkload Workload_Sequential = {
+    .type = TEST_SEQUENTIAL_WRITE,
+    .name = "Sequential Write",
+    .description = "Sustained throughput: 256MB file",
+    .detailed_info =
+        "Sequential Write\n"
+        "\n"
+        "Measures sustained sequential write throughput by writing a\n"
+        "single large file from start to finish using a configurable\n"
+        "block size.\n"
+        "\n"
+        "  File size:      256 MB (32 MB on RAM:)\n"
+        "  Block size:     Configurable (default 1 MB)\n"
+        "  Metric:         MB/s (megabytes per second)\n"
+        "  Default passes: 3\n"
+        "\n"
+        "This test stresses the drive's ability to write large\n"
+        "contiguous data streams. Higher block sizes reduce per-\n"
+        "operation overhead and generally yield higher throughput.\n"
+        "Results are comparable to real-world file copy operations.\n"
+        "\n"
+        "The block size can be changed via the Block Size chooser\n"
+        "to compare performance at different I/O granularities.\n"
+        "\n"
+        "Good for: Peak write throughput measurement.\n"
+        "Simulates: Large file copies, video rendering output.\n",
+    .Setup = Setup_Sequential,
+    .Run = Run_Sequential,
+    .Cleanup = Cleanup_Sequential,
+    .GetDefaultSettings = GetDefaultSettings_Sequential};

@@ -9,11 +9,13 @@
 ### 1. Benchmark Profiles
 Choose from a variety of tailored test scenarios:
 - **Sprinter**: Fast, small file I/O and metadata performance test.
-- **Marathon**: Sustained long-duration test to check for thermal throttling or buffer issues.
+- **Legacy**: Small-block (512B) sequential write to stress worst-case throughput.
 - **Heavy Lifter**: Large file sequential throughput with varying chunk sizes.
 - **Daily Grind**: A pseudo-random mix of operations simulating real-world OS usage.
 - **Profiler**: Detailed filesystem metadata performance analysis.
 - **Standard Tests**: Sequential Read/Write, Random 4K Read/Write, and Mixed 70/30.
+
+Right-click the **Test Type** chooser and select **Describe Test...** for a detailed explanation of what the selected test measures, including file sizes, block sizes, operation counts, and real-world equivalents.
 
 ### 2. Flexible Pass Averaging
 Choose how multi-pass results are combined, via **Preferences**:
@@ -265,7 +267,7 @@ The **Benchmark** tab is where performance testing happens.
 - **Target Drive**: Select the volume or partition you wish to test. Note that depending on the filesystem, some tests require write access.
 - **Test Type**:
   - *Standard Tests*: Choose Sequential Read/Write, Random 4K Read/Write, or a Mixed 70/30 (Read/Write) workload.
-  - *Profiles*: Use preset profiles like "Sprinter" for quick I/O checks, "Marathon" for sustained thermal testing, or "Daily Grind" for everyday usage simulation.
+  - *Profiles*: Use preset profiles like "Sprinter" for quick I/O checks, "Heavy Lifter" for sustained throughput testing, or "Daily Grind" for everyday usage simulation.
 - **Parameters**: Adjust the **Block Size** (e.g., 4K, 32K, 1M) and the number of **Passes**. Higher passes yield more reliable averages.
 - **Execution**: Click **Run Benchmark**. Monitor the **Traffic Light** (green/yellow/red) for current status, and the **Fuel Gauge** for overall progress.
 - **Quit Safety**: If you attempt to close the application while a benchmark is running, a confirmation dialog will ask whether you really want to quit.
@@ -344,7 +346,12 @@ This will produce the `AmigaDiskBench` executable in the `build/` folder.
 
 ## Version History
 
-### v2.5.3 (Current)
+### v2.5.4 (Current)
+- **Test Description popup**: Right-click the Test Type chooser and select "Describe Test..." to open a popup window with a detailed explanation of the selected benchmark — what it measures, file sizes, block sizes, operation counts, and real-world equivalents. Each of the 10 benchmark tests has its own description.
+- **Crash fix**: DSI exception (page fault) on AmigaOne X1000 during drive scanning. BPTR-decoded pointers from DosList entries are now validated with `IExec->TypeOfMem()` before dereferencing, preventing crashes on systems with non-standard or stale DosList entries that point to unmapped memory.
+- **Hover hint**: Test Type chooser tooltip now reads "Select benchmark test. Right-click for detailed description."
+
+### v2.5.3
 - **VALIDATE mode improvements**: Workbench validation window now displays columns at correct proportions. Message column auto-fits to window width with horizontal scrolling for long messages.
 - **VALIDATE usage**: Run `AmigaDiskBench VALIDATE` from Shell, or add the tooltype `VALIDATE` to the program's icon in the Information editor. The benchmark GUI does not open — only a validation report is shown (text report in Shell, ReAction window from Workbench).
 - **Bug fixes**:

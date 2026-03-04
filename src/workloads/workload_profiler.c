@@ -137,10 +137,34 @@ static void GetDefaultSettings_Profiler(uint32 *block_size, uint32 *passes)
     *passes = 2;
 }
 
-const BenchWorkload Workload_Profiler = {.type = TEST_PROFILER,
-                                         .name = "Full System Profiler",
-                                         .description = "Metadata Stress: Creates, Renames, Deletes 500+ files/dirs",
-                                         .Setup = Setup_Profiler,
-                                         .Run = Run_Profiler,
-                                         .Cleanup = Cleanup_Profiler,
-                                         .GetDefaultSettings = GetDefaultSettings_Profiler};
+const BenchWorkload Workload_Profiler = {
+    .type = TEST_PROFILER,
+    .name = "Full System Profiler",
+    .description = "Metadata Stress: Creates, Renames, Deletes 500+ files/dirs",
+    .detailed_info =
+        "Full System Profiler\n"
+        "\n"
+        "A comprehensive filesystem metadata stress test that creates\n"
+        "a directory tree, populates it with files, performs random\n"
+        "renames, then deletes everything.\n"
+        "\n"
+        "  Directories:    50 (20 on RAM:)\n"
+        "  Files per dir:  10\n"
+        "  Total files:    500 (200 on RAM:)\n"
+        "  Operations:     ~1500 metadata ops per pass\n"
+        "  Metric:         IOPS (operations per second)\n"
+        "  Block size:     N/A (pure metadata test)\n"
+        "  Default passes: 2\n"
+        "\n"
+        "This test pushes the filesystem's directory handling to the\n"
+        "limit. It measures the combined cost of creating directories,\n"
+        "writing small files, renaming entries, and cleaning up. The\n"
+        "results expose how well the filesystem handles deep directory\n"
+        "trees and high-frequency metadata updates.\n"
+        "\n"
+        "Good for: Filesystem comparison (FFS vs SFS vs JXFS).\n"
+        "Simulates: Software compilation, package management.\n",
+    .Setup = Setup_Profiler,
+    .Run = Run_Profiler,
+    .Cleanup = Cleanup_Profiler,
+    .GetDefaultSettings = GetDefaultSettings_Profiler};

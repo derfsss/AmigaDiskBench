@@ -1,6 +1,6 @@
-# Knowledge Transfer: AmigaDiskBench v2.5.2
+# Knowledge Transfer: AmigaDiskBench v2.5.4
 
-This document captures detailed technical learnings and patterns discovered during the implementation of AmigaDiskBench through v2.5.2. It supplements the [AGENT_HANDOVER.md](AGENT_HANDOVER.md) with deep implementation details.
+This document captures detailed technical learnings and patterns discovered during the implementation of AmigaDiskBench through v2.5.4. It supplements the [AGENT_HANDOVER.md](AGENT_HANDOVER.md) with deep implementation details.
 
 ## 1. ReAction UI & Gadget State
 - **Initial Selection**: When a ReAction `ChooserObject` (or similar) depends on a global state variable (like `ui.viz_chart_type_idx`), always include `CHOOSER_Selected, ui.variable` in the gadget definition within `CreateMainLayout`. Failing to do so can cause the UI to default to index 0 regardless of the variable's initial value.
@@ -202,3 +202,40 @@ When all data points share the same X value (e.g., all tests at 1M block size), 
 - **Proto headers don't always include tag defs**: E.g., `<proto/filler.h>` provides class pointer but NOT `FILLER_BackgroundColor`. Include the specific image/gadget header too.
 - **TAG_IGNORE pattern**: `condition ? REAL_TAG : TAG_IGNORE, value` for conditional tags. TAG_IGNORE skips both tag+data.
 - **Deprecated functions**: `AllocMem`/`AllocVec` → `AllocVecTags`. See wiki for full list.
+
+## 17. TypeOfMem for BPTR Validation (v2.5.4)
+- **Problem**: On some systems (notably AmigaOne X1000), DosList entries can have `dol_Startup` values that pass basic `> 0x1000` heuristic checks but decode (via `<< 2` BPTR shift) to unmapped memory addresses. Dereferencing causes DSI exception (page fault).
+- **Solution**: `IExec->TypeOfMem(ptr)` returns 0 for addresses not in any known memory region. Add it as a guard after the `> 0x1000` check and before any dereference:
+    ```c
+    if ((uint32)ptr > 0x1000 && IExec->TypeOfMem(ptr)) {
+        // safe to dereference
+    }
+    ```
+- **Applied at three sites** in `ScanSystemDrives()` (`engine_diskinfo.c`):
+  1. `fssm` (FileSysStartupMsg pointer decoded from `dol_Startup`)
+  2. `bstr` (BSTR device name decoded from `fssm->fssm_Device`)
+  3. `env` (DosEnvec decoded from `fssm->fssm_Environ`)
+
+## 18. Context Menu on Gadgets (v2.5.4)
+- **GA_ContextMenu**: Attach a context menu to any gadget via `IIntuition->SetAttrs(gadget, GA_ContextMenu, menuObj, TAG_DONE)`.
+- **Menu construction**: Use `menuclass` with `MA_Type` hierarchy:
+    ```c
+    menu = IIntuition->NewObject(NULL, "menuclass",
+        MA_Type, T_ROOT, MA_AddChild,
+        IIntuition->NewObject(NULL, "menuclass",
+            MA_Type, T_MENU, MA_Label, "Info", MA_AddChild,
+            IIntuition->NewObject(NULL, "menuclass",
+                MA_Type, T_ITEM, MA_Label, "Describe Test...",
+                MA_ID, MID_TEST_DESCRIBE, TAG_DONE),
+            TAG_DONE),
+        TAG_DONE);
+    ```
+- **Event handling**: In the `WMHI_MENUPICK` handler, check `WINDOW_MenuType != IMT_DEFAULT` to enter the context menu path, then `GetAttr(WINDOW_MenuAddress, ...)` to get the menu item, read `MA_ID`.
+- **Cleanup**: `DisposeObject(menu)` on application exit. The menu object is separate from the gadget — disposing the gadget does NOT dispose the context menu.
+
+## 19. Test Description Popup Window (v2.5.4)
+- **Pattern**: Follows `gui_details_window.c` — separate `Open`/`Close`/`HandleEvent` functions.
+- **Content**: Read-only `texteditor.gadget` with `GA_TEXTEDITOR_FixedFont` and vertical scroller. Content set via `GA_TEXTEDITOR_Contents` at window creation time.
+- **String source**: `GetWorkloadDetailedInfo(BenchTestType)` returns the `detailed_info` field from the `BenchWorkload` struct, or "No description available." if NULL.
+- **Important**: `GA_TEXTEDITOR_Contents` is NOT printf — do not use `%%` for literal percent signs (use plain `%`).
+- **Event loop integration**: Add describe window's signal bit to the main `Wait()` mask. Dispatch in its own event block (same pattern as details/compare windows). Close on `WMHI_CLOSEWINDOW`.

@@ -322,6 +322,24 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2);
  */
 void CloseCompareWindow(void);
 
+/* [gui_describe_window.c] - Test Description Popup */
+
+/**
+ * @brief Open a popup window showing the detailed description of a benchmark test.
+ * @param test_type The BenchTestType index of the currently selected test.
+ */
+void OpenDescribeWindow(uint32 test_type);
+
+/**
+ * @brief Close the test description popup window.
+ */
+void CloseDescribeWindow(void);
+
+/**
+ * @brief Handle events for the test description popup window.
+ */
+void HandleDescribeWindowEvent(uint16 code, uint32 result);
+
 /* [gui_logging.c] - User-facing Log Tab */
 
 /** Initialise the log subsystem. Call once from gui.c before the window opens. */

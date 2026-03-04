@@ -73,10 +73,29 @@ static void GetDefaultSettings_Heavy(uint32 *block_size, uint32 *passes)
     *passes = 1;
 }
 
-const BenchWorkload Workload_Legacy_Heavy = {.type = TEST_HEAVY_LIFTER,
-                                             .name = "Heavy Lifter (Legacy)",
-                                             .description = "Throughput: 50MB file with 128KB chunks",
-                                             .Setup = Setup_Heavy,
-                                             .Run = Run_Heavy,
-                                             .Cleanup = Cleanup_Heavy,
-                                             .GetDefaultSettings = GetDefaultSettings_Heavy};
+const BenchWorkload Workload_Legacy_Heavy = {
+    .type = TEST_HEAVY_LIFTER,
+    .name = "Heavy Lifter (Legacy)",
+    .description = "Throughput: 50MB file with 128KB chunks",
+    .detailed_info =
+        "Heavy Lifter (Legacy)\n"
+        "\n"
+        "Measures sustained write throughput by writing a single 50 MB\n"
+        "file using moderately large 128 KB chunks.\n"
+        "\n"
+        "  File size:      50 MB\n"
+        "  Block size:     Fixed (128 KB)\n"
+        "  Metric:         MB/s (megabytes per second)\n"
+        "  Default passes: 1\n"
+        "\n"
+        "The 128 KB chunk size represents a common buffer size used by\n"
+        "many real-world applications. This test shows how well the\n"
+        "drive and filesystem handle sequential writes with moderate\n"
+        "I/O request sizes.\n"
+        "\n"
+        "Good for: Comparing raw drive throughput.\n"
+        "Simulates: File downloads, data extraction.\n",
+    .Setup = Setup_Heavy,
+    .Run = Run_Heavy,
+    .Cleanup = Cleanup_Heavy,
+    .GetDefaultSettings = GetDefaultSettings_Heavy};

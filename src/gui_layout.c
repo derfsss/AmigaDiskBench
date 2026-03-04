@@ -67,7 +67,7 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
     /* Test Type Selector */
         LAYOUT_AddChild,
     (ui.test_chooser = ChooserObject, GA_ID, GID_TEST_CHOOSER, GA_RelVerify, TRUE, CHOOSER_Selected, 0, CHOOSER_Labels,
-     (uint32)&ui.test_labels, GA_HintInfo, "Select the specific benchmark test to run.", End),
+     (uint32)&ui.test_labels, GA_HintInfo, "Select benchmark test. Right-click for detailed description.", End),
     CHILD_Label, LabelObject, LABEL_Text, GetString(5, "Test Type:"), End, CHILD_WeightedHeight, 0,
     /* Passes + Average Method (same row, aligned with Drive/Test/Block) */
         LAYOUT_AddChild, HLayoutObject, LAYOUT_HorizSpacing, 4,
@@ -260,6 +260,21 @@ Object *CreateMainLayout(struct DiskObject *icon, struct List *tab_list)
         CHILD_WeightedWidth, 0,
     End, CHILD_WeightedHeight, 100,
     End;
+
+    /* Build context menu for test chooser (right-click: Describe Test) */
+    ui.test_context_menu = IIntuition->NewObject(
+        NULL, "menuclass", MA_Type, T_ROOT, MA_AddChild,
+        IIntuition->NewObject(NULL, "menuclass", MA_Type, T_MENU, MA_Label, "Info", MA_AddChild,
+            IIntuition->NewObject(NULL, "menuclass", MA_Type, T_ITEM,
+                MA_Label, "Describe Test...", MA_ID, MID_TEST_DESCRIBE, TAG_DONE),
+            TAG_DONE),
+        TAG_DONE);
+
+    if (ui.test_chooser && ui.test_context_menu) {
+        IIntuition->SetAttrs(ui.test_chooser,
+                             GA_ContextMenu, ui.test_context_menu,
+                             TAG_DONE);
+    }
 
     /* Build context menu for log editor (right-click: Select All, Copy) */
     ui.log_context_menu = IIntuition->NewObject(

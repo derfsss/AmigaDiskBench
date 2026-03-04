@@ -25,6 +25,12 @@ void CleanupWorkloadRegistry(void);
  */
 const BenchWorkload *GetWorkloadByType(BenchTestType type);
 
+/*
+ * Get the detailed description text for a test type.
+ * Returns a fallback string if the workload has no detailed_info.
+ */
+const char *GetWorkloadDetailedInfo(BenchTestType type);
+
 /* Workload descriptors defined in individual workload source files */
 extern const BenchWorkload Workload_Legacy_Sprinter;
 extern const BenchWorkload Workload_Legacy_Heavy;

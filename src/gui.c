@@ -395,7 +395,8 @@ int StartGUI(void)
         while (running) {
             uint32 sig =
                 IExec->Wait(wait_mask | (ui.details_win_obj ? (1L << ui.details_window->UserPort->mp_SigBit) : 0) |
-                            (ui.compare_win_obj ? (1L << ui.compare_window->UserPort->mp_SigBit) : 0));
+                            (ui.compare_win_obj ? (1L << ui.compare_window->UserPort->mp_SigBit) : 0) |
+                            (ui.describe_win_obj ? (1L << ui.describe_window->UserPort->mp_SigBit) : 0));
             if (sig & SIGBREAKF_CTRL_C) {
                 if (ui.worker_busy) {
                     struct EasyStruct easy = { sizeof(struct EasyStruct), 0, "AmigaDiskBench",
@@ -463,6 +464,13 @@ int StartGUI(void)
                 while (ui.compare_win_obj &&
                        (cresult = IIntuition->IDoMethod(ui.compare_win_obj, WM_HANDLEINPUT, &ccode)) != WMHI_LASTMSG)
                     HandleCompareWindowEvent(ccode, cresult);
+            }
+            if (ui.describe_win_obj && (sig & (1L << ui.describe_window->UserPort->mp_SigBit))) {
+                uint16 bcode;
+                uint32 bresult;
+                while (ui.describe_win_obj &&
+                       (bresult = IIntuition->IDoMethod(ui.describe_win_obj, WM_HANDLEINPUT, &bcode)) != WMHI_LASTMSG)
+                    HandleDescribeWindowEvent(bcode, bresult);
             }
         }
         /* Log session end with duration */
@@ -563,6 +571,11 @@ int StartGUI(void)
             ui.IApp->UnregisterApplication(ui.app_id, TAG_DONE);
         }
 
+        CloseDescribeWindow();
+        if (ui.test_context_menu) {
+            IIntuition->DisposeObject(ui.test_context_menu);
+            ui.test_context_menu = NULL;
+        }
         if (ui.log_context_menu) {
             IIntuition->DisposeObject(ui.log_context_menu);
             ui.log_context_menu = NULL;

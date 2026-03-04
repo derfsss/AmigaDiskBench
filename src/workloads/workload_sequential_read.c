@@ -116,6 +116,28 @@ const BenchWorkload Workload_SequentialRead = {
     .type = TEST_SEQUENTIAL_READ,
     .name = "Sequential Read I/O",
     .description = "Read throughput: 256MB file, 1MB chunks",
+    .detailed_info =
+        "Sequential Read I/O\n"
+        "\n"
+        "Measures sustained sequential read throughput by reading a\n"
+        "pre-created file from start to finish using a configurable\n"
+        "block size.\n"
+        "\n"
+        "  File size:      256 MB (32 MB on RAM:)\n"
+        "  Block size:     Configurable (default 1 MB)\n"
+        "  Metric:         MB/s (megabytes per second)\n"
+        "  Default passes: 3\n"
+        "\n"
+        "A 256 MB dummy file is written to disk first (not timed),\n"
+        "then the timed phase reads it back sequentially. This\n"
+        "measures the drive's sustained read bandwidth independent\n"
+        "of write performance.\n"
+        "\n"
+        "Read speeds are often higher than write speeds on the same\n"
+        "drive, especially on SSDs with read-optimised flash.\n"
+        "\n"
+        "Good for: Peak read throughput measurement.\n"
+        "Simulates: Loading large files, media playback.\n",
     .Setup = Setup_SequentialRead,
     .Run = Run_SequentialRead,
     .Cleanup = Cleanup_SequentialRead,

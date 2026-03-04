@@ -128,10 +128,34 @@ static void GetDefaultSettings_MixedRW(uint32 *block_size, uint32 *passes)
     *passes = 3;
 }
 
-const BenchWorkload Workload_MixedRW = {.type = TEST_MIXED_RW_70_30,
-                                        .name = "Mixed R/W 70/30",
-                                        .description = "Real-world: 2048 ops, 70% reads, 30% writes",
-                                        .Setup = Setup_MixedRW,
-                                        .Run = Run_MixedRW,
-                                        .Cleanup = Cleanup_MixedRW,
-                                        .GetDefaultSettings = GetDefaultSettings_MixedRW};
+const BenchWorkload Workload_MixedRW = {
+    .type = TEST_MIXED_RW_70_30,
+    .name = "Mixed R/W 70/30",
+    .description = "Real-world: 2048 ops, 70% reads, 30% writes",
+    .detailed_info =
+        "Mixed R/W 70/30\n"
+        "\n"
+        "A realistic mixed workload that performs 2048 random I/O\n"
+        "operations on a single file, with 70% of operations being\n"
+        "reads and 30% being writes.\n"
+        "\n"
+        "  File size:      64 MB (8 MB on RAM:)\n"
+        "  Operations:     2048 mixed ops (512 on RAM:)\n"
+        "  Read ratio:     70%\n"
+        "  Write ratio:    30%\n"
+        "  Block size:     Configurable (default 4 KB)\n"
+        "  Seek alignment: 512-byte sectors\n"
+        "  Metric:         IOPS (I/O operations per second)\n"
+        "  Default passes: 3\n"
+        "\n"
+        "The 70/30 read-write split closely matches the I/O pattern\n"
+        "of a typical desktop workload where the system reads far\n"
+        "more data than it writes. This test gives the most realistic\n"
+        "picture of how a drive will perform under normal usage.\n"
+        "\n"
+        "Good for: Realistic overall drive performance rating.\n"
+        "Simulates: Normal desktop multitasking, web browsing.\n",
+    .Setup = Setup_MixedRW,
+    .Run = Run_MixedRW,
+    .Cleanup = Cleanup_MixedRW,
+    .GetDefaultSettings = GetDefaultSettings_MixedRW};

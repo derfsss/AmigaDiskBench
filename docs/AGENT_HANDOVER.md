@@ -26,7 +26,7 @@ docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make a
 When invoking from Windows (e.g., VS Code terminal via `wsl -e sh -c "..."`), `$(pwd)` expands correctly inside the quoted string. Each `make` target should be run as a separate Docker invocation. **Always run `make clean` before `make all`** — the Makefile only recompiles changed `.c` files, so stale `.o` files can cause the binary to show an old version string or link against outdated object code.
 
 ## Current Version
-**v2.5.2** (version.h: VERSION=2, REVISION=5, MINOR=2, BUILD=1136, date 01.03.2026)
+**v2.5.4** (version.h: VERSION=2, REVISION=5, MINOR=4, BUILD=1139, date 04.03.2026)
 
 ## Architecture & Key Components
 
@@ -47,6 +47,7 @@ When invoking from Windows (e.g., VS Code terminal via `wsl -e sh -c "..."`), `$
 - `src/gui_system.c`: System resource init (drive enumeration, chooser label building).
 - `src/gui_utils.c`: Shared GUI utility functions.
 - `src/gui_compare_window.c`: Comparison delta report window.
+- `src/gui_describe_window.c`: Test description popup window (right-click "Describe Test..." on test chooser).
 - `src/gui_details_window.c`: Detailed result view window.
 - `src/gui_export.c`: CSV export functionality.
 - `src/gui_report.c`: Summary report generation.
@@ -67,7 +68,7 @@ When invoking from Windows (e.g., VS Code terminal via `wsl -e sh -c "..."`), `$
 - `src/engine_system.c`: System-level engine utilities.
 - `src/engine_utils.c`: Shared engine helpers.
 - `src/engine_warmup.c`: Pre-benchmark warmup passes.
-- `src/engine_workloads.c`: Workload dispatch.
+- `src/engine_workloads.c`: Workload registry and dispatch. `GetWorkloadDetailedInfo()` returns detailed descriptions for the test description popup.
 - `src/benchmark_queue.c`: Benchmark job queue management.
 
 ### Workloads
@@ -82,7 +83,7 @@ When invoking from Windows (e.g., VS Code terminal via `wsl -e sh -c "..."`), `$
 - `src/workloads/workload_legacy_heavy.c`: Heavy Lifter profile.
 - `src/workloads/workload_legacy_legacy.c`: Legacy 512B-block test.
 
-Each workload implements the `BenchWorkload` interface: `Setup()`, `Run()`, `Cleanup()`, `GetDefaultSettings()`. The `Run()` function returns `bytes_processed` and `op_count` (= bytes / block_size for sequential I/O workloads).
+Each workload implements the `BenchWorkload` interface: `Setup()`, `Run()`, `Cleanup()`, `GetDefaultSettings()`. The `Run()` function returns `bytes_processed` and `op_count` (= bytes / block_size for sequential I/O workloads). Each workload also provides a `detailed_info` string for the test description popup.
 
 ### Headers
 - `include/version.h`: Single source of truth for version string.
@@ -100,7 +101,17 @@ Each workload implements the `BenchWorkload` interface: `Setup()`, `Run()`, `Cle
 
 ## Version History
 
-### v2.5.2 (Current — 01.03.2026)
+### v2.5.4 (Current — 04.03.2026)
+- **Test Description popup**: Right-click the Test Type chooser → "Describe Test..." opens a popup window (`gui_describe_window.c`) with a read-only texteditor showing the selected test's detailed description. Each of the 10 workloads provides a `detailed_info` string via the `BenchWorkload` struct. `GetWorkloadDetailedInfo()` accessor in `engine_workloads.c`.
+- **Context menu on test chooser**: `GA_ContextMenu` with `menuclass` tree (`T_ROOT` → `T_MENU "Info"` → `T_ITEM "Describe Test..." MID_TEST_DESCRIBE`). Handled in `gui_events.c` `WMHI_MENUPICK` context-menu path.
+- **Crash fix (X1000 DSI)**: `ScanSystemDrives()` in `engine_diskinfo.c` — BPTR-decoded pointers (`fssm`, `fssm_Device` BSTR, `fssm_Environ`) now validated with `IExec->TypeOfMem()` before dereferencing. Prevents page faults on systems with stale or non-standard DosList entries.
+- **Hover hint update**: Test Type chooser `GA_HintInfo` changed to "Select benchmark test. Right-click for detailed description."
+- **Bug fix**: `%%` in Mixed R/W workload `detailed_info` string displayed as literal `%%` instead of `%` (string is used as `GA_TEXTEDITOR_Contents`, not printf).
+
+### v2.5.3 (03.03.2026)
+- VALIDATE mode improvements, Workbench launch fix, profile validator known-key fix, underscore sanitization in viz hover/legend, icon cleanup, Makefile install target.
+
+### v2.5.2 (01.03.2026)
 - **Pluggable Visualization Profiles**: Replaced 5 hardcoded chart types with a file-driven `.viz` profile system. Nine INI-style profiles in `Visualizations/` define chart type, axes, grouping, filters, trend lines, annotations, colors, and collapse aggregation.
 - **Profile-driven rendering**: `gui_viz.c` reads the active `VizProfile` to determine data collection (X/Y sources, GroupBy, filters, collapse), and `gui_viz_render.c` dispatches to the correct chart renderer based on `profile->chart_type`.
 - **Trend lines**: `ComputeLinearFit()` (OLS), `ComputeMovingAverage()` (centred window), `ComputePolynomialFit()` (Gaussian elimination with partial pivoting). Rendered as lighter-shade polylines with coordinate clamping to stay within chart bounds.
@@ -205,5 +216,4 @@ Each workload implements the `BenchWorkload` interface: `Setup()`, `Run()`, `Cle
 
 ## Future Roadmap
 - **Persistent Log Files**: Save session logs to `PROGDIR:logs/session_YYYYMMDD.log`.
-- **AmigaOS native icons**: Proper `.info` icons for the `dist/` binary.
 - **Additional .viz profiles**: Users can create their own without recompilation.

@@ -22,6 +22,7 @@ typedef struct
     BenchTestType type;
     const char *name;
     const char *description;
+    const char *detailed_info; /* Paragraph-length explanation for user popup */
 
     /* Lifecycle hooks */
     BOOL (*Setup)(const char *path, uint32 block_size, void **data);
