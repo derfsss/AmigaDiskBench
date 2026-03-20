@@ -10,12 +10,10 @@
 #define STR(x) XSTR(x)
 
 #define VERSION 2
-#define REVISION 5
-#define MINOR 4
-#define BUILD 1139
-#define APP_DATE "04.03.2026"
+#define MINOR 6
+#define APP_DATE "20.03.2026"
 #define APP_TITLE "AmigaDiskBench"
-#define VERSION_STR STR(VERSION) "." STR(REVISION) "." STR(MINOR) "." STR(BUILD)
+#define VERSION_STR STR(VERSION) "." STR(MINOR)
 #define APP_VERSION_STR VERSION_STR
 #define VSTRING APP_TITLE " " VERSION_STR " (" APP_DATE ")\r\n"
 #define VERSTAG "\0$VER: " APP_TITLE " " VERSION_STR " (" APP_DATE ")"

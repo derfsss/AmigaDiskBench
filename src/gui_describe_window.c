@@ -1,6 +1,8 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
  * Copyright (c) 2026 Team Derfs. All rights reserved.
+ *
+ * Test description viewer window for displaying detailed workload information.
  */
 
 #include "gui_internal.h"

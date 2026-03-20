@@ -93,7 +93,7 @@ BOOL GenerateGlobalReport(const char *filename, GlobalReport *report)
         return FALSE;
 
     memset(report, 0, sizeof(GlobalReport));
-    char line[512];
+    char line[2048]; /* Must be large enough to hold a full CSV record (matches SaveResultToCSV buffer) */
     BOOL first = TRUE;
 
     while (IDOS->FGets(file, line, sizeof(line))) {
@@ -104,7 +104,8 @@ BOOL GenerateGlobalReport(const char *filename, GlobalReport *report)
 
         char id[64], timestamp[32], type[64], disk[32], fs[64], mbs_str[32], iops_str[32];
         char device[64], unit[32], app_ver[32], passes_str[16], bs_str[32];
-        int fields = sscanf(line, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,\r\n]", id,
+        /* Use width-limited format specifiers to prevent buffer overflows */
+        int fields = sscanf(line, "%63[^,],%31[^,],%63[^,],%31[^,],%63[^,],%31[^,],%31[^,],%63[^,],%31[^,],%31[^,],%15[^,],%31[^,\r\n]", id,
                             timestamp, type, disk, fs, mbs_str, iops_str, device, unit, app_ver, passes_str, bs_str);
 
         if (fields < 7) {

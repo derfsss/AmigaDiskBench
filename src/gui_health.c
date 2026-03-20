@@ -18,7 +18,7 @@ void UpdateHealthUI(const char *volume)
         return;
 
     char device[128];
-    uint32 unit;
+    uint32 unit = 0;
 
     /* 1. Reset UI immediately to clear stale data from previous drive */
     IIntuition->RefreshSetGadgetAttrs((struct Gadget *)ui.health_status_label, ui.window, NULL, GA_Text,

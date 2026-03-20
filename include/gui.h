@@ -163,7 +163,7 @@ typedef struct
     uint32 completed_jobs;
 
     /* Library Bases */
-    struct Library *IconBase, *LocaleBase, *ApplicationBase, *AslBase, *GraphicsBase;
+    struct Library *IconBase, *LocaleBase, *ApplicationBase, *AslBase, *GraphicsBase, *UtilityBase;
 
     /* Class library bases. Many are now handled by reaction.h but
        we keep those we explicitly manage via OpenClass for safety. */

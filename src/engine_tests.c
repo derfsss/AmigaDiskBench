@@ -7,10 +7,9 @@
 #include <stdlib.h>
 
 /*
- * Seed for "The Daily Grind" to ensure deterministic random behavior
+ * Writes a dummy file of the specified size using the given chunk size.
+ * Returns the number of bytes actually written, or 0 on failure.
  */
-#define FIXED_SEED 1985
-
 uint32 WriteDummyFile(const char *path, uint32 size, uint32 chunk_size)
 {
     BPTR file = IDOS->Open(path, MODE_NEWFILE);

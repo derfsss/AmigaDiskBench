@@ -1,6 +1,8 @@
 /*
- * AmigaDiskBench - Benchmark Queue System
- * Handles serialization of benchmark jobs from GUI to Worker.
+ * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
+ * Copyright (c) 2026 Team Derfs. All rights reserved.
+ *
+ * Benchmark job queue management for batch/bulk test execution.
  */
 
 #include "benchmark_queue.h"

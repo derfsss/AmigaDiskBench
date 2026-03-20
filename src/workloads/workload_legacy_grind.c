@@ -41,7 +41,7 @@ static BOOL Run_Grind(void *data, uint32 *bytes_processed, uint32 *op_count)
             size = (2 + (rand() % 9)) * 1024 * 1024;
         else
             size = (1 + (rand() % 64)) * 1024;
-        chunk = (512 << (rand() % 6));
+        chunk = (512 << (rand() % 7)); /* 512B, 1K, 2K, 4K, 8K, 16K, 32K */
         snprintf(temp_file, sizeof(temp_file), "%sbench_grind_%d.tmp", gd->path, i);
         total_bytes += WriteDummyFile(temp_file, size, chunk);
         IDOS->Delete(temp_file);

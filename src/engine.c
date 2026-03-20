@@ -85,6 +85,8 @@ void GetMicroTime(struct TimeVal *tv)
 
 float GetDuration(struct TimeVal *start, struct TimeVal *end)
 {
+    if (!IBenchTimer)
+        return 0.0f;
     struct TimeVal delta = *end;
     IBenchTimer->SubTime(&delta, start);
     return (float)delta.Seconds + (float)delta.Microseconds / 1000000.0f;
@@ -105,6 +107,9 @@ static int CompareFloats(const void *a, const void *b)
 }
 
 
+/*
+ * Records a single time/value data point into the sample buffer.
+ */
 static void AddSample(BenchSampleData *sd, float time, float value)
 {
     if (sd && sd->sample_count < MAX_SAMPLES) {
@@ -155,14 +160,16 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     if (colon)
         *colon = '\0';
 
-    // LOG_DEBUG("RunBenchmark: target='%s' -> volume_name='%s'", target_path, out_result->volume_name);
-
     /* Capture timestamp */
     time_t rawtime;
     struct tm *timeinfo;
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    strftime(out_result->timestamp, sizeof(out_result->timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
+    if (timeinfo) {
+        strftime(out_result->timestamp, sizeof(out_result->timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
+    } else {
+        snprintf(out_result->timestamp, sizeof(out_result->timestamp), "Unknown");
+    }
 
     /* Generate unique ID */
     snprintf(out_result->result_id, sizeof(out_result->result_id), "%04d%02d%02d%02d%02d%02d_%04hX",

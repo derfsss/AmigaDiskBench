@@ -73,12 +73,8 @@ static uint32 TrafficLightDraw(struct Hook *hook, Object *obj, struct gpRender *
         /* Red (Busy) or Green (Idle) */
         uint32 color = ui.worker_busy ? 0x00FF0000 : 0x0000FF00;
 
-        /* Update Label Text based on busy state */
-        /* Note: Doing this in RenderHook is risky but might work if SetGadgetAttrs doesn't trigger redraw of THIS
-         * gadget */
-        // Better to do it where busy is toggled.
-        // I will NOT do it here. I will find the toggle point.
-
+        /* Label text is updated at the busy-state toggle point, not here,
+         * to avoid recursive redraws from SetGadgetAttrs inside a RenderHook. */
         LONG pen = ObtainTrafficPen(color);
 
         if (pen >= 0) {
@@ -197,17 +193,11 @@ int StartGUI(void)
         return 1;
     ui.worker_port = &worker_proc->pr_MsgPort;
 
-    /* Get Utility Interface (for Date functions) */
-    struct Library *UtilityBase = IExec->OpenLibrary("utility.library", 53);
-    if (UtilityBase) {
-        ui.IUtility = (struct UtilityIFace *)IExec->GetInterface(UtilityBase, "main", 1, NULL);
-        IExec->CloseLibrary(UtilityBase); /* As per OS4 spec, interface holds lib? No, usually keep lib open or depends.
-                                             ReAction classes handled differently. */
-        /* Actually, let's keep it simple. If IExec->OpenLibrary and then GetInterface, usually you keep lib open if not
-         * using interface counting */
-        /* But looking at existing code, it uses IApp etc. Let's refer to InitSystemResources in gui_system.c if
-         * existing. */
-        /* gui.c line 155 is StartGUI. InitSystemResources is called later! */
+    /* Get Utility Interface (for Date functions).
+     * The library must remain open while the interface is in use. */
+    ui.UtilityBase = IExec->OpenLibrary("utility.library", 53);
+    if (ui.UtilityBase) {
+        ui.IUtility = (struct UtilityIFace *)IExec->GetInterface(ui.UtilityBase, "main", 1, NULL);
     }
 
     icon = ui.IIcn->GetDiskObject("PROGDIR:AmigaDiskBench");

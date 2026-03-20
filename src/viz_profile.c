@@ -633,13 +633,22 @@ void ComputePolynomialFit(float *x, float *y, uint32 count, uint32 degree, float
     uint32 i, j, k;
     uint32 n = degree + 1;
     double x_min, x_max, x_range;
-    double matrix[5][6]; /* max degree 4 → 5x6 augmented matrix */
-    double x_norm[200];
+    double matrix[5][6]; /* max degree 4 -> 5x6 augmented matrix */
     double coeffs[5];
 
-    /* Guard: insufficient points → fall back to linear */
+    /* Dynamically allocate normalized X values to handle any count.
+     * Stack-based arrays are limited; heap allocation avoids silent truncation. */
+    double *x_norm = (double *)malloc(count * sizeof(double));
+    if (!x_norm) {
+        /* Allocation failed - fall back to linear fit */
+        ComputeLinearFit(x, y, count, y_fit);
+        return;
+    }
+
+    /* Guard: insufficient points - fall back to linear */
     if (count < n)
     {
+        free(x_norm);
         ComputeLinearFit(x, y, count, y_fit);
         return;
     }
@@ -658,13 +667,13 @@ void ComputePolynomialFit(float *x, float *y, uint32 count, uint32 degree, float
     x_range = x_max - x_min;
     if (x_range < 1e-12) x_range = 1.0;
 
-    for (i = 0; i < count && i < 200; i++)
+    for (i = 0; i < count; i++)
         x_norm[i] = ((double)x[i] - x_min) / x_range;
 
     /* Build normal equations: M * coeffs = rhs */
     memset(matrix, 0, sizeof(matrix));
 
-    for (i = 0; i < count && i < 200; i++)
+    for (i = 0; i < count; i++)
     {
         double xi_pow[8]; /* powers of x_norm[i] up to 2*degree */
         xi_pow[0] = 1.0;
@@ -697,6 +706,7 @@ void ComputePolynomialFit(float *x, float *y, uint32 count, uint32 degree, float
         /* Singular matrix guard */
         if (max_val < 1e-12)
         {
+            free(x_norm);
             ComputeLinearFit(x, y, count, y_fit);
             return;
         }
@@ -732,7 +742,7 @@ void ComputePolynomialFit(float *x, float *y, uint32 count, uint32 degree, float
     }
 
     /* Evaluate polynomial at each x_norm */
-    for (i = 0; i < count && i < 200; i++)
+    for (i = 0; i < count; i++)
     {
         double val = 0.0;
         double xp = 1.0;
@@ -743,4 +753,6 @@ void ComputePolynomialFit(float *x, float *y, uint32 count, uint32 degree, float
         }
         y_fit[i] = (float)val;
     }
+
+    free(x_norm);
 }

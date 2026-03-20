@@ -2,6 +2,10 @@
 build/
 *.o
 
+# Distribution
+dist/
+releases/
+
 # Local data
 *.csv
 *.log
@@ -15,16 +19,19 @@ Thumbs.db
 .clangd
 .vscode/
 *.json
-.agent/
 
-# Amiga specific (optional if you want to keep logs)
+# Temporary / scratch
 stats/
-plan/
 tmp/
-releases/
-dist/
-docs/
 
-# Agent specific
+# AI agent / Claude artifacts
+.agent/
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+docs/AGENT_HANDOVER.md
+docs/KNOWLEDGE_TRANSFER.md
+docs/Enhancement_Plan_Professional_v1.md
+docs/plans/
 AGENT_HANDOVER.md
 KNOWLEDGE_TRANSFER.md

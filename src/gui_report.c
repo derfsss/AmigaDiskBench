@@ -1,6 +1,8 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
  * Copyright (c) 2026 Team Derfs. All rights reserved.
+ *
+ * Global report generation and display from aggregated benchmark history.
  */
 
 #include "gui_internal.h"

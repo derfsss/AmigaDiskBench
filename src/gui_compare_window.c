@@ -32,8 +32,19 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
     }
     IExec->NewList(compare_list);
 
-    /* Helper macros for creating comparison rows */
     char val1[256], val2[256], diff[256];
+
+    /* Helper macro to safely allocate and add a ListBrowser node.
+     * Skips the row if allocation fails, avoiding NULL pointer dereference in AddTail. */
+#define ADD_COMPARE_ROW(label)                                                                                         \
+    do {                                                                                                               \
+        struct Node *_node = IListBrowser->AllocListBrowserNode(                                                       \
+            4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text, (label), LBNA_Column, 1, LBNCA_CopyText, TRUE,       \
+            LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText, TRUE, LBNCA_Text, val2, LBNA_Column, 3, LBNCA_CopyText, \
+            TRUE, LBNCA_Text, diff, TAG_DONE);                                                                         \
+        if (_node)                                                                                                     \
+            IExec->AddTail(compare_list, _node);                                                                       \
+    } while (0)
 
     /* Add comparison rows */
 
@@ -41,21 +52,13 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
     snprintf(val1, sizeof(val1), "%s", result1->timestamp);
     snprintf(val2, sizeof(val2), "%s", result2->timestamp);
     snprintf(diff, sizeof(diff), "N/A");
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Timestamp", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Timestamp");
 
     /* Test Type */
     snprintf(val1, sizeof(val1), "%s", TestTypeToDisplayName(result1->type));
     snprintf(val2, sizeof(val2), "%s", TestTypeToDisplayName(result2->type));
     snprintf(diff, sizeof(diff), "%s", (result1->type == result2->type) ? "Same" : "Different");
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Test Type", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Test Type");
 
     /* MB/s */
     snprintf(val1, sizeof(val1), "%.2f MB/s", result1->mb_per_sec);
@@ -66,67 +69,44 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
     } else {
         snprintf(diff, sizeof(diff), "N/A");
     }
-    IExec->AddTail(compare_list,
-                   IListBrowser->AllocListBrowserNode(
-                       4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text, "Throughput (MB/s)", LBNA_Column, 1,
-                       LBNCA_CopyText, TRUE, LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText, TRUE, LBNCA_Text, val2,
-                       LBNA_Column, 3, LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Throughput (MB/s)");
 
     /* IOPS */
     snprintf(val1, sizeof(val1), "%u IOPS", (unsigned int)result1->iops);
     snprintf(val2, sizeof(val2), "%u IOPS", (unsigned int)result2->iops);
     if (result1->iops > 0) {
-        float percent_diff = ((float)(result2->iops - result1->iops) / (float)result1->iops) * 100.0f;
+        /* Use signed arithmetic to avoid unsigned underflow when result2 < result1 */
+        float percent_diff = (((float)result2->iops - (float)result1->iops) / (float)result1->iops) * 100.0f;
         snprintf(diff, sizeof(diff), "%+.1f%%", percent_diff);
     } else {
         snprintf(diff, sizeof(diff), "N/A");
     }
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "IOPS", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("IOPS");
 
     /* Volume */
     snprintf(val1, sizeof(val1), "%s", result1->volume_name);
     snprintf(val2, sizeof(val2), "%s", result2->volume_name);
     snprintf(diff, sizeof(diff), "%s",
              (strcmp(result1->volume_name, result2->volume_name) == 0) ? "Same" : "Different");
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Volume", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Volume");
 
     /* Filesystem */
     snprintf(val1, sizeof(val1), "%s", result1->fs_type);
     snprintf(val2, sizeof(val2), "%s", result2->fs_type);
     snprintf(diff, sizeof(diff), "%s", (strcmp(result1->fs_type, result2->fs_type) == 0) ? "Same" : "Different");
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Filesystem", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Filesystem");
 
     /* Block Size */
     snprintf(val1, sizeof(val1), "%u bytes", (unsigned int)result1->block_size);
     snprintf(val2, sizeof(val2), "%u bytes", (unsigned int)result2->block_size);
     snprintf(diff, sizeof(diff), "%s", (result1->block_size == result2->block_size) ? "Same" : "Different");
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Block Size", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Block Size");
 
     /* Passes */
     snprintf(val1, sizeof(val1), "%u", (unsigned int)result1->passes);
     snprintf(val2, sizeof(val2), "%u", (unsigned int)result2->passes);
     snprintf(diff, sizeof(diff), "%s", (result1->passes == result2->passes) ? "Same" : "Different");
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Passes", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Passes");
 
     /* Device */
     snprintf(val1, sizeof(val1), "%s:%u", result1->device_name, (unsigned int)result1->device_unit);
@@ -135,11 +115,7 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
              (strcmp(result1->device_name, result2->device_name) == 0 && result1->device_unit == result2->device_unit)
                  ? "Same"
                  : "Different");
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Device", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Device");
 
     /* Vendor/Product */
     snprintf(val1, sizeof(val1), "%s %s", result1->vendor, result1->product);
@@ -148,22 +124,14 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
              (strcmp(result1->vendor, result2->vendor) == 0 && strcmp(result1->product, result2->product) == 0)
                  ? "Same"
                  : "Different");
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Drive Model", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Drive Model");
 
     /* Firmware */
     snprintf(val1, sizeof(val1), "%s", result1->firmware_rev);
     snprintf(val2, sizeof(val2), "%s", result2->firmware_rev);
     snprintf(diff, sizeof(diff), "%s",
              (strcmp(result1->firmware_rev, result2->firmware_rev) == 0) ? "Same" : "Different");
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Firmware", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Firmware");
 
     /* Duration */
     snprintf(val1, sizeof(val1), "%.2f sec", result1->duration_secs);
@@ -174,11 +142,9 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
     } else {
         snprintf(diff, sizeof(diff), "N/A");
     }
-    IExec->AddTail(compare_list, IListBrowser->AllocListBrowserNode(4, LBNA_Column, 0, LBNCA_CopyText, TRUE, LBNCA_Text,
-                                                                    "Duration", LBNA_Column, 1, LBNCA_CopyText, TRUE,
-                                                                    LBNCA_Text, val1, LBNA_Column, 2, LBNCA_CopyText,
-                                                                    TRUE, LBNCA_Text, val2, LBNA_Column, 3,
-                                                                    LBNCA_CopyText, TRUE, LBNCA_Text, diff, TAG_DONE));
+    ADD_COMPARE_ROW("Duration");
+
+#undef ADD_COMPARE_ROW
 
     /* Create window */
     ui.compare_win_obj = WindowObject, WA_Title, "Benchmark Comparison", WA_Width, 700, WA_Height, 450, WA_DragBar,

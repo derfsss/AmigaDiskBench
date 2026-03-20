@@ -1,6 +1,8 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
  * Copyright (c) 2026 Team Derfs. All rights reserved.
+ *
+ * Common GUI utility functions: formatting, message dialogs, gadget state management.
  */
 
 #include "gui_internal.h"
@@ -110,7 +112,7 @@ void SetGadgetState(uint16 gid, BOOL disabled)
             obj = ui.block_chooser;
             break;
         case GID_BULK_RUN:
-            obj = ui.run_button; /* Reused for bulk */
+            obj = ui.run_button; /* No separate bulk button stored; reuses main run button */
             break;
         case GID_HISTORY_COMPARE:
             obj = ui.compare_button;

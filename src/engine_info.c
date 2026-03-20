@@ -397,10 +397,13 @@ void GetHardwareInfo(const char *path, BenchResult *result)
             IDOS->UnLockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_READ);
         }
 
-        if (strcasecmp(canonical, "RAM:") == 0 || strcasecmp(canonical, "RAM Disk:") == 0) {
-            snprintf(result->device_name, sizeof(result->device_name), "%s", "ramdrive.device");
-        } else {
-            snprintf(result->device_name, sizeof(result->device_name), "%s", "Generic Disk");
+        /* Only set a generic fallback if no device name was resolved above */
+        if (result->device_name[0] == '\0') {
+            if (strcasecmp(canonical, "RAM:") == 0 || strcasecmp(canonical, "RAM Disk:") == 0) {
+                snprintf(result->device_name, sizeof(result->device_name), "%s", "ramdrive.device");
+            } else {
+                snprintf(result->device_name, sizeof(result->device_name), "%s", "Generic Disk");
+            }
         }
     }
 

@@ -1,12 +1,13 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
- * Copyright (c) 2026 Team Derfs
+ * Copyright (c) 2026 Team Derfs. All rights reserved.
  */
 
 #include "gui_internal.h"
 #include "viz_profile.h"
 #include <graphics/rpattr.h>
 #include <proto/graphics.h>
+#include <limits.h>
 #include <stdlib.h>
 
 /* Graph layout constants - margins in pixels */
@@ -639,12 +640,10 @@ static void RenderHybridChart(struct RastPort *rp, struct IBox *box, VizData *vd
         int pw = box->Width - MARGIN_LEFT - MARGIN_RIGHT;
         int ph = box->Height - MARGIN_TOP - MARGIN_BOTTOM;
 
-        LONG line_pen = ObtainColorPen(rp, 0x00FFFFFF);
+        LONG axis_pen = ObtainColorPen(rp, 0x00FFFFFF);
         LONG text_pen = ObtainColorPen(rp, 0x00CCCCDD);
 
         DrawSecondaryYAxis(rp, px, py, pw, ph, vd->global_max_y2, text_pen);
-
-        IGraphics->SetAPen(rp, line_pen);
 
         int total_bars = vd->total_points;
         int bar_pw = pw / (total_bars > 0 ? total_bars : 1);
@@ -656,8 +655,8 @@ static void RenderHybridChart(struct RastPort *rp, struct IBox *box, VizData *vd
         int cur_x = start_x;
 
         for (uint32 s = 0; s < vd->series_count; s++) {
-            LONG line_pen = ObtainColorPen(rp, GetSeriesColor(s)); /* Use series/profile color for line */
-            IGraphics->SetAPen(rp, line_pen);
+            LONG series_pen = ObtainColorPen(rp, GetSeriesColor(s));
+            IGraphics->SetAPen(rp, series_pen);
 
             int last_x = -1;
 
@@ -685,9 +684,9 @@ static void RenderHybridChart(struct RastPort *rp, struct IBox *box, VizData *vd
                 last_x = dx;
                 cur_x += bar_pw;
             }
-            ReleaseColorPen(rp, line_pen);
+            ReleaseColorPen(rp, series_pen);
         }
-        ReleaseColorPen(rp, line_pen);
+        ReleaseColorPen(rp, axis_pen);
         ReleaseColorPen(rp, text_pen);
     }
 }
@@ -751,11 +750,18 @@ void RenderGraph(struct RastPort *rp, struct IBox *box, VizData *vd)
 void VizCheckHover(int mx, int my)
 {
     BenchResult *hit = NULL;
+    int best_dist = INT_MAX;
     /* Increased radius for easier hit detection on Amiga screens */
     for (uint32 i = 0; i < plotted_count; i++) {
-        if (abs(plotted_points[i].x - mx) < 15 && abs(plotted_points[i].y - my) < 15) {
-            hit = plotted_points[i].res;
-            /* If multiple points are in range, we pick the one closest to the mouse */
+        int dx = plotted_points[i].x - mx;
+        int dy = plotted_points[i].y - my;
+        if (abs(dx) < 15 && abs(dy) < 15) {
+            int dist = dx * dx + dy * dy;
+            /* Pick the closest point to the mouse cursor */
+            if (dist < best_dist) {
+                best_dist = dist;
+                hit = plotted_points[i].res;
+            }
         }
     }
 

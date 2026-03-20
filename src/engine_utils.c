@@ -1,8 +1,8 @@
-/**
- * engine_utils.c - Centralised test type utilities
+/*
+ * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
+ * Copyright (c) 2026 Team Derfs. All rights reserved.
  *
- * Maintains a single lookup table for test-type-to-string
- * mappings, eliminating duplication across the codebase.
+ * Centralised test-type-to-string lookup table and fuzzy matching utilities.
  */
 
 #include "engine_internal.h"
@@ -59,11 +59,22 @@ BenchTestType StringToTestType(const char *name)
             return test_type_table[i].type;
     }
 
-    /* Fall back to substring match (for legacy/fuzzy data) */
+    /* Fall back to substring match (for legacy/fuzzy data).
+     * Check longer match keys first to avoid false positives
+     * (e.g. "Random" matching before "RandomRead"). */
+    int best_idx = -1;
+    int best_len = 0;
     for (uint32 i = 0; i < TEST_TYPE_TABLE_SIZE; i++) {
-        if (strstr(name, test_type_table[i].match_key))
-            return test_type_table[i].type;
+        if (strstr(name, test_type_table[i].match_key)) {
+            int key_len = strlen(test_type_table[i].match_key);
+            if (key_len > best_len) {
+                best_len = key_len;
+                best_idx = (int)i;
+            }
+        }
     }
+    if (best_idx >= 0)
+        return test_type_table[best_idx].type;
 
     return TEST_COUNT; /* Not found */
 }

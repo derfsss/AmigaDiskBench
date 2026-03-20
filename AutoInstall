@@ -1,0 +1,52 @@
+; AmigaDiskBench AutoInstall
+; Installs AmigaDiskBench to your system for AmigaOS 4
+;
+; Run from the AmigaDiskBench distribution directory:
+;   Execute AutoInstall
+;
+; Files installed:
+;   SYS:Utilities/AmigaDiskBench           - Main application
+;   SYS:Utilities/AmigaDiskBench.info      - Application icon
+;   SYS:Utilities/Visualizations/          - Visualization profile files (.viz)
+;   SYS:Utilities/Visualizations.info      - Visualizations drawer icon
+
+echo ""
+echo "AmigaDiskBench Installer"
+echo "========================"
+echo ""
+
+; Create target directories (ignore errors if they already exist)
+failat 21
+makedir SYS:Utilities ALL
+makedir SYS:Utilities/Visualizations ALL
+failat 10
+
+; Install main application
+echo "Installing AmigaDiskBench..."
+copy AmigaDiskBench SYS:Utilities/AmigaDiskBench CLONE QUIET
+copy AmigaDiskBench.info SYS:Utilities/AmigaDiskBench.info CLONE QUIET
+
+; Install visualization profiles
+echo "Installing visualization profiles..."
+copy Visualizations SYS:Utilities/Visualizations ALL CLONE QUIET
+copy Visualizations.info SYS:Utilities/Visualizations.info CLONE QUIET
+
+echo ""
+echo "Installation complete."
+echo ""
+echo "AmigaDiskBench has been installed to SYS:Utilities/"
+echo ""
+echo "You can also run it directly from this directory."
+echo ""
+echo "Included visualization profiles:"
+echo "  scaling.viz     - Performance vs. block size"
+echo "  trend.viz       - Performance stability over time"
+echo "  battle.viz      - Head-to-head drive comparison"
+echo "  workload.viz    - Test type comparison"
+echo "  hybrid.viz      - Throughput bars with IOPS overlay"
+echo "  peak.viz        - Peak performance with reference lines"
+echo "  smoothed.viz    - IOPS with moving average"
+echo "  curve.viz       - Polynomial curve fitting"
+echo "  filesystem.viz  - Filesystem performance comparison"
+echo ""
+echo "========================"

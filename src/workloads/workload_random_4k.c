@@ -76,6 +76,12 @@ static BOOL Run_Random4K(void *data, uint32 *bytes_processed, uint32 *op_count)
 {
     struct RandomData *rd = (struct RandomData *)data;
     uint64 total_bytes = 0;
+    /* Guard against underflow when block_size >= file_size */
+    if (rd->block_size >= rd->file_size) {
+        *bytes_processed = 0;
+        *op_count = 0;
+        return FALSE;
+    }
     uint32 max_offset = rd->file_size - rd->block_size;
 
     for (uint32 i = 0; i < rd->num_ios; i++) {
@@ -83,7 +89,9 @@ static BOOL Run_Random4K(void *data, uint32 *bytes_processed, uint32 *op_count)
         /* Align to 512-byte boundary for realistic disk performance */
         offset &= ~RAND_SECTOR_ALIGN;
 
-        if (IDOS->ChangeFilePosition(rd->file, offset, OFFSET_BEGINNING)) {
+        /* ChangeFilePosition returns the old position, not a success flag.
+         * A return of -1 indicates error; any other value (including 0) is valid. */
+        if (IDOS->ChangeFilePosition(rd->file, offset, OFFSET_BEGINNING) != -1) {
             if (IDOS->Write(rd->file, rd->buffer, rd->block_size) == rd->block_size) {
                 total_bytes += rd->block_size;
             }

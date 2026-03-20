@@ -1,6 +1,8 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
  * Copyright (c) 2026 Team Derfs. All rights reserved.
+ *
+ * Visualization data collection and filtering engine for chart rendering.
  */
 
 #include "gui_internal.h"
@@ -57,10 +59,13 @@ static BOOL IsDateInRange(const char *timestamp, VizDateRange range)
     }
 
     if (range == VIZ_DATE_WEEK) {
-        if (ty == cy && tm == cm) {
-            if (abs(cd_day - td) <= 7)
-                return TRUE;
-        }
+        /* Calculate actual day difference accounting for month/year boundaries.
+         * Approximate: convert both dates to a day count for comparison. */
+        int today_days = ty * 365 + tm * 30 + td;
+        int result_days = cy * 365 + cm * 30 + cd_day;
+        if (abs(today_days - result_days) <= 7)
+            return TRUE;
+        return FALSE;
     }
 
     if (range == VIZ_DATE_MONTH) {

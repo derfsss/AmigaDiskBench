@@ -162,7 +162,10 @@ void LogUser(const char *fmt, ...)
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
     char ts[12];
-    strftime(ts, sizeof(ts), "%H:%M:%S", t);
+    if (t != NULL)
+        strftime(ts, sizeof(ts), "%H:%M:%S", t);
+    else
+        strncpy(ts, "Unknown", sizeof(ts));
     snprintf(line, sizeof(line), "[%s] %s\n", ts, msg);
 
     if (ui.log_main_task != NULL) {

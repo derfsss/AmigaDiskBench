@@ -1,6 +1,8 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
  * Copyright (c) 2026 Team Derfs. All rights reserved.
+ *
+ * System resource initialization and cleanup for libraries, interfaces, and ReAction classes.
  */
 
 #include "gui_internal.h"
@@ -250,6 +252,15 @@ void CleanupSystemResources(void)
         ui.GraphicsBase = NULL;
     }
 
+    if (ui.IUtility) {
+        IExec->DropInterface((struct Interface *)ui.IUtility);
+        ui.IUtility = NULL;
+    }
+    if (ui.UtilityBase) {
+        IExec->CloseLibrary(ui.UtilityBase);
+        ui.UtilityBase = NULL;
+    }
+
     /* Close ReAction classes */
     if (ui.WindowBase)
         IIntuition->CloseClass(ui.WindowBase);
@@ -294,10 +305,10 @@ void CleanupSystemResources(void)
 
     ui.WindowBase = ui.LayoutBase = ui.ButtonBase = ui.ListBrowserBase = ui.ChooserBase = NULL;
     ui.IntegerBase = ui.CheckBoxBase = ui.ClickTabBase = ui.PageBase = ui.LabelBase = ui.StringBase = NULL;
-    ui.SpaceBase = NULL;
+    ui.TextEditorBase = ui.ScrollerBase = ui.FuelGaugeBase = ui.SpaceBase = NULL;
     ui.WindowClass = ui.LayoutClass = ui.ButtonClass = ui.ListBrowserClass = ui.ChooserClass = NULL;
     ui.IntegerClass = ui.CheckBoxClass = ui.ClickTabClass = ui.PageClass = ui.LabelClass = ui.StringClass = NULL;
-    ui.SpaceClass = NULL;
+    ui.TextEditorClass = ui.ScrollerClass = ui.FuelGaugeClass = ui.SpaceClass = NULL;
 
     LOG_DEBUG("CleanupSystemResources: Finished");
 }

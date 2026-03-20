@@ -18,7 +18,6 @@
 #define ATA_SMART_CMD 0xB0
 #define ATA_SMART_READ_DATA 0xD0
 #define ATA_SMART_READ_THRESHOLD 0xD1
-#define ATA_SMART_ENABLE 0xD8
 
 /* Common S.M.A.R.T. Attribute Names */
 static struct

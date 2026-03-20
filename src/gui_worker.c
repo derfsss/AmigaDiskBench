@@ -1,6 +1,8 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
  * Copyright (c) 2026 Team Derfs. All rights reserved.
+ *
+ * Background worker process for executing benchmark jobs asynchronously.
  */
 
 #include "gui_internal.h"
@@ -151,13 +153,10 @@ void LaunchBenchmarkJob(void)
     }
 
     /* Update Visual Indicators */
-    // ui.worker_busy = TRUE; /* Removed to fix deadlock */
 
     /* Increment total_jobs to support appending to an active queue (cumulative progress) */
     ui.total_jobs++;
     /* ui.completed_jobs preserves its value */
-
-    // Traffic light refresh removed - handled by DispatchNextJob
 
     if (ui.fuel_gauge) {
         char buf[32];

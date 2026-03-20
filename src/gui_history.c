@@ -99,7 +99,7 @@ void RefreshHistory(void)
                 snprintf(fs, sizeof(fs), "%s", disk);
                 snprintf(disk, sizeof(disk), "%s", type);
                 snprintf(type, sizeof(type), "%s", timestamp);
-                snprintf(type, sizeof(timestamp), "%s", id);
+                snprintf(type, sizeof(type), "%s", id);
                 snprintf(id, sizeof(id), "N/A");
             }
 
@@ -228,7 +228,7 @@ void RefreshHistory(void)
         RefreshVizVersionFilter();
         UpdateVisualization();
     } else {
-        LOG_DEBUG("RefreshHistory: Skiping UI update, win=%p, list=%p", ui.window, ui.history_list);
+        LOG_DEBUG("RefreshHistory: Skipping UI update, win=%p, list=%p", ui.window, ui.history_list);
     }
 }
 

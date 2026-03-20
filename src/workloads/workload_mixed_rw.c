@@ -77,6 +77,12 @@ static BOOL Run_MixedRW(void *data, uint32 *bytes_processed, uint32 *op_count)
 {
     struct MixedRWData *md = (struct MixedRWData *)data;
     uint64 total_bytes = 0;
+    /* Guard against underflow when block_size >= file_size */
+    if (md->block_size >= md->file_size) {
+        *bytes_processed = 0;
+        *op_count = 0;
+        return FALSE;
+    }
     uint32 max_offset = md->file_size - md->block_size;
 
     for (uint32 i = 0; i < md->num_ops; i++) {
@@ -87,7 +93,9 @@ static BOOL Run_MixedRW(void *data, uint32 *bytes_processed, uint32 *op_count)
         /* 70% reads, 30% writes */
         BOOL is_read = ((rand() % 100) < MIXED_READ_RATIO);
 
-        if (IDOS->ChangeFilePosition(md->file, offset, OFFSET_BEGINNING)) {
+        /* ChangeFilePosition returns the old position, not a success flag.
+         * A return of -1 indicates error; any other value (including 0) is valid. */
+        if (IDOS->ChangeFilePosition(md->file, offset, OFFSET_BEGINNING) != -1) {
             if (is_read) {
                 /* Read operation */
                 int32 bytes_read = IDOS->Read(md->file, md->buffer, md->block_size);

@@ -1,6 +1,8 @@
 /*
  * AmigaDiskBench - A modern benchmark for AmigaOS 4.x
  * Copyright (c) 2026 Team Derfs. All rights reserved.
+ *
+ * Preferences window management, loading, saving, and UI synchronization.
  */
 
 #include "gui_internal.h"

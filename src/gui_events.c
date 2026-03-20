@@ -75,7 +75,6 @@ void UpdateVolumeInfo(const char *volume)
         uint64 total_bytes = (uint64)info.id_NumBlocks * info.id_BytesPerBlock;
         uint64 free_bytes = (uint64)(info.id_NumBlocks - info.id_NumBlocksUsed) * info.id_BytesPerBlock;
 
-        FormatByteSize(total_bytes); /* Returns static buffer, careful if called twice in printf */
         snprintf(size_buf, sizeof(size_buf), "%s", FormatByteSize(total_bytes));
         snprintf(free_buf, sizeof(free_buf), "%s", FormatByteSize(free_bytes));
 
@@ -502,7 +501,9 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
                 if (req) {
                     if (ui.IAsl->AslRequest(req, NULL)) {
                         char filepath[512];
-                        snprintf(filepath, sizeof(filepath), "%s%s", req->fr_Drawer, req->fr_File);
+                        /* Use AddPart to correctly insert path separator between drawer and file */
+                        snprintf(filepath, sizeof(filepath), "%s", req->fr_Drawer);
+                        IDOS->AddPart(filepath, req->fr_File, sizeof(filepath));
                         ExportHistoryToCSV(filepath);
                         ShowMessage("Export Successful", "History has been exported to CSV.", "OK");
                     }

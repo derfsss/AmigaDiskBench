@@ -344,9 +344,7 @@ static void GetDriveGeometry(struct IOStdReq *ior, PhysicalDrive *drive)
         drive->cylinders = geom.dg_Cylinders;
         drive->heads = geom.dg_Heads;
         drive->sectors = geom.dg_TrackSectors;
-        drive->block_bytes = geom.dg_BufMemType; // Actually sector size in newer devices, check API
-        // Wait, struct DriveGeometry definition:
-        // dg_SectorSize is what we want.
+        /* dg_SectorSize holds the actual sector size in bytes */
         drive->block_bytes = geom.dg_SectorSize;
 
         drive->capacity_bytes = (uint64)drive->cylinders * drive->heads * drive->sectors * drive->block_bytes;
@@ -569,22 +567,21 @@ struct List *ScanSystemDrives(void)
                                         part->block_size = id.id_BytesPerBlock;
                                         part->blocks_per_drive = id.id_NumBlocks;
 
-                                        // Calculate bytes (Careful with overflow on large drives, cast to uint64)
+                                                /* Calculate bytes (cast to uint64 to avoid overflow on large drives) */
                                         part->size_bytes = (uint64)id.id_NumBlocks * (uint64)id.id_BytesPerBlock;
                                         part->used_bytes = (uint64)id.id_NumBlocksUsed * (uint64)id.id_BytesPerBlock;
-                                        part->free_bytes = part->size_bytes - part->used_bytes;
+                                        /* Guard against used > total from inconsistent filesystem reporting */
+                                        if (part->used_bytes <= part->size_bytes)
+                                            part->free_bytes = part->size_bytes - part->used_bytes;
+                                        else
+                                            part->free_bytes = 0;
 
-                                        // Get Volume Name from InfoData (if attached)
-                                        // Actually InfoData doesn't have Volume Name.
-                                        // We need to check if the Lock refers to a volume.
-                                        // For now, use the Device Name as default Volume Name
+                                        /* Default volume name to DOS device name */
                                         snprintf(part->volume_name, sizeof(part->volume_name), "%s", entryName);
 
-                                        // Try to get real Volume Name
+                                        /* Try to resolve the real volume name via NameFromLock */
                                         char volBuf[64];
                                         if (IDOS->NameFromLock(lock, volBuf, sizeof(volBuf))) {
-                                            // NameFromLock returns "Volume:Path" or "Device:Path"
-                                            // We just want the Volume part.
                                             char *colon = strchr(volBuf, ':');
                                             if (colon)
                                                 *colon = '\0';
@@ -592,11 +589,14 @@ struct List *ScanSystemDrives(void)
                                         }
                                     }
                                     IDOS->UnLock(lock);
+
+                                    /* Add successfully-locked partition to its parent drive */
+                                    IExec->AddTail((struct List *)&drive->partitions, (struct Node *)part);
                                 } else {
-                                    // Failed to lock (maybe not mounted?)
+                                    /* Partition not mounted or inaccessible */
                                     snprintf(part->volume_name, sizeof(part->volume_name), "Not Mounted");
 
-                                    // Try to get geometry from DosEnvec (available even when not mounted)
+                                    /* Try to get geometry from DosEnvec (available even when not mounted) */
                                     if (fssm->fssm_Environ > 100) {
                                         struct DosEnvec *env = (struct DosEnvec *)((uint32)fssm->fssm_Environ << 2);
                                         if ((uint32)env > 0x1000 && IExec->TypeOfMem(env) && env->de_TableSize >= DE_UPPERCYL) {
