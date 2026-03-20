@@ -1,14 +1,10 @@
-AmigaDiskBench
-==============
+AmigaDiskBench v2.6
+===================
 
 AmigaDiskBench is a modern, high-performance disk benchmarking utility
 specifically designed for AmigaOS 4.1 Final Edition. It provides a robust,
 ReAction-based GUI to measure, analyze, and visualize the performance of
 various storage devices, filesystems, and hardware configurations.
-
-This project was developed with the assistance of AI agents (Claude by
-Anthropic), which contributed to code design, implementation, and
-documentation throughout the development process.
 
 
 Key Features
@@ -139,13 +135,14 @@ Requirements
 
 Installation
 ------------
-No special installation is required.
-1. Extract the archive to a location of your choice (e.g., Work:Utilities/).
+1. Extract AmigaDiskBench.lha to a location of your choice (e.g., Work:).
    This creates an AmigaDiskBench drawer containing the executable, icons,
-   readme, and Visualizations/ folder.
-2. The application requires at least one valid .viz file in the Visualizations/
+   readme, visualization profiles, and an AutoInstall script.
+2. AutoInstall (optional): Double-click or "Execute AutoInstall" from a Shell
+   to copy the application and visualization profiles to SYS:Utilities/.
+3. The application requires at least one valid .viz file in the Visualizations/
    folder to start.
-3. Launch AmigaDiskBench from the icon.
+4. Launch AmigaDiskBench from the icon.
 
 
 Visualization Profile Format
@@ -428,190 +425,64 @@ open -- only a validation report is shown.
 - Workbench: Opens a standalone window with a scrollable list of findings.
 
 
-Building from Source
---------------------
-AmigaDiskBench is open source and can be cross-compiled using a Docker-based
-toolchain (GCC 11).
-
-Prerequisites
-* WSL2 (Windows) or Linux/macOS.
-* Docker installed and running.
-* Walkero's Amiga GCC 11 Image (walkero/amigagccondocker:os4-gcc11).
-
-Build Commands (from WSL2):
-
-  cd /mnt/w/Code/amiga/antigravity/projects/AmigaDiskBench
-
-  # Clean previous build
-  docker run --rm -v /mnt/w/.../AmigaDiskBench:/src -w /src \
-    walkero/amigagccondocker:os4-gcc11 make clean
-
-  # Build
-  docker run --rm -v /mnt/w/.../AmigaDiskBench:/src -w /src \
-    walkero/amigagccondocker:os4-gcc11 make
-
-This will produce the AmigaDiskBench executable in the build/ folder.
-
-
 Authors
 -------
-* Team Derfs - Core Development
+* Team Derfs
 
 
 Version History
 ---------------
 
-v2.5.4 (Current)
-- Test Description popup: Right-click the Test Type chooser and select
-  "Describe Test..." to open a popup window with a detailed explanation of
-  the selected benchmark -- what it measures, file sizes, block sizes,
-  operation counts, and real-world equivalents. Each of the 10 benchmark
-  tests has its own description.
-- Crash fix: DSI exception (page fault) on AmigaOne X1000 during drive
-  scanning. BPTR-decoded pointers from DosList entries are now validated
-  with IExec->TypeOfMem() before dereferencing, preventing crashes on
-  systems with non-standard or stale DosList entries pointing to unmapped
-  memory.
-- Hover hint: Test Type chooser tooltip now reads "Select benchmark test.
-  Right-click for detailed description."
+v2.6 (Current)
+- Adopted Amiga-style major.minor versioning.
+- AutoInstall script for one-click installation to SYS:Utilities/.
+- Distribution packaging: "make dist" and "make dist-lha" targets produce a
+  ready-to-ship LHA archive with all required files.
+- Comprehensive code quality audit across all 48 source files with critical
+  bug fixes:
+  - Mounted partitions missing from drive scan results (memory leak).
+  - DosList device name resolution overwritten with "Generic Disk".
+  - UtilityBase use-after-free crash in date functions.
+  - Dangling ReAction class pointers after cleanup.
+  - ChangeFilePosition return value misused as boolean in random workloads.
+  - Unsigned integer underflow in random workloads.
+  - IOPS comparison percentage wrong (unsigned subtraction wrap).
+  - "Last Week" visualization date filter broken across month boundaries.
+  - Hover detection picked wrong data point.
+  - Variable shadowing in hybrid chart renderer.
+  - Polynomial curve fit truncated beyond 200 data points.
+  - CSV report parser buffer overflow and unbounded sscanf.
+  - Test type fuzzy matching false positives.
+  - History legacy field shifting data corruption.
+- Additional fixes: NULL dereference guards, localtime NULL checks, free_bytes
+  underflow guard, missing path separator in CSV export, Daily Grind chunk size
+  range corrected.
+- Dead code removed, professional file headers and documentation added.
 
-v2.5.3
-- VALIDATE mode improvements: Workbench validation window now displays columns
-  at correct proportions. Message column auto-fits to window width with
-  horizontal scrolling for long messages.
-- VALIDATE usage: Run "AmigaDiskBench VALIDATE" from Shell, or add the tooltype
-  VALIDATE to the program's icon in the Information editor. The benchmark GUI
-  does not open -- only a validation report is shown (text report in Shell,
-  ReAction window from Workbench).
-- Bug fixes:
-  - Blank window on Workbench launch: ReadArgs() was guarded by
-    Output() != NULL, but Output() can return a valid handle from Workbench
-    when a default console is configured. ReadArgs then blocked waiting for
-    interactive input, displaying an empty CON: window. Fixed by using
-    IDOS->Cli() (the canonical AmigaOS 4 method) to detect Shell vs Workbench.
-  - VALIDATE mode Shell/Workbench detection used the same unreliable Output()
-    check. Fixed to use IDOS->Cli().
-  - Profile validator falsely warned about DefaultDateRange and MinVersion keys
-    in the [Filters] section. Both are valid parser-recognized keys that were
-    missing from the validator's known-key list.
-  - Visualization hover tooltip and chart legend now replace underscores with
-    spaces in volume names (e.g., FFS2_DH8_2 displays as FFS2 DH8 2).
-- Icon cleanup: Program icon now ships with a single (VALIDATE) tooltype
-  (commented out by default). Old template tooltypes removed. Drawer and
-  folder icons included for the distribution archive.
-- Makefile "install" target: Now produces a complete distribution layout with
-  drawer icon, program icon, Visualizations folder icon, and readme.
+v2.5
+- Pluggable visualization profiles loaded from .viz files (9 built-in).
+- Trend lines: linear regression, moving average, polynomial curve fitting.
+- VALIDATE mode for checking .viz files from Shell or Workbench.
+- Test description popup (right-click Test Type chooser).
+- S.M.A.R.T. drive health monitoring tab.
+- Quit confirmation dialog when benchmarks are running.
+- IOPS calculation corrected to true ops/second.
+- Numerous crash fixes (X1000 drive scanning, Workbench launch, exit during
+  benchmarks).
 
-v2.5.2
-- Pluggable Visualization Profiles: Chart definitions are now loaded from .viz
-  files in the Visualizations/ folder. Nine built-in profiles ship with the
-  application: Scaling, Trend, Battle, Workload, Hybrid, Peak Performance,
-  IOPS Smoothed, Scaling Curve, and Filesystem.
-- Profile-driven rendering: Each profile defines chart type (line/bar/hybrid),
-  X/Y axes, series grouping, data filters, trend lines, reference line
-  annotations, custom color palettes, and collapse aggregation -- all without
-  recompilation.
-- Trend lines: Linear regression, moving average, and polynomial curve fitting,
-  rendered per-series or globally. Coordinate clamping prevents drawing outside
-  the chart area.
-- Collapse aggregation: Reduce multiple runs at the same X value to a single
-  data point using mean, median, min, or max.
-- Reference line annotations: Horizontal dashed lines with labels at user-defined
-  Y values (e.g., SATA III @ 600 MB/s).
-- Custom color palettes: Up to 16 hex colors per profile.
-- Reload Profiles button: Rescan the Visualizations/ folder for new or modified
-  profiles without restarting.
-- VALIDATE mode: Shell argument or icon tooltype to validate all .viz files and
-  report errors with line numbers and severity.
-- Quit confirmation dialog: Attempting to close the application while a benchmark
-  is running now shows a Yes/No confirmation prompt.
-- IOPS calculation corrected: IOPS is now computed as total I/O operations
-  divided by total elapsed time (true ops/second). Previously, workloads
-  reported a fixed operation count of 1, and the engine averaged ops per pass
-  rather than per second.
-- Bug fixes:
-  - Random 4K Write/Read and Mixed R/W benchmarks failed at 1M block size:
-    uint32 total_bytes overflowed (4096 ops x 1M = exactly 2^32, wrapping to
-    0). Fixed by using uint64 internally with a cap to UINT32_MAX.
-  - CSV history records silently truncated when field data exceeded the
-    1024-byte line buffer (producing malformed rows). Increased to 2048 bytes
-    with overflow detection -- oversized records are now skipped with a warning
-    in the session log.
-  - Benchmark failure messages in the session log were generic ("check target
-    volume"). Now reports the specific failure reason: setup failure (file
-    creation, device open, or buffer allocation), unknown test type, or all
-    passes producing zero bytes -- with test name, target path, and block size.
-  - Crash on exit while benchmarks are running (pending worker messages not
-    drained before freeing reply port).
-  - Blank window on Workbench launch (ReadArgs called unconditionally, failing
-    when launched from icon).
-  - Crash in CollapseSeriesPoints when series had no data points.
-  - Chart lines drawn outside the graph area (missing coordinate clamping in
-    line/hybrid renderers).
-  - Duplicate X-axis labels when all data points share the same block size.
-  - Color By dropdown removed -- now a read-only label driven by the active
-    profile's GroupBy setting.
-  - Unused filter dropdowns removed from the visualization tab.
+v2.4
+- Session Log tab with timestamped, cross-process log entries.
+- Copy to Clipboard and Clear Log buttons.
+- Context menu fix for classic menu selections.
 
-v2.4.1
-- Session Log tab: A new scrollable, timestamped log panel records all benchmark
-  activity in real time -- start, per-pass progress, results, and failures --
-  with [HH:MM:SS] timestamps.
-- Live log updates: Cross-process Exec message passing delivers log entries from
-  the worker process to the GUI without polling or unsafe gadget access.
-- Log context menu: Right-click for Select All and Copy.
-- Copy to Clipboard button: Writes the entire log to the system clipboard via
-  IFFParse (FORM FTXT/CHRS format).
-- Clear Log button: Wipes the transcript and re-inserts the session header.
-- Bug fix: Classic menu selections were silently swallowed when a context menu
-  was also present. Fixed by checking WINDOW_MenuType before routing the
-  WMHI_MENUPICK event.
+v2.3
+- Flexible pass averaging (All Passes, Trimmed Mean, Median) via Preferences.
+- Disk Information Center with hierarchical hardware tree view.
+- S.M.A.R.T. column auto-fit, improved drive/partition naming.
+- Unmounted partition details from RDB geometry.
 
-v2.3.7
-- S.M.A.R.T. column auto-fit: Attribute Name column now correctly expands to
-  show full text without truncation.
-- Average method display: Benchmark Control row shows a single combined label
-  (e.g., "Average: Median (Middle Value Only)") next to the Passes count.
-- Bulk tab Settings text: Queue summary now includes the averaging method name,
-  e.g., Settings: Sprinter / 10 Passes (Median) / 4K.
-- Disk Info improved naming: Detail panel uses precise labels -- "Disk Name"
-  (SCSI identity), "Partition Name" (unmounted), "Volume Name" (mounted).
-- Disk Info unmounted partitions: Clicking an unmounted partition now shows its
-  device name, size (from RDB geometry), and filesystem type.
-- Disk Info underscore sanitization: Filesystem underscores shown as spaces.
-- Disk Info DOS type fix: 4th byte shown as ASCII where printable (e.g., SWAP
-  instead of SWA/50).
-- Bug fixes including DSI crash on Disk Info tab page switching.
-
-v2.3.4 - v2.3.6
-- Flexible Pass Averaging: Three averaging options -- All Passes, Trimmed Mean,
-  and Median.
-- Average Method always visible on the Benchmark tab next to Passes count.
-- Disk Info tree restructured: device name at root, VolumeName (Unit N) at
-  partition level, multiple units of the same controller merged.
-- Bug fixes.
-
-v2.2.16
-- Disk Information Center: New hierarchical view of all physical storage
-  devices, categorized as Fixed, USB, and Optical.
-- True Hardware Scanning: Engine directly probes the system to map logical
-  partitions to physical driver units.
-- Enhanced CD/DVD Detection: Safeguards to prevent system freezes when
-  querying optical drives.
-- Filesystem Display: Standardized DOS type formatting to ABC/XX hex notation.
-- Bug fixes.
-
-v2.2.14
-- Release Optimization: Debug logging disabled for maximum performance.
-
-v2.2.11
-- Architectural Foundation: Multi-threaded benchmark engine, CSV history
-  persistence.
-
-v2.2.10
-- Advanced Graphing: Visualization engine overhauled; X-axis = Block Size;
-  auto-refresh on tab switch.
-- Variable Workloads: Random I/O tests support dynamic user-selected block
-  sizes.
-- Visual Feedback: Traffic Light status indicator and Fuel Gauge progress bar.
-- Bug fixes.
+v2.2
+- Multi-threaded benchmark engine with CSV history persistence.
+- ReAction-based GUI with Traffic Light and Fuel Gauge.
+- Advanced graphing engine with block size X-axis.
+- Random I/O tests with dynamic block sizes.
