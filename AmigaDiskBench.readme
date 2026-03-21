@@ -1,4 +1,4 @@
-AmigaDiskBench v2.7
+AmigaDiskBench v2.8
 ===================
 
 AmigaDiskBench is a modern, high-performance disk benchmarking utility
@@ -439,7 +439,26 @@ Authors
 Version History
 ---------------
 
-v2.7 (Current)
+v2.8 (Current)
+- Fixed: Hard freeze on startup caused by shared Chooser label list between
+  Benchmark and Drive Health tabs. The health chooser was not detached before
+  the drive list was rebuilt, causing input.device to walk freed nodes during
+  window rendering -- triggering a DSI exception in chooser.gadget.
+- Fixed: Partition list corruption from double-add bug. Mounted partitions
+  were added to their parent drive's linked list twice (once in the mounted
+  path, once unconditionally), corrupting Exec list pointers and causing
+  stale node references.
+- Disk Info scan no longer opens non-storage devices (serial.device,
+  a1parallel.device, printer.device, etc.) that were bound to DosEntries,
+  avoiding interference with programs using those ports.
+- Disk Info scan now pre-checks media availability before performing expensive
+  device I/O. Empty virtual drive slots (diskimage.device with no image
+  loaded) are skipped entirely, eliminating unnecessary OpenDevice, RDB scan,
+  geometry query, and SCSI inquiry cycles.
+- Reduced scan noise: non-filesystem DosEntries (CON, RAW, RAM, ENV, URL,
+  TEXTCLIP, PIPE, etc.) are no longer logged during drive enumeration.
+
+v2.7
 - S.M.A.R.T. rewrite: Three-tier query strategy for broad hardware support:
   1. CMD_IDE/CMDIDE_DIRECTATA: Direct ATA register passthrough (reverse-
      engineered from AmigaOS smartctl binary). Works on a1ide.device,

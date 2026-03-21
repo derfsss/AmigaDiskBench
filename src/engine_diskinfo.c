@@ -469,7 +469,6 @@ struct List *ScanSystemDrives(void)
                 entryName[nlen] = '\0';
             }
         }
-        LOG_DEBUG("ScanSystemDrives: Inspecting DosEntry '%s' @ %p", entryName, entry);
 
         // Check for FileSysStartupMsg
         // Heuristic: Startup must be a valid BPTR (not small int)
@@ -499,9 +498,76 @@ struct List *ScanSystemDrives(void)
                         devName[len] = '\0';
 
                         uint32 unit = fssm->fssm_Unit;
-                        LOG_DEBUG("ScanSystemDrives: Found Handler Device '%s' Unit %lu", devName, unit);
+
+                        /* Skip known non-storage devices early to avoid opening
+                         * serial ports, parallel ports, printers, etc. which can
+                         * interfere with other programs and waste time. */
+                        {
+                            static const char *skip_devices[] = {
+                                "serial.device", "a1parallel.device", "printer.device",
+                                "camd.device", "timer.device", "gameport.device",
+                                "keyboard.device", "input.device", "console.device",
+                                NULL};
+                            BOOL skip = FALSE;
+                            for (int si = 0; skip_devices[si]; si++) {
+                                if (strcasecmp(devName, skip_devices[si]) == 0) {
+                                    skip = TRUE;
+                                    break;
+                                }
+                            }
+                            if (skip) {
+                                LOG_DEBUG("ScanSystemDrives: Skipping non-storage device '%s'", devName);
+                                entry = IDOS->NextDosEntry(entry, LDF_DEVICES);
+                                continue;
+                            }
+                        }
+
+                        LOG_DEBUG("ScanSystemDrives: Inspecting '%s' (%s Unit %lu)", entryName, devName, unit);
 
                         PhysicalDrive *drive = FindPhysicalDrive(driveList, devName, unit);
+
+                        /* For a new device+unit, pre-check if this entry has any
+                         * accessible media before doing expensive device I/O.
+                         * Skip empty virtual drive slots (e.g. diskimage.device with
+                         * no image loaded) that can't be locked and have no valid
+                         * DosEnvec geometry.  Existing drives always pass — they were
+                         * already validated on first encounter. */
+                        if (!drive) {
+                            BOOL has_media = FALSE;
+
+                            /* Quick check: can we lock the volume? */
+                            char checkPath[64];
+                            snprintf(checkPath, sizeof(checkPath), "%s:", entryName);
+                            APTR oldWin = IDOS->SetProcWindow((APTR)-1);
+                            BPTR checkLock = IDOS->Lock(checkPath, ACCESS_READ);
+                            IDOS->SetProcWindow(oldWin);
+                            if (checkLock) {
+                                IDOS->UnLock(checkLock);
+                                has_media = TRUE;
+                            }
+
+                            /* Fallback: check DosEnvec for valid partition geometry */
+                            if (!has_media && fssm->fssm_Environ > 100) {
+                                struct DosEnvec *env =
+                                    (struct DosEnvec *)((uint32)fssm->fssm_Environ << 2);
+                                if ((uint32)env > 0x1000 && IExec->TypeOfMem(env) &&
+                                    env->de_TableSize >= DE_UPPERCYL) {
+                                    uint64 sectors =
+                                        ((uint64)(env->de_HighCyl - env->de_LowCyl + 1)) *
+                                        env->de_Surfaces * env->de_SectorPerTrack;
+                                    if (sectors > 0)
+                                        has_media = TRUE;
+                                }
+                            }
+
+                            if (!has_media) {
+                                LOG_DEBUG("ScanSystemDrives: Skipping empty entry '%s' (%s Unit %lu)",
+                                          entryName, devName, unit);
+                                entry = IDOS->NextDosEntry(entry, LDF_DEVICES);
+                                continue;
+                            }
+                        }
+
                         if (!drive) {
                             // New Physical Drive Candidate
                             drive = IExec->AllocVecTags(sizeof(PhysicalDrive), AVT_Type, MEMF_SHARED,
@@ -614,9 +680,9 @@ struct List *ScanSystemDrives(void)
                                                       entryName, part->size_bytes);
                                         }
                                     }
-                                }
 
-                                IExec->AddTail((struct List *)&drive->partitions, (struct Node *)part);
+                                    IExec->AddTail((struct List *)&drive->partitions, (struct Node *)part);
+                                }
                             }
                         }
                     }

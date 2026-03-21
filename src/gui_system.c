@@ -13,6 +13,10 @@ void RefreshDriveList(void)
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.target_chooser, ui.window, NULL, CHOOSER_Labels, (ULONG)-1,
                                    TAG_DONE);
     }
+    if (ui.health_target_chooser && ui.window) {
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.health_target_chooser, ui.window, NULL, CHOOSER_Labels,
+                                   (ULONG)-1, TAG_DONE);
+    }
     /* Also detach from prefs chooser if open */
     if (ui.prefs_target_chooser && ui.prefs_window) {
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.prefs_target_chooser, ui.prefs_window, NULL, CHOOSER_Labels,
@@ -112,6 +116,10 @@ void RefreshDriveList(void)
     if (ui.target_chooser && ui.window) {
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.target_chooser, ui.window, NULL, CHOOSER_Labels, &ui.drive_list,
                                    TAG_DONE);
+    }
+    if (ui.health_target_chooser && ui.window) {
+        IIntuition->SetGadgetAttrs((struct Gadget *)ui.health_target_chooser, ui.window, NULL, CHOOSER_Labels,
+                                   &ui.drive_list, TAG_DONE);
     }
     if (ui.prefs_target_chooser && ui.prefs_window) {
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.prefs_target_chooser, ui.prefs_window, NULL, CHOOSER_Labels,
