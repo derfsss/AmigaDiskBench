@@ -235,6 +235,15 @@ typedef enum
     SMART_STATUS_CRITICAL
 } SmartStatus;
 
+/* Tracks which query method succeeded for diagnostic display */
+typedef enum
+{
+    SMART_METHOD_NONE = 0,
+    SMART_METHOD_CMD_IDE,  /* Direct ATA via CMD_IDE/CMDIDE_DIRECTATA */
+    SMART_METHOD_SAT,      /* HD_SCSICMD with ATA PASS-THROUGH CDB */
+    SMART_METHOD_SMARTCTL  /* External smartctl command */
+} SmartMethod;
+
 typedef struct
 {
     uint8 id;
@@ -251,6 +260,7 @@ typedef struct
 typedef struct
 {
     SmartStatus overall_status;
+    SmartMethod method;
     char health_summary[128];
     uint32 temperature;
     uint32 power_on_hours;

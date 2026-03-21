@@ -51,9 +51,13 @@ Analyze your data with a powerful, profile-driven graphing engine. Chart definit
 
 ### 4. Drive Health Monitoring
 Keep an eye on your hardware's physical status:
-- **S.M.A.R.T. Analysis**: Reads raw attribute data directly from the drive via ATA PASS-THROUGH.
-- **Health Indicators**: Real-time display of **Temperature**, **Power-On Hours**, and overall **Health Status**.
-- **Assessment**: Automatic interpretation of critical attributes (Reallocated Sectors, Spin Retry Count, etc.).
+- **S.M.A.R.T. Analysis**: Three-tier query strategy for maximum hardware compatibility:
+  1. **Direct ATA** via CMD_IDE (works on a1ide, sb600sata, sii3114 drivers).
+  2. **ATA PASS-THROUGH** via HD_SCSICMD (SAT-compliant drivers).
+  3. **External smartctl** fallback (bundled with AmigaOS 4.1 FE).
+- **Health Indicators**: Real-time display of **Temperature**, **Power-On Hours**, and overall **Health Status**. Query method shown in status display.
+- **Assessment**: Automatic interpretation of critical attributes (Reallocated Sectors, Spin Retry Count, etc.) with threshold comparison.
+- **Threshold Data**: Reads both SMART attribute values and failure thresholds from the drive for accurate health assessment.
 
 ### 5. Bulk Testing
 Automate your benchmarking workflow:
@@ -305,8 +309,8 @@ The **Disk Info** tab provides deep hardware enumeration.
 
 ### 6. Drive Health
 The **Drive Health** tab communicates directly with S.M.A.R.T.-enabled drives.
-- **Status Check**: Click **Refresh Health Data** to retrieve the latest vital statistics.
-- **Interpretation**: The tool automatically interprets raw hexadecimal attributes (Reallocated Sectors, Power-On Hours, etc.) and provides a human-readable health assessment.
+- **Status Check**: Click **Refresh Health Data** to retrieve the latest vital statistics. The query method used (Direct ATA, ATA Pass-Through, or smartctl) is shown in the status display.
+- **Interpretation**: The tool automatically interprets raw attributes (Reallocated Sectors, Power-On Hours, etc.) and provides a human-readable health assessment with threshold comparison.
 
 ### 7. History and Exporting
 - **History View**: Review all past benchmarks in a tabular format.
@@ -342,7 +346,18 @@ make dist-lha
 
 ## Version History
 
-### v2.6 (Current)
+### v2.7 (Current)
+- **S.M.A.R.T. rewrite**: Three-tier query strategy for broad hardware support:
+  1. **CMD_IDE/CMDIDE_DIRECTATA**: Direct ATA register passthrough (reverse-engineered from AmigaOS smartctl binary). Works on `a1ide.device`, `sb600sata.device`, `sii3112ide.device`, `sii3114ide.device`, and other drivers implementing the CMD_IDE interface.
+  2. **HD_SCSICMD with ATA PASS-THROUGH**: SAT-compliant CDBs (16-byte with 12-byte fallback) for drivers supporting SCSI-ATA Translation.
+  3. **External smartctl**: Falls back to the system `smartctl` command bundled with AmigaOS 4.1 Final Edition, parsing its text output.
+- S.M.A.R.T. now reads **threshold data** (ATA Feature 0xD1) in addition to attribute values, enabling accurate failure threshold comparison.
+- S.M.A.R.T. status display shows which query method succeeded for diagnostic transparency.
+- **Fixed**: `SCSICmd` struct not properly reinitialized between 16-byte and 12-byte ATA PASS-THROUGH fallback attempts.
+- **Fixed**: SCSI sense buffer now properly allocated for S.M.A.R.T. commands.
+- Expanded S.M.A.R.T. attribute name table from 18 to 35 known attributes (adds SSD-specific attributes).
+
+### v2.6
 - **Version numbering**: Adopted Amiga-style major.minor versioning.
 - **AutoInstall script**: Distribution now includes an AmigaDOS AutoInstall script for one-click installation to `SYS:Utilities/`.
 - **Distribution packaging**: New `make dist` and `make dist-lha` targets produce a ready-to-ship LHA archive with all required files.

@@ -69,22 +69,33 @@ void RefreshHealthTab(void)
 
     /* Update Status Labels */
     char temp_str[32], power_str[64];
-    const char *status_text = "Unknown";
+    char status_buf[128];
+    const char *status_text;
+
+    /* Build method suffix for diagnostic display */
+    const char *method_suffix = "";
+    switch (ui.current_health.method) {
+    case SMART_METHOD_CMD_IDE:  method_suffix = " [Direct ATA]";       break;
+    case SMART_METHOD_SAT:      method_suffix = " [ATA Pass-Through]"; break;
+    case SMART_METHOD_SMARTCTL: method_suffix = " [smartctl]";         break;
+    default: break;
+    }
 
     switch (ui.current_health.overall_status) {
     case SMART_STATUS_OK:
-        status_text = "DRIVE HEALTH: OK";
+        snprintf(status_buf, sizeof(status_buf), "DRIVE HEALTH: OK%s", method_suffix);
         break;
     case SMART_STATUS_WARNING:
-        status_text = "DRIVE HEALTH: WARNING (Attention Required)";
+        snprintf(status_buf, sizeof(status_buf), "DRIVE HEALTH: WARNING (Attention Required)%s", method_suffix);
         break;
     case SMART_STATUS_CRITICAL:
-        status_text = "DRIVE HEALTH: CRITICAL (Imminent Failure!)";
+        snprintf(status_buf, sizeof(status_buf), "DRIVE HEALTH: CRITICAL (Imminent Failure!)%s", method_suffix);
         break;
     default:
-        status_text = "DRIVE HEALTH: UNKNOWN";
+        snprintf(status_buf, sizeof(status_buf), "DRIVE HEALTH: UNKNOWN");
         break;
     }
+    status_text = status_buf;
 
     if (ui.current_health.supported) {
         snprintf(temp_str, sizeof(temp_str), "Temp: %u C", (unsigned int)ui.current_health.temperature);
