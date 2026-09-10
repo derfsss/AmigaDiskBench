@@ -132,6 +132,11 @@ const char *FormatPresetBlockSize(uint32 bytes);
 const char *FormatByteSize(uint64 bytes);
 
 /**
+ * @brief Refresh a single gadget; safe to call while iconified (NULL window).
+ */
+void SafeRefreshGList(Object *obj);
+
+/**
  * @brief Thread-safe formatted size helper.
  * @param bytes Size in bytes.
  * @param out Output buffer (must be at least 32 bytes).
@@ -229,6 +234,12 @@ void OpenPrefsWindow(void);
  * @brief Apply changes from the Preferences window and save them.
  */
 void UpdatePreferences(void);
+
+/**
+ * @brief Close/dispose the Preferences window and free its chooser list.
+ *        Safe to call when the window is not open.
+ */
+void ClosePrefsWindow(void);
 
 /**
  * @brief Refresh the Average Method read-only label on the Benchmark tab.

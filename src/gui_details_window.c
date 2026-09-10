@@ -133,8 +133,10 @@ void OpenDetailsWindow(BenchResult *res)
             IIntuition->SetWindowPointer(ui.details_window, WA_PointerType, POINTERTYPE_TEXT, TAG_DONE);
         } else {
             LOG_DEBUG("FAILED to open details window");
-            IIntuition->DisposeObject(ui.details_win_obj);
-            ui.details_win_obj = NULL;
+            /* CloseDetailsWindow disposes the window object AND both
+             * menus — leaving the menus alive here would leak them on
+             * the next OpenDetailsWindow (pointers get overwritten). */
+            CloseDetailsWindow();
         }
     } else {
         LOG_DEBUG("FAILED to create details window object");

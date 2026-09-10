@@ -89,7 +89,10 @@ const char *GetDosTypeString(uint32 dostype)
     char c3 = (dostype >> 8) & 0xFF;
     char v = dostype & 0xFF;
 
-    if (c1 >= 0x20 && c2 >= 0x20 && c3 >= 0x20) {
+    /* Upper bound 0x7E on every byte: char is unsigned on PPC GCC, so
+     * 0x7F-0xFF would pass a lower-bound-only check and emit
+     * non-printable characters into GUI labels. */
+    if (c1 >= 0x20 && c1 <= 0x7E && c2 >= 0x20 && c2 <= 0x7E && c3 >= 0x20 && c3 <= 0x7E) {
         if (v >= 0x20 && v <= 0x7E)
             snprintf(buf, sizeof(buf), "%c%c%c%c", c1, c2, c3, v);
         else
@@ -201,7 +204,10 @@ static void PerformScsiInquiry(struct IOStdReq *ior, PhysicalDrive *drive)
         // Clear buffer to avoid stale data
         memset(buffer, 0, 256);
 
-        if (IExec->DoIO((struct IORequest *)ior) == 0 && cmd.scsi_Status == 0) {
+        /* buffer[1] must echo the requested page code: devices that
+         * ignore the EVPD bit return standard inquiry data with GOOD
+         * status, which would fill 'serial' with vendor/product bytes. */
+        if (IExec->DoIO((struct IORequest *)ior) == 0 && cmd.scsi_Status == 0 && buffer[1] == 0x80) {
             uint8 page_len = buffer[3];
             if (page_len > 0) {
                 if (page_len > 31)
@@ -235,7 +241,8 @@ static void PerformScsiInquiry(struct IOStdReq *ior, PhysicalDrive *drive)
 
         memset(buffer, 0, 256);
 
-        if (IExec->DoIO((struct IORequest *)ior) == 0 && cmd.scsi_Status == 0) {
+        /* Require buffer[1] == 0xB1 — see VPD 0x80 note above. */
+        if (IExec->DoIO((struct IORequest *)ior) == 0 && cmd.scsi_Status == 0 && buffer[1] == 0xB1) {
             // Medium Rotation Rate is at byte 4 (2 bytes)
             // 0000h = Non-rotating (SSD)
             // 0001h = Non-rotating reserved
@@ -246,8 +253,10 @@ static void PerformScsiInquiry(struct IOStdReq *ior, PhysicalDrive *drive)
             } else {
                 drive->media_type = MEDIA_TYPE_HDD;
             }
-        } else {
-            // Fallback assumption if Page B1 not supported
+        } else if (drive->media_type == MEDIA_TYPE_UNKNOWN) {
+            /* Fallback assumption if Page B1 not supported — but only when
+             * nothing better is known: TD_GETDRIVETYPE may already have
+             * classified this as a floppy, which must not be overwritten. */
             drive->media_type = MEDIA_TYPE_HDD;
         }
     }
@@ -440,6 +449,29 @@ static PhysicalDrive *FindPhysicalDrive(struct List *list, const char *device, u
     return NULL;
 }
 
+/* Snapshot of one DosList device entry, captured while the DosList is
+ * locked so that all blocking work (Lock, Info, OpenDevice, SCSI
+ * inquiry) can happen AFTER UnLockDosList(). The LockDosList autodoc
+ * forbids calling functions that may block — such as Lock() — while
+ * holding the list: a filesystem handler needing a write lock (e.g. to
+ * add a volume node) would deadlock against our read lock. */
+struct ScanEntry
+{
+    struct ScanEntry *next;
+    char entry_name[32]; /* DOS device name, e.g. "DH0"          */
+    char dev_name[32];   /* Exec device, e.g. "a1ide.device"     */
+    uint32 unit;
+    /* DosEnvec geometry snapshot (env_valid == TRUE when captured) */
+    BOOL env_valid;
+    uint32 de_table_size;
+    uint32 de_sector_size;
+    uint32 de_surfaces;
+    uint32 de_sector_per_track;
+    uint32 de_low_cyl;
+    uint32 de_high_cyl;
+    uint32 de_dos_type;
+};
+
 struct List *ScanSystemDrives(void)
 {
     LOG_DEBUG("ScanSystemDrives: Entry (REAL SCANNING)");
@@ -448,13 +480,16 @@ struct List *ScanSystemDrives(void)
         return NULL;
     }
 
+    /* ---------------- Phase 1: snapshot under the DosList lock -------- */
+
+    struct ScanEntry *scan_head = NULL, *scan_tail = NULL;
+
     struct DosList *dl = IDOS->LockDosList(LDF_DEVICES | LDF_READ);
     if (!dl) {
         LOG_DEBUG("ScanSystemDrives: Failed to lock DosList");
         return driveList; // Return empty list rather than NULL
     }
 
-    // Traverse the DosList
     struct DosList *entry = IDOS->NextDosEntry(dl, LDF_DEVICES);
     while (entry) {
         // Safe-decode Name for logging
@@ -497,193 +532,55 @@ struct List *ScanSystemDrives(void)
                         memcpy(devName, bstr + 1, len);
                         devName[len] = '\0';
 
-                        uint32 unit = fssm->fssm_Unit;
-
                         /* Skip known non-storage devices early to avoid opening
                          * serial ports, parallel ports, printers, etc. which can
                          * interfere with other programs and waste time. */
-                        {
-                            static const char *skip_devices[] = {
-                                "serial.device", "a1parallel.device", "printer.device",
-                                "camd.device", "timer.device", "gameport.device",
-                                "keyboard.device", "input.device", "console.device",
-                                NULL};
-                            BOOL skip = FALSE;
-                            for (int si = 0; skip_devices[si]; si++) {
-                                if (strcasecmp(devName, skip_devices[si]) == 0) {
-                                    skip = TRUE;
-                                    break;
-                                }
-                            }
-                            if (skip) {
-                                LOG_DEBUG("ScanSystemDrives: Skipping non-storage device '%s'", devName);
-                                entry = IDOS->NextDosEntry(entry, LDF_DEVICES);
-                                continue;
+                        static const char *skip_devices[] = {
+                            "serial.device", "a1parallel.device", "printer.device",
+                            "camd.device", "timer.device", "gameport.device",
+                            "keyboard.device", "input.device", "console.device",
+                            NULL};
+                        BOOL skip = FALSE;
+                        for (int si = 0; skip_devices[si]; si++) {
+                            if (strcasecmp(devName, skip_devices[si]) == 0) {
+                                skip = TRUE;
+                                break;
                             }
                         }
 
-                        LOG_DEBUG("ScanSystemDrives: Inspecting '%s' (%s Unit %lu)", entryName, devName, unit);
+                        if (!skip) {
+                            struct ScanEntry *se = IExec->AllocVecTags(sizeof(struct ScanEntry), AVT_Type, MEMF_SHARED,
+                                                                       AVT_ClearWithValue, 0, TAG_DONE);
+                            if (se) {
+                                snprintf(se->entry_name, sizeof(se->entry_name), "%s", entryName);
+                                snprintf(se->dev_name, sizeof(se->dev_name), "%s", devName);
+                                se->unit = fssm->fssm_Unit;
 
-                        PhysicalDrive *drive = FindPhysicalDrive(driveList, devName, unit);
-
-                        /* For a new device+unit, pre-check if this entry has any
-                         * accessible media before doing expensive device I/O.
-                         * Skip empty virtual drive slots (e.g. diskimage.device with
-                         * no image loaded) that can't be locked and have no valid
-                         * DosEnvec geometry.  Existing drives always pass — they were
-                         * already validated on first encounter. */
-                        if (!drive) {
-                            BOOL has_media = FALSE;
-
-                            /* Quick check: can we lock the volume? */
-                            char checkPath[64];
-                            snprintf(checkPath, sizeof(checkPath), "%s:", entryName);
-                            APTR oldWin = IDOS->SetProcWindow((APTR)-1);
-                            BPTR checkLock = IDOS->Lock(checkPath, ACCESS_READ);
-                            IDOS->SetProcWindow(oldWin);
-                            if (checkLock) {
-                                IDOS->UnLock(checkLock);
-                                has_media = TRUE;
-                            }
-
-                            /* Fallback: check DosEnvec for valid partition geometry */
-                            if (!has_media && fssm->fssm_Environ > 100) {
-                                struct DosEnvec *env =
-                                    (struct DosEnvec *)((uint32)fssm->fssm_Environ << 2);
-                                if ((uint32)env > 0x1000 && IExec->TypeOfMem(env) &&
-                                    env->de_TableSize >= DE_UPPERCYL) {
-                                    uint64 sectors =
-                                        ((uint64)(env->de_HighCyl - env->de_LowCyl + 1)) *
-                                        env->de_Surfaces * env->de_SectorPerTrack;
-                                    if (sectors > 0)
-                                        has_media = TRUE;
-                                }
-                            }
-
-                            if (!has_media) {
-                                LOG_DEBUG("ScanSystemDrives: Skipping empty entry '%s' (%s Unit %lu)",
-                                          entryName, devName, unit);
-                                entry = IDOS->NextDosEntry(entry, LDF_DEVICES);
-                                continue;
-                            }
-                        }
-
-                        if (!drive) {
-                            // New Physical Drive Candidate
-                            drive = IExec->AllocVecTags(sizeof(PhysicalDrive), AVT_Type, MEMF_SHARED,
-                                                        AVT_ClearWithValue, 0, TAG_DONE);
-                            if (drive) {
-                                snprintf(drive->device_name, sizeof(drive->device_name), "%s", devName);
-                                drive->unit_number = unit;
-                                IExec->NewMinList(&drive->partitions);
-
-                                // Initial Label
-                                char labelBuf[64];
-                                snprintf(labelBuf, sizeof(labelBuf), "%s Unit %lu", devName, unit);
-
-                                drive->node.ln_Name =
-                                    IExec->AllocVecTags(strlen(labelBuf) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
-                                if (drive->node.ln_Name)
-                                    strcpy(drive->node.ln_Name, labelBuf);
-
-                                // Enrich with Real Data (Geometry, RDB, Inquiry)
-                                EnrichPhysicalDrive(drive);
-
-                                // Dynamic Validation: Only keep block storage devices
-                                // If media_type is still UNKNOWN and capacity is 0, neither SCSI nor Trackdisk matched
-                                // it
-                                if (drive->media_type == MEDIA_TYPE_UNKNOWN && drive->capacity_bytes == 0) {
-                                    LOG_DEBUG("ScanSystemDrives: Rejecting non-storage device '%s'", devName);
-                                    if (drive->node.ln_Name)
-                                        IExec->FreeVec(drive->node.ln_Name);
-                                    IExec->FreeVec(drive);
-                                    drive = NULL; // Prevent partition loop below
-                                } else {
-                                    IExec->AddTail(driveList, (struct Node *)drive);
-                                }
-                            }
-                        }
-
-                        // Add Partition Logic (Real Scanning)
-                        if (drive) {
-                            LogicalPartition *part = IExec->AllocVecTags(sizeof(LogicalPartition), AVT_Type,
-                                                                         MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
-                            if (part) {
-                                // Use the DossHandler Name (e.g., DH0)
-                                snprintf(part->dos_device_name, sizeof(part->dos_device_name), "%s", entryName);
-
-                                // Volume Name & Info
-                                char devicePath[64];
-                                snprintf(devicePath, sizeof(devicePath), "%s:", entryName);
-
-                                // Suppress system requesters (e.g. "No Disk in device CD0")
-                                APTR oldWin = IDOS->SetProcWindow((APTR)-1);
-                                BPTR lock = IDOS->Lock(devicePath, ACCESS_READ);
-                                IDOS->SetProcWindow(oldWin);
-
-                                if (!lock) {
-                                    LOG_DEBUG("Failed to Lock '%s' (Empty or Unmounted)", devicePath);
-                                }
-
-                                if (lock) {
-                                    struct InfoData id;
-                                    if (IDOS->Info(lock, &id)) {
-                                        part->dos_type = id.id_DiskType;
-                                        part->disk_environment_type = id.id_DiskType;
-                                        part->block_size = id.id_BytesPerBlock;
-                                        part->blocks_per_drive = id.id_NumBlocks;
-
-                                                /* Calculate bytes (cast to uint64 to avoid overflow on large drives) */
-                                        part->size_bytes = (uint64)id.id_NumBlocks * (uint64)id.id_BytesPerBlock;
-                                        part->used_bytes = (uint64)id.id_NumBlocksUsed * (uint64)id.id_BytesPerBlock;
-                                        /* Guard against used > total from inconsistent filesystem reporting */
-                                        if (part->used_bytes <= part->size_bytes)
-                                            part->free_bytes = part->size_bytes - part->used_bytes;
-                                        else
-                                            part->free_bytes = 0;
-
-                                        /* Default volume name to DOS device name */
-                                        snprintf(part->volume_name, sizeof(part->volume_name), "%s", entryName);
-
-                                        /* Try to resolve the real volume name via NameFromLock */
-                                        char volBuf[64];
-                                        if (IDOS->NameFromLock(lock, volBuf, sizeof(volBuf))) {
-                                            char *colon = strchr(volBuf, ':');
-                                            if (colon)
-                                                *colon = '\0';
-                                            snprintf(part->volume_name, sizeof(part->volume_name), "%s", volBuf);
-                                        }
+                                /* Snapshot DosEnvec geometry while it is safe to read */
+                                if (fssm->fssm_Environ > 100) {
+                                    struct DosEnvec *env = (struct DosEnvec *)((uint32)fssm->fssm_Environ << 2);
+                                    if ((uint32)env > 0x1000 && IExec->TypeOfMem(env) &&
+                                        env->de_TableSize >= DE_UPPERCYL) {
+                                        se->env_valid           = TRUE;
+                                        se->de_table_size       = env->de_TableSize;
+                                        se->de_sector_size      = env->de_SectorSize;
+                                        se->de_surfaces         = env->de_Surfaces;
+                                        se->de_sector_per_track = env->de_SectorPerTrack;
+                                        se->de_low_cyl          = env->de_LowCyl;
+                                        se->de_high_cyl         = env->de_HighCyl;
+                                        if (env->de_TableSize >= DE_DOSTYPE)
+                                            se->de_dos_type = env->de_DosType;
                                     }
-                                    IDOS->UnLock(lock);
-
-                                    /* Add successfully-locked partition to its parent drive */
-                                    IExec->AddTail((struct List *)&drive->partitions, (struct Node *)part);
-                                } else {
-                                    /* Partition not mounted or inaccessible */
-                                    snprintf(part->volume_name, sizeof(part->volume_name), "Not Mounted");
-
-                                    /* Try to get geometry from DosEnvec (available even when not mounted) */
-                                    if (fssm->fssm_Environ > 100) {
-                                        struct DosEnvec *env = (struct DosEnvec *)((uint32)fssm->fssm_Environ << 2);
-                                        if ((uint32)env > 0x1000 && IExec->TypeOfMem(env) && env->de_TableSize >= DE_UPPERCYL) {
-                                            uint64 sector_bytes = (uint64)env->de_SectorSize * 4;
-                                            uint64 sectors = ((uint64)(env->de_HighCyl - env->de_LowCyl + 1))
-                                                             * env->de_Surfaces * env->de_SectorPerTrack;
-                                            part->size_bytes = sectors * sector_bytes;
-                                            part->block_size = (uint32)sector_bytes;
-                                            part->blocks_per_drive = (uint32)sectors;
-                                            if (env->de_TableSize >= DE_DOSTYPE) {
-                                                part->disk_environment_type = env->de_DosType;
-                                                part->dos_type = env->de_DosType;
-                                            }
-                                            LOG_DEBUG("ScanSystemDrives: DosEnvec size for '%s': %llu bytes",
-                                                      entryName, part->size_bytes);
-                                        }
-                                    }
-
-                                    IExec->AddTail((struct List *)&drive->partitions, (struct Node *)part);
                                 }
+
+                                if (scan_tail)
+                                    scan_tail->next = se;
+                                else
+                                    scan_head = se;
+                                scan_tail = se;
                             }
+                        } else {
+                            LOG_DEBUG("ScanSystemDrives: Skipping non-storage device '%s'", devName);
                         }
                     }
                 }
@@ -693,6 +590,176 @@ struct List *ScanSystemDrives(void)
     }
 
     IDOS->UnLockDosList(LDF_DEVICES | LDF_READ);
+
+    /* ------------- Phase 2: blocking I/O with the lock released ------- */
+
+    for (struct ScanEntry *se = scan_head; se; se = se->next) {
+        const char *entryName = se->entry_name;
+        const char *devName = se->dev_name;
+        uint32 unit = se->unit;
+
+        LOG_DEBUG("ScanSystemDrives: Inspecting '%s' (%s Unit %lu)", entryName, devName, unit);
+
+        PhysicalDrive *drive = FindPhysicalDrive(driveList, devName, unit);
+
+        /* For a new device+unit, pre-check if this entry has any
+         * accessible media before doing expensive device I/O.
+         * Skip empty virtual drive slots (e.g. diskimage.device with
+         * no image loaded) that can't be locked and have no valid
+         * DosEnvec geometry.  Existing drives always pass — they were
+         * already validated on first encounter. */
+        if (!drive) {
+            BOOL has_media = FALSE;
+
+            /* Quick check: can we lock the volume? */
+            char checkPath[64];
+            snprintf(checkPath, sizeof(checkPath), "%s:", entryName);
+            APTR oldWin = IDOS->SetProcWindow((APTR)-1);
+            BPTR checkLock = IDOS->Lock(checkPath, SHARED_LOCK);
+            IDOS->SetProcWindow(oldWin);
+            if (checkLock) {
+                IDOS->UnLock(checkLock);
+                has_media = TRUE;
+            }
+
+            /* Fallback: check DosEnvec snapshot for valid partition geometry */
+            if (!has_media && se->env_valid) {
+                uint64 sectors = ((uint64)(se->de_high_cyl - se->de_low_cyl + 1)) *
+                                 se->de_surfaces * se->de_sector_per_track;
+                if (sectors > 0)
+                    has_media = TRUE;
+            }
+
+            if (!has_media) {
+                LOG_DEBUG("ScanSystemDrives: Skipping empty entry '%s' (%s Unit %lu)",
+                          entryName, devName, unit);
+                continue;
+            }
+        }
+
+        if (!drive) {
+            // New Physical Drive Candidate
+            drive = IExec->AllocVecTags(sizeof(PhysicalDrive), AVT_Type, MEMF_SHARED,
+                                        AVT_ClearWithValue, 0, TAG_DONE);
+            if (drive) {
+                snprintf(drive->device_name, sizeof(drive->device_name), "%s", devName);
+                drive->unit_number = unit;
+                IExec->NewMinList(&drive->partitions);
+
+                // Initial Label
+                char labelBuf[64];
+                snprintf(labelBuf, sizeof(labelBuf), "%s Unit %lu", devName, unit);
+
+                drive->node.ln_Name =
+                    IExec->AllocVecTags(strlen(labelBuf) + 1, AVT_Type, MEMF_SHARED, TAG_DONE);
+                if (drive->node.ln_Name)
+                    strcpy(drive->node.ln_Name, labelBuf);
+
+                // Enrich with Real Data (Geometry, RDB, Inquiry)
+                EnrichPhysicalDrive(drive);
+
+                // Dynamic Validation: Only keep block storage devices
+                // If media_type is still UNKNOWN and capacity is 0, neither SCSI nor Trackdisk matched
+                // it
+                if (drive->media_type == MEDIA_TYPE_UNKNOWN && drive->capacity_bytes == 0) {
+                    LOG_DEBUG("ScanSystemDrives: Rejecting non-storage device '%s'", devName);
+                    if (drive->node.ln_Name)
+                        IExec->FreeVec(drive->node.ln_Name);
+                    IExec->FreeVec(drive);
+                    drive = NULL; // Prevent partition loop below
+                } else {
+                    IExec->AddTail(driveList, (struct Node *)drive);
+                }
+            }
+        }
+
+        // Add Partition Logic (Real Scanning)
+        if (drive) {
+            LogicalPartition *part = IExec->AllocVecTags(sizeof(LogicalPartition), AVT_Type,
+                                                         MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
+            if (part) {
+                // Use the DossHandler Name (e.g., DH0)
+                snprintf(part->dos_device_name, sizeof(part->dos_device_name), "%s", entryName);
+
+                // Volume Name & Info
+                char devicePath[64];
+                snprintf(devicePath, sizeof(devicePath), "%s:", entryName);
+
+                // Suppress system requesters (e.g. "No Disk in device CD0")
+                APTR oldWin = IDOS->SetProcWindow((APTR)-1);
+                BPTR lock = IDOS->Lock(devicePath, SHARED_LOCK);
+                IDOS->SetProcWindow(oldWin);
+
+                if (!lock) {
+                    LOG_DEBUG("Failed to Lock '%s' (Empty or Unmounted)", devicePath);
+                }
+
+                if (lock) {
+                    struct InfoData id;
+                    if (IDOS->Info(lock, &id)) {
+                        part->dos_type = id.id_DiskType;
+                        part->disk_environment_type = id.id_DiskType;
+                        part->block_size = id.id_BytesPerBlock;
+                        part->blocks_per_drive = id.id_NumBlocks;
+
+                        /* Calculate bytes (cast to uint64 to avoid overflow on large drives) */
+                        part->size_bytes = (uint64)id.id_NumBlocks * (uint64)id.id_BytesPerBlock;
+                        part->used_bytes = (uint64)id.id_NumBlocksUsed * (uint64)id.id_BytesPerBlock;
+                        /* Guard against used > total from inconsistent filesystem reporting */
+                        if (part->used_bytes <= part->size_bytes)
+                            part->free_bytes = part->size_bytes - part->used_bytes;
+                        else
+                            part->free_bytes = 0;
+
+                        /* Default volume name to DOS device name */
+                        snprintf(part->volume_name, sizeof(part->volume_name), "%s", entryName);
+
+                        /* Try to resolve the real volume name via NameFromLock */
+                        char volBuf[64];
+                        if (IDOS->NameFromLock(lock, volBuf, sizeof(volBuf))) {
+                            char *colon = strchr(volBuf, ':');
+                            if (colon)
+                                *colon = '\0';
+                            snprintf(part->volume_name, sizeof(part->volume_name), "%s", volBuf);
+                        }
+                    }
+                    IDOS->UnLock(lock);
+
+                    /* Add successfully-locked partition to its parent drive */
+                    IExec->AddTail((struct List *)&drive->partitions, (struct Node *)part);
+                } else {
+                    /* Partition not mounted or inaccessible */
+                    snprintf(part->volume_name, sizeof(part->volume_name), "Not Mounted");
+
+                    /* Geometry from the DosEnvec snapshot (available even when not mounted) */
+                    if (se->env_valid) {
+                        uint64 sector_bytes = (uint64)se->de_sector_size * 4;
+                        uint64 sectors = ((uint64)(se->de_high_cyl - se->de_low_cyl + 1))
+                                         * se->de_surfaces * se->de_sector_per_track;
+                        part->size_bytes = sectors * sector_bytes;
+                        part->block_size = (uint32)sector_bytes;
+                        part->blocks_per_drive = (uint32)sectors;
+                        if (se->de_table_size >= DE_DOSTYPE) {
+                            part->disk_environment_type = se->de_dos_type;
+                            part->dos_type = se->de_dos_type;
+                        }
+                        LOG_DEBUG("ScanSystemDrives: DosEnvec size for '%s': %llu bytes",
+                                  entryName, part->size_bytes);
+                    }
+
+                    IExec->AddTail((struct List *)&drive->partitions, (struct Node *)part);
+                }
+            }
+        }
+    }
+
+    /* Free the snapshot list */
+    while (scan_head) {
+        struct ScanEntry *next = scan_head->next;
+        IExec->FreeVec(scan_head);
+        scan_head = next;
+    }
+
     return driveList;
 }
 

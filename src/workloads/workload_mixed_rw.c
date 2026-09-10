@@ -85,6 +85,12 @@ static BOOL Run_MixedRW(void *data, uint32 *bytes_processed, uint32 *op_count)
     }
     uint32 max_offset = md->file_size - md->block_size;
 
+    /* Fixed seed: identical offset sequence on every run/pass so results
+     * are comparable run-to-run (same approach as Daily Grind). Without
+     * this the sequence depended on how many tests ran beforehand. */
+    srand(1985);
+
+    uint32 ops_done = 0;
     for (uint32 i = 0; i < md->num_ops; i++) {
         uint32 offset = (uint32)rand() % max_offset;
         /* Align to 512-byte boundary for realistic disk performance */
@@ -93,19 +99,21 @@ static BOOL Run_MixedRW(void *data, uint32 *bytes_processed, uint32 *op_count)
         /* 70% reads, 30% writes */
         BOOL is_read = ((rand() % 100) < MIXED_READ_RATIO);
 
-        /* ChangeFilePosition returns the old position, not a success flag.
-         * A return of -1 indicates error; any other value (including 0) is valid. */
-        if (IDOS->ChangeFilePosition(md->file, offset, OFFSET_BEGINNING) != -1) {
+        /* ChangeFilePosition returns a DOS boolean: non-zero on success,
+         * zero on failure (it does NOT return the old position). */
+        if (IDOS->ChangeFilePosition(md->file, offset, OFFSET_BEGINNING) != 0) {
             if (is_read) {
                 /* Read operation */
                 int32 bytes_read = IDOS->Read(md->file, md->buffer, md->block_size);
                 if (bytes_read > 0) {
                     total_bytes += bytes_read;
+                    ops_done++;
                 }
             } else {
                 /* Write operation */
                 if (IDOS->Write(md->file, md->buffer, md->block_size) == md->block_size) {
                     total_bytes += md->block_size;
+                    ops_done++;
                 }
             }
         }
@@ -113,7 +121,7 @@ static BOOL Run_MixedRW(void *data, uint32 *bytes_processed, uint32 *op_count)
 
     /* Cap to uint32 max to avoid overflow — total_bytes can exceed 4GB with large block sizes */
     *bytes_processed = (total_bytes > 0xFFFFFFFFULL) ? 0xFFFFFFFFU : (uint32)total_bytes;
-    *op_count = md->num_ops;
+    *op_count = ops_done;
     return (total_bytes > 0);
 }
 

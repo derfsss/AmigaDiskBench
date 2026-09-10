@@ -25,6 +25,20 @@ static void ParseDate(const char *timestamp, int *y, int *m, int *d)
     }
 }
 
+/* Convert a civil date to a serial day number (days since 1970-01-01,
+ * proleptic Gregorian). Exact across month and year boundaries — the
+ * previous y*365 + m*30 + d approximation drifted up to 5 days near
+ * month ends and broke "Last Week" across every year boundary. */
+static int32 DaysFromCivil(int y, int m, int d)
+{
+    y -= (m <= 2);
+    int era = (y >= 0 ? y : y - 399) / 400;
+    unsigned yoe = (unsigned)(y - era * 400);
+    unsigned doy = (153u * (unsigned)(m + (m > 2 ? -3 : 9)) + 2u) / 5u + (unsigned)d - 1u;
+    unsigned doe = yoe * 365u + yoe / 4u - yoe / 100u + doy;
+    return era * 146097 + (int32)doe - 719468;
+}
+
 /**
  * @brief Checks if a benchmark result's timestamp falls within the selected date range.
  *
@@ -59,13 +73,11 @@ static BOOL IsDateInRange(const char *timestamp, VizDateRange range)
     }
 
     if (range == VIZ_DATE_WEEK) {
-        /* Calculate actual day difference accounting for month/year boundaries.
-         * Approximate: convert both dates to a day count for comparison. */
-        int today_days = ty * 365 + tm * 30 + td;
-        int result_days = cy * 365 + cm * 30 + cd_day;
-        if (abs(today_days - result_days) <= 7)
-            return TRUE;
-        return FALSE;
+        /* Exact day difference across month/year boundaries */
+        int32 result_days = DaysFromCivil(ty, tm, td);
+        int32 today_days = DaysFromCivil(cy, cm, cd_day);
+        int32 diff = today_days - result_days;
+        return (diff >= 0 && diff <= 7);
     }
 
     if (range == VIZ_DATE_MONTH) {
@@ -282,6 +294,12 @@ static uint32 CollectVizData(VizData *vd)
                         match = FALSE;
                     if (match && profile->max_duration_secs > 0.0f && res->total_duration > profile->max_duration_secs)
                         match = FALSE;
+                    if (match && profile->min_version_key > 0) {
+                        unsigned rmaj = 0, rmin = 0;
+                        sscanf(res->app_version, "%u.%u", &rmaj, &rmin);
+                        if (rmaj * 1000 + rmin < profile->min_version_key)
+                            match = FALSE;
+                    }
                 }
 
                 if (match) {
@@ -337,9 +355,28 @@ static uint32 CollectVizData(VizData *vd)
         }
     }
 
-    /* Apply max_series cap from profile */
-    if (profile && profile->max_series > 0 && vd->series_count > profile->max_series)
+    /* Apply max_series cap from profile. Dropped series must also be
+     * removed from total_points and the global maxima, otherwise bar
+     * width/centering and Y autoscale are computed from invisible data. */
+    if (profile && profile->max_series > 0 && vd->series_count > profile->max_series) {
+        for (uint32 si = profile->max_series; si < vd->series_count; si++)
+            vd->total_points -= vd->series[si].count;
         vd->series_count = profile->max_series;
+
+        vd->global_max_y1 = 0.0f;
+        vd->global_max_y2 = 0.0f;
+        for (uint32 si = 0; si < vd->series_count; si++) {
+            VizYSource ms = profile->y_source;
+            for (uint32 ri = 0; ri < vd->series[si].count; ri++) {
+                BenchResult *r = vd->series[si].results[ri];
+                float yval = GetYValue(r, ms);
+                if (yval > vd->global_max_y1)
+                    vd->global_max_y1 = yval;
+                if ((float)r->iops > vd->global_max_y2)
+                    vd->global_max_y2 = (float)r->iops;
+            }
+        }
+    }
 
     /* Sort results within each series based on profile X-axis source */
     for (uint32 i = 0; i < vd->series_count; i++) {
@@ -457,7 +494,7 @@ void UpdateVisualization(void)
     LOG_DEBUG("Updating Visualization (Chart Type %u)...", ui.viz_chart_type_idx);
 
     /* Force SpaceObject to redraw via RefreshGList */
-    IIntuition->RefreshGList((struct Gadget *)ui.viz_canvas, ui.window, NULL, 1);
+    SafeRefreshGList(ui.viz_canvas);
 }
 
 /**
@@ -584,8 +621,10 @@ void ReloadVizProfiles(void)
     /* Reload profiles */
     FreeVizProfiles();
     if (!LoadVizProfiles()) {
+        /* The old profiles are already freed at this point — do not
+         * claim they were retained. */
         ShowMessage("Reload Failed",
-                    "No valid .viz files found in\nPROGDIR:Visualizations/\n\nPrevious profiles retained.",
+                    "No valid .viz files found in\nPROGDIR:Visualizations/\n\nNo profiles are loaded — restore the\nfolder and press Reload Profiles again.",
                     "OK");
         /* Re-add placeholder */
         struct Node *n = IChooser->AllocChooserNode(CNA_Text, "(no profiles)", CNA_CopyText, TRUE, TAG_DONE);

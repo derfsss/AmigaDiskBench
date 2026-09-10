@@ -168,10 +168,10 @@ void LaunchBulkJobs(void)
     }
 
     if (job_count == 0) {
-        ui.worker_busy = FALSE;
-        if (ui.traffic_light) {
-            IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
-        }
+        /* Do NOT touch ui.worker_busy here: a benchmark may already be
+         * running (this button is not disabled mid-run). Clearing the
+         * flag would skip the shutdown drain and free the reply port
+         * while the worker still posts to it. */
         LOG_DEBUG("Bulk: No volumes selected for benchmarking.");
         ShowMessage("AmigaDiskBench", "Please select at least one volume\nin the bulk list.", "OK");
     } else {

@@ -120,12 +120,14 @@ int StartGUI(void)
      * Use Cli() to detect Shell — Output() can be non-NULL from Workbench
      * (e.g. default console), causing ReadArgs to open a blocking CON: window. */
     {
-        BOOL validate = FALSE;
+        /* Must be int32: ReadArgs stores a LONG through the /S slot.
+         * A 16-bit BOOL here would let ReadArgs clobber adjacent stack. */
+        int32 validate = FALSE;
         struct RDArgs *rd = NULL;
         struct CommandLineInterface *cli = IDOS->Cli();
         LOG_DEBUG("StartGUI: Cli()=%p", (void *)cli);
         if (cli) {
-            rd = IDOS->ReadArgs("VALIDATE/S", (int32 *)&validate, NULL);
+            rd = IDOS->ReadArgs("VALIDATE/S", &validate, NULL);
             LOG_DEBUG("StartGUI: ReadArgs returned rd=%p, validate=%d", (void *)rd, (int)validate);
         }
         if (!validate) {
@@ -163,6 +165,7 @@ int StartGUI(void)
 
     InitBenchmarkQueue();
     InitUserLogging();
+    InitHardwareInfoCache(); /* must precede worker spawn — cache is shared */
 
     /* Initialize nodes for choosers */
     const char *blocks[] = {"4K", "16K", "32K", "64K", "128K", "256K", "1M"};
@@ -301,7 +304,7 @@ int StartGUI(void)
             IIntuition->SetGadgetAttrs((struct Gadget *)ui.traffic_light, ui.window, NULL, SPACE_RenderHook,
                                        (uint32)&traffic_light_hook, TAG_DONE);
             /* Trigger initial refresh */
-            IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
+            SafeRefreshGList(ui.traffic_light);
         }
 
         RefreshDriveList();
@@ -415,7 +418,7 @@ int StartGUI(void)
                 uint32 result;
                 while ((result = IIntuition->IDoMethod(ui.win_obj, WM_HANDLEINPUT, &code)) != WMHI_LASTMSG) {
                     /* Handle Mouse Move for Visualization Hover */
-                    if ((result & WMHI_CLASSMASK) == WMHI_MOUSEMOVE) {
+                    if ((result & WMHI_CLASSMASK) == WMHI_MOUSEMOVE && ui.tabs) {
                         /* Check only if Visualization tab is active (Page 3) */
                         uint32 t = 0;
                         IIntuition->GetAttr(CLICKTAB_Current, ui.tabs, &t);
@@ -474,9 +477,12 @@ int StartGUI(void)
                 LogUser("Session ended - duration %us", (unsigned int)secs);
         }
 
-        IClickTab->FreeClickTabList(&tab_list);
-
-        /* Drain pending benchmark queue before shutting down worker */
+        /* Drain pending benchmark queue before shutting down worker.
+         * NOTE: the main window is still open during the drain below (it
+         * can take as long as the rest of a running benchmark), so the
+         * clicktab list and all chooser/listbrowser node lists must NOT
+         * be freed yet — gadgets walk them live on user input. They are
+         * freed after DisposeObject(ui.win_obj) below. */
         CleanupBenchmarkQueue();
 
         /* If worker is busy, wait for the active benchmark to finish.
@@ -504,6 +510,24 @@ int StartGUI(void)
         IExec->WaitPort(ui.worker_reply_port);
         IExec->GetMsg(ui.worker_reply_port);
         /* qj is a stack variable — not freed */
+
+        /* Close any child windows still open — quitting with them open
+         * would leave orphaned Intuition windows dispatching into
+         * unloaded code after exit. */
+        ClosePrefsWindow();
+        CloseDetailsWindow();
+        CloseCompareWindow();
+        CloseDescribeWindow();
+
+        /* Dispose the main window FIRST: gadgets reference the node
+         * lists live, so the lists may only be freed once no gadget can
+         * receive input anymore. */
+        if (ui.win_obj) {
+            IIntuition->DisposeObject(ui.win_obj);
+            ui.win_obj = NULL;
+            ui.window = NULL;
+        }
+        IClickTab->FreeClickTabList(&tab_list);
 
         /* Node data cleanup */
         struct Node *n, *nx;
@@ -561,7 +585,6 @@ int StartGUI(void)
             ui.IApp->UnregisterApplication(ui.app_id, TAG_DONE);
         }
 
-        CloseDescribeWindow();
         if (ui.test_context_menu) {
             IIntuition->DisposeObject(ui.test_context_menu);
             ui.test_context_menu = NULL;
@@ -570,8 +593,6 @@ int StartGUI(void)
             IIntuition->DisposeObject(ui.log_context_menu);
             ui.log_context_menu = NULL;
         }
-        if (ui.win_obj)
-            IIntuition->DisposeObject(ui.win_obj);
         if (ui.gui_port)
             IExec->FreeSysObject(ASOT_PORT, ui.gui_port);
         if (ui.worker_reply_port)
@@ -581,6 +602,7 @@ int StartGUI(void)
 
         CleanupVizFilterLabels();
         CleanupUserLogging();
+        ClearHardwareInfoCache();
 
         if (icon)
             ui.IIcn->FreeDiskObject(icon);
@@ -589,6 +611,30 @@ int StartGUI(void)
         CleanupBenchmarkQueue();
         return 0;
     }
+
+    /* WM_OPEN failed: the worker process is alive and waiting on its
+     * port, and the window object/tab list/ports were all allocated.
+     * Shut the worker down first (it would otherwise survive our exit
+     * holding a dangling reply port), then release everything. */
+    {
+        BenchJob qj = {.type = (BenchTestType)-1, .msg.mn_ReplyPort = ui.worker_reply_port};
+        IExec->PutMsg(ui.worker_port, &qj.msg);
+        IExec->WaitPort(ui.worker_reply_port);
+        IExec->GetMsg(ui.worker_reply_port);
+    }
+    if (ui.win_obj) {
+        IIntuition->DisposeObject(ui.win_obj);
+        ui.win_obj = NULL;
+    }
+    IClickTab->FreeClickTabList(&tab_list);
+    if (ui.gui_port)
+        IExec->FreeSysObject(ASOT_PORT, ui.gui_port);
+    if (ui.worker_reply_port)
+        IExec->FreeSysObject(ASOT_PORT, ui.worker_reply_port);
+    if (ui.prefs_port)
+        IExec->FreeSysObject(ASOT_PORT, ui.prefs_port);
+    if (icon)
+        ui.IIcn->FreeDiskObject(icon);
     CleanupVizFilterLabels();
     CleanupUserLogging();
     CleanupSystemResources();

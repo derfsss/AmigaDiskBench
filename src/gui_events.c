@@ -19,7 +19,8 @@ void UpdateBulkTabInfo(void)
     if (!ui.bulk_info_label || !ui.window)
         return;
 
-    char buf[160];
+    /* static: button.gadget keeps the GA_Text pointer for re-renders */
+    static char buf[160];
     char test_name[32];
 
     uint32 run_all_tests = 0;
@@ -171,11 +172,11 @@ void HandleWorkerReply(struct Message *m)
 
                     /* Force visual refresh for ReAction layout to reflect enabled state */
                     // IIntuition->IDoMethod(ui.win_obj, WM_RETHINK);
-                    IIntuition->RefreshGList((struct Gadget *)ui.run_button, ui.window, NULL, 1);
+                    SafeRefreshGList(ui.run_button);
 
                     /* Reset Traffic Light to Green */
                     if (ui.traffic_light) {
-                        IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
+                        SafeRefreshGList(ui.traffic_light);
                     }
 
                     /* Log bulk/single queue completion */
@@ -242,7 +243,7 @@ void HandleWorkerReply(struct Message *m)
                         IExec->AddTail(&ui.bench_labels, n);
                         IIntuition->SetGadgetAttrs((struct Gadget *)ui.bench_list, ui.window, NULL, LISTBROWSER_Labels,
                                                    (uint32)&ui.bench_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
-                        IIntuition->RefreshGList((struct Gadget *)ui.bench_list, ui.window, NULL, 1);
+                        SafeRefreshGList(ui.bench_list);
                         UpdateVisualization();
                     }
                 }
@@ -313,6 +314,15 @@ void HandleGUIEvent(uint32 result, uint16 code, BOOL *running)
         } else {
             *running = FALSE;
         }
+        break;
+    case WMHI_ICONIFY:
+        /* Titlebar iconify gadget: window.class expects the app to
+         * respond with WM_ICONIFY (same as the AppLib Hide path). */
+        if (IIntuition->IDoMethod(ui.win_obj, WM_ICONIFY))
+            ui.window = NULL;
+        break;
+    case WMHI_UNICONIFY:
+        ui.window = (struct Window *)IIntuition->IDoMethod(ui.win_obj, WM_OPEN);
         break;
     case WMHI_GADGETUP:
         switch (gid) {
@@ -679,33 +689,13 @@ void HandlePrefsEvent(uint32 result, uint16 code)
     uint32 gid = result & WMHI_GADGETMASK;
     switch (result & WMHI_CLASSMASK) {
     case WMHI_CLOSEWINDOW:
-        IIntuition->IDoMethod(ui.prefs_win_obj, WM_CLOSE);
-        IIntuition->DisposeObject(ui.prefs_win_obj);
-        ui.prefs_win_obj = NULL;
-        ui.prefs_window = NULL;
-        {
-            struct Node *pn, *pnx;
-            for (pn = IExec->GetHead(&ui.prefs_avg_list); pn; pn = pnx) {
-                pnx = IExec->GetSucc(pn);
-                IChooser->FreeChooserNode(pn);
-            }
-        }
+        ClosePrefsWindow();
         break;
     case WMHI_GADGETUP:
         if (gid == GID_PREFS_SAVE) {
             UpdatePreferences();
         } else if (gid == GID_PREFS_CANCEL) {
-            IIntuition->IDoMethod(ui.prefs_win_obj, WM_CLOSE);
-            IIntuition->DisposeObject(ui.prefs_win_obj);
-            ui.prefs_win_obj = NULL;
-            ui.prefs_window = NULL;
-            {
-                struct Node *pn, *pnx;
-                for (pn = IExec->GetHead(&ui.prefs_avg_list); pn; pn = pnx) {
-                    pnx = IExec->GetSucc(pn);
-                    IChooser->FreeChooserNode(pn);
-                }
-            }
+            ClosePrefsWindow();
         } else if (gid == GID_PREFS_CSV_BR) {
             BrowseCSV();
         }

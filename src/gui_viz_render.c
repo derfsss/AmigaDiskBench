@@ -766,7 +766,8 @@ void VizCheckHover(int mx, int my)
     }
 
     if (hit) {
-        char buf[256];
+        /* static: button.gadget keeps the GA_Text pointer for re-renders */
+        static char buf[256];
         /* Sanitize underscores in volume name for display */
         char vol_display[32];
         const char *src = hit->volume_name;

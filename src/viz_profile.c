@@ -176,6 +176,14 @@ static VizSection ParseSectionHeader(const char *line)
 
 static void AddFilterValue(VizFilterList *fl, VizFilterMode mode, const char *val)
 {
+    /* Include/Exclude are mutually exclusive per category (documented in
+     * the README). Without this guard a later key of the opposite mode
+     * would silently flip the WHOLE list's mode, inverting the meaning
+     * of every previously added value. First mode wins; conflicting
+     * entries are dropped. */
+    if (fl->count > 0 && fl->mode != mode)
+        return;
+
     if (fl->count < VIZ_FILTER_LIST_MAX)
     {
         fl->mode = mode;
@@ -196,7 +204,10 @@ static BOOL ParseVizFile(const char *path, VizProfile *profile)
     /* Set defaults */
     memset(profile, 0, sizeof(VizProfile));
     profile->y_autoscale = TRUE;
-    profile->sort_x_by_value = TRUE; /* will be adjusted per x_source */
+    /* Documented default when [XAxis] Source is omitted is test_index
+     * (the memset would otherwise silently leave block_size = 0). */
+    profile->x_source = VIZ_SRC_TEST_INDEX;
+    profile->sort_x_by_value = FALSE; /* adjusted per x_source below */
     profile->default_date_range = VIZ_DATE_ALL;
     profile->trend_window = 3;
     profile->trend_degree = 2;
@@ -253,9 +264,10 @@ static BOOL ParseVizFile(const char *path, VizProfile *profile)
             if (StrCaseCmp(key, "Source") == 0)
             {
                 profile->x_source = ParseXSource(val);
-                /* Adjust sort default based on source */
-                if (profile->x_source != VIZ_SRC_BLOCK_SIZE)
-                    profile->sort_x_by_value = FALSE;
+                /* Sort default: yes for block_size, no otherwise.
+                 * (An explicit [Series] SortX key still overrides when it
+                 * appears after [XAxis], the conventional section order.) */
+                profile->sort_x_by_value = (profile->x_source == VIZ_SRC_BLOCK_SIZE);
             }
             else if (StrCaseCmp(key, "Label") == 0)
                 strncpy(profile->x_label, val, sizeof(profile->x_label) - 1);
@@ -322,8 +334,18 @@ static BOOL ParseVizFile(const char *path, VizProfile *profile)
                 AddFilterValue(&profile->filter_averaging, VIZ_FILTER_INCLUDE, val);
             else if (StrCaseCmp(key, "ExcludeVersion") == 0)
                 AddFilterValue(&profile->filter_version, VIZ_FILTER_EXCLUDE, val);
-            else if (StrCaseCmp(key, "MinVersion") == 0)
+            else if (StrCaseCmp(key, "IncludeVersion") == 0)
                 AddFilterValue(&profile->filter_version, VIZ_FILTER_INCLUDE, val);
+            else if (StrCaseCmp(key, "MinVersion") == 0)
+            {
+                /* True numeric threshold. The old behaviour (substring
+                 * include) meant "MinVersion = 2.5" EXCLUDED v2.6+.
+                 * major*1000+minor keying keeps Amiga-style "2.10" > "2.9"
+                 * ordering (a float compare would invert it). */
+                unsigned vmaj = 0, vmin = 0;
+                if (sscanf(val, "%u.%u", &vmaj, &vmin) >= 1)
+                    profile->min_version_key = vmaj * 1000 + vmin;
+            }
             else if (StrCaseCmp(key, "MinPasses") == 0)
                 profile->min_passes = (uint32)strtoul(val, NULL, 10);
             else if (StrCaseCmp(key, "MinMBs") == 0)
@@ -420,7 +442,7 @@ BOOL LoadVizProfiles(void)
 
     g_viz_profile_count = 0;
 
-    lock = IDOS->Lock("PROGDIR:Visualizations", ACCESS_READ);
+    lock = IDOS->Lock("PROGDIR:Visualizations", SHARED_LOCK);
     if (!lock)
     {
         LOG_DEBUG("LoadVizProfiles: Visualizations folder not found\n");
@@ -603,10 +625,14 @@ void ComputeLinearFit(float *x, float *y, uint32 count, float *y_fit)
 void ComputeMovingAverage(float *y, uint32 count, uint32 window, float *y_fit)
 {
     uint32 i;
-    int32 half = (int32)(window / 2);
 
     if (count == 0) return;
+    /* Clamp BEFORE computing 'half' (a post-clamp 'half' was dead code:
+     * window 0/1 produced half==0, i.e. no smoothing at all). Upper
+     * clamp prevents signed overflow of lo/hi with absurd windows. */
     if (window < 2) window = 2;
+    if (window > count) window = count;
+    int32 half = (int32)(window / 2);
 
     for (i = 0; i < count; i++)
     {

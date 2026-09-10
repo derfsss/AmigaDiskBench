@@ -196,7 +196,7 @@ Valid test type names: `Sprinter`, `HeavyLifter`, `Legacy`, `DailyGrind`, `Seque
 | `ExcludeBlockSize` | Exclude results with this block size. |
 | `IncludeBlockSize` | Include only results with these block sizes. |
 
-Valid block size names: `4K`, `16K`, `32K`, `64K`, `256K`, `1M`, `Mixed`
+Valid block size names: `4K`, `16K`, `32K`, `64K`, `128K`, `256K`, `1M`, `Mixed`
 
 **Other data filters:**
 
@@ -208,7 +208,8 @@ Valid block size names: `4K`, `16K`, `32K`, `64K`, `256K`, `1M`, `Mixed`
 | `ExcludeVendor` / `IncludeVendor` | Drive vendor string | Filter by manufacturer. |
 | `ExcludeProduct` / `IncludeProduct` | Drive product string | Filter by drive model. |
 | `ExcludeAveraging` / `IncludeAveraging` | Averaging method | Filter by pass averaging. |
-| `ExcludeVersion` / `MinVersion` | App version string | Filter by AmigaDiskBench version. |
+| `ExcludeVersion` / `IncludeVersion` | App version string | Filter by AmigaDiskBench version (substring match). |
+| `MinVersion` | Numeric version (e.g. `2.5`) | Include only results from this app version **or newer**. Compared numerically (major.minor), so `2.10` > `2.9`. |
 
 Valid averaging method names: `AllPasses`, `TrimmedMean`, `Median`
 
@@ -235,7 +236,7 @@ Valid averaging method names: `AllPasses`, `TrimmedMean`, `Median`
 | Key | Values | Default | Description |
 |-----|--------|---------|-------------|
 | `Style` | `none`, `linear`, `moving_average`, `polynomial` | `none` | Trend line algorithm. |
-| `Window` | Integer | `3` | Window size for moving average (number of points on each side). |
+| `Window` | Integer | `3` | Total moving-average window width in points (clamped to 2..point count); e.g. `5` averages each point with its two neighbours on each side. |
 | `Degree` | `2` or `3` | `2` | Polynomial degree (clamped to 2-3). Uses Gaussian elimination. |
 | `PerSeries` | `yes` / `no` | `no` | Draw a separate trend line for each series, or one global trend. |
 
@@ -257,7 +258,7 @@ Example: `ReferenceLine = 600, "SATA III Max"` draws a dashed line at 600 MB/s.
 
 - A profile **must** have a `[Profile]` section with a `Name` key to be loaded.
 - Boolean values accept `yes`/`true`/`1` for true; anything else is false.
-- The `Exclude*` / `Include*` filter modes are mutually exclusive per category. If you use `IncludeTest`, only those tests are shown. If you use `ExcludeTest`, everything except those tests is shown. Do not mix both for the same category.
+- The `Exclude*` / `Include*` filter modes are mutually exclusive per category. If you use `IncludeTest`, only those tests are shown. If you use `ExcludeTest`, everything except those tests is shown. Do not mix both for the same category — if you do, the first mode encountered wins and later keys of the opposite mode are ignored.
 - On-screen GUI filters (Volume, Test Type, Date Range, App Version) are applied on top of profile filters.
 - Use the `VALIDATE` mode (Shell argument or icon tooltype) to check your `.viz` files for errors before launching.
 - See the 9 included `.viz` files in `Visualizations/` for working examples covering all features.
@@ -346,7 +347,27 @@ make dist-lha
 
 ## Version History
 
-### v2.7 (Current)
+### v2.10 (Current)
+- **S.M.A.R.T. signature written to the wrong ATA registers** (thanks to @alfredone): the 0x4F/0xC2 SMART signature was placed in LBA Low/LBA Mid instead of LBA Mid/LBA High, in both the 16-byte and 12-byte ATA PASS-THROUGH CDBs. Per SAT, the 16-byte CDB carries LBA Mid at byte 10 and LBA High at byte 12; the 12-byte CDB carries them at bytes 6 and 7. With the signature one register too low, drives were entitled to abort the command, so the HD_SCSICMD S.M.A.R.T. tier could not work on SAT-compliant drivers.
+- Everything listed under v2.9 below, which shipped as a binary release but whose sources were never published; they are included in this release.
+
+### v2.9
+Comprehensive audit and bug-fix release. All sources reviewed against the AmigaOS 4.1 SDK 54.16 autodocs.
+- **Critical — Random/Mixed workloads performed no I/O on some filesystems**: `ChangeFilePosition()` returns a DOS boolean (non-zero = success), not the old seek position. The `!= -1` check treated a `DOSTRUE` success as failure (skipping every read/write) and a `0` failure as success. Fixed in Random Write, Random Read, and Mixed 70/30; IOPS now counts only *successful* operations.
+- **Random/Mixed workloads now use a fixed random seed** so the offset sequence is identical on every run and pass (results are comparable run-to-run, matching Daily Grind).
+- **Worker logging raced the GUI**: `NP_Entry` child processes share globals with the main task, so the worker took the "main task" logging path and mutated the log buffer / texteditor gadget cross-process. Worker log lines are now correctly routed through Exec message passing.
+- **DosList deadlock risk**: `ScanSystemDrives()` no longer calls blocking DOS/device I/O while holding `LockDosList()` — entries are snapshotted under the lock, then enriched after release.
+- **Crash fixes**: VALIDATE mode crashed in cleanup (uninitialized list walk); wild-pointer dereference when resolving a volume-only DosList entry (`DLT_VOLUME` has no `dol_Startup`); `RefreshGList()` on a NULL window when a benchmark finished while iconified; `ReadArgs` stack corruption (32-bit switch written through a 16-bit BOOL); titlebar iconify gadget now actually iconifies.
+- **Use-after-free fixes**: gadget label lists were freed before the main window was disposed (clickable for minutes during the shutdown drain); Preferences/Details/Compare windows left open after quit dispatched into unloaded code; dangling stack buffers passed as `GA_Text` to health/bulk/viz-hover labels.
+- **Leak fixes**: comparison window list nodes (every open/close); smartctl NIL: filehandles (synchronous `System()` never closes them — every health refresh leaked two); details-window menus on open failure; hardware cache at exit; disk-info category node data on allocation failure.
+- **Logic fixes**: legacy CSV import corrupted the Type/Date columns (wrong shift target); compare window Duration row always showed 0; "Run Bulk" with nothing selected cleared the busy flag mid-benchmark (crash on quit); warmup write phase could loop forever on a full volume; smartctl tier reported "Drive issues detected!" for healthy drives lacking a "test result:" line; SCSI VPD responses are now validated by page code (garbage serials / SSDs misdetected as HDD on devices that ignore EVPD); floppy media type no longer overwritten by the HDD fallback; S.M.A.R.T. health query races between GUI and worker eliminated (semaphore-guarded hardware cache).
+- **Visualization fixes**: "Last Week" date filter now computes exact day differences across month/year boundaries; `MinVersion` is now a true numeric ≥ filter (previously a substring match that *excluded* newer versions); mixing Include/Exclude in one category no longer silently inverts the filter; moving-average `Window` clamp fixed (0/1 produced no smoothing); `MaxSeries` truncation no longer distorts bar width and Y autoscale; VALIDATE accepts the documented `0x` color prefix and uppercase `.VIZ` extensions; profile reload failure message no longer claims old profiles were retained; omitted `[XAxis] Source` now defaults to `test_index` as documented.
+- 128K block size: added missing display label (was shown via fallback formatter).
+
+### v2.8
+- Startup crash fix, disk scan hardening, partition list corruption fixes.
+
+### v2.7
 - **S.M.A.R.T. rewrite**: Three-tier query strategy for broad hardware support:
   1. **CMD_IDE/CMDIDE_DIRECTATA**: Direct ATA register passthrough (reverse-engineered from AmigaOS smartctl binary). Works on `a1ide.device`, `sb600sata.device`, `sii3112ide.device`, `sii3114ide.device`, and other drivers implementing the CMD_IDE interface.
   2. **HD_SCSICMD with ATA PASS-THROUGH**: SAT-compliant CDBs (16-byte with 12-byte fallback) for drivers supporting SCSI-ATA Translation.

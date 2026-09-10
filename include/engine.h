@@ -193,6 +193,14 @@ void GetFileSystemInfo(const char *path, char *out_name, uint32 name_size);
 void GetHardwareInfo(const char *path, BenchResult *result);
 
 /**
+ * @brief Initialize the hardware info cache semaphore.
+ *
+ * Must be called once in the GUI process BEFORE the benchmark worker is
+ * spawned — the cache is shared between both processes.
+ */
+void InitHardwareInfoCache(void);
+
+/**
  * @brief Clear the internal hardware info cache.
  *
  * Invalidates all cached hardware information, forcing a re-query on the next access.

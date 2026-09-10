@@ -99,7 +99,7 @@ void RefreshHistory(void)
                 snprintf(fs, sizeof(fs), "%s", disk);
                 snprintf(disk, sizeof(disk), "%s", type);
                 snprintf(type, sizeof(type), "%s", timestamp);
-                snprintf(type, sizeof(type), "%s", id);
+                snprintf(timestamp, sizeof(timestamp), "%s", id);
                 snprintf(id, sizeof(id), "N/A");
             }
 
@@ -223,7 +223,7 @@ void RefreshHistory(void)
         LOG_DEBUG("RefreshHistory: Reattaching list to %p", ui.history_list);
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels,
                                    &ui.history_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
-        IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
+        SafeRefreshGList(ui.history_list);
         RefreshVizVolumeFilter();
         RefreshVizVersionFilter();
         UpdateVisualization();
@@ -406,7 +406,7 @@ void DeleteSelectedHistoryItems(void)
     if (ui.window && ui.history_list) {
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels,
                                    &ui.history_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
-        IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
+        SafeRefreshGList(ui.history_list);
     }
 }
 
@@ -439,7 +439,7 @@ void ClearBenchmarkList(void)
     if (ui.bench_list) {
         IIntuition->SetGadgetAttrs((struct Gadget *)ui.bench_list, ui.window, NULL, LISTBROWSER_Labels,
                                    &ui.bench_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
-        IIntuition->RefreshGList((struct Gadget *)ui.bench_list, ui.window, NULL, 1);
+        SafeRefreshGList(ui.bench_list);
     }
 }
 
@@ -482,7 +482,7 @@ void ClearHistory(void)
     /* 5. Reattach lists (empty) */
     IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels,
                                &ui.history_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
-    IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
+    SafeRefreshGList(ui.history_list);
 }
 
 /**
@@ -511,13 +511,16 @@ void DeselectAllHistoryItems(void)
 
     struct Node *node;
     for (node = IExec->GetHead(&ui.history_labels); node; node = IExec->GetSucc(node)) {
-        IListBrowser->SetListBrowserNodeAttrs(node, LBNA_Checked, FALSE, TAG_DONE);
+        /* Clear both interaction models: DeleteSelectedHistoryItems honours
+         * LBNA_Selected as well as LBNA_Checked, so a click-selected row
+         * left selected here would still be delete-eligible. */
+        IListBrowser->SetListBrowserNodeAttrs(node, LBNA_Checked, FALSE, LBNA_Selected, FALSE, TAG_DONE);
     }
 
     /* Reattach and refresh */
     IIntuition->SetGadgetAttrs((struct Gadget *)ui.history_list, ui.window, NULL, LISTBROWSER_Labels,
                                (uint32)&ui.history_labels, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
-    IIntuition->RefreshGList((struct Gadget *)ui.history_list, ui.window, NULL, 1);
+    SafeRefreshGList(ui.history_list);
 
     /* Update Compare Button State - Explicitly disable it as count is now 0 */
     SetGadgetState(GID_HISTORY_COMPARE, TRUE);

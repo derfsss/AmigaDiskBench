@@ -270,8 +270,22 @@ struct DeviceCacheNode
 
 static struct DeviceCacheNode *hardware_cache = NULL;
 
+/* The cache is shared between the GUI process and the benchmark worker
+ * (globals are shared with NP_Entry children). Both can miss and insert
+ * concurrently, so every traversal/mutation is serialized through this
+ * semaphore. InitHardwareInfoCache() must run before the worker is
+ * spawned (called from StartGUI). */
+static struct SignalSemaphore cache_sem;
+
+void InitHardwareInfoCache(void)
+{
+    memset(&cache_sem, 0, sizeof(cache_sem));
+    IExec->InitSemaphore(&cache_sem);
+}
+
 void ClearHardwareInfoCache(void)
 {
+    IExec->ObtainSemaphore(&cache_sem);
     struct DeviceCacheNode *node = hardware_cache;
     while (node) {
         struct DeviceCacheNode *next = node->next;
@@ -279,12 +293,15 @@ void ClearHardwareInfoCache(void)
         node = next;
     }
     hardware_cache = NULL;
+    IExec->ReleaseSemaphore(&cache_sem);
     LOG_DEBUG("Hardware Info Cache cleared.");
 }
 
 void GetHardwareInfo(const char *path, BenchResult *result)
 {
     snprintf(result->app_version, sizeof(result->app_version), "%s", APP_VERSION_STR);
+
+    IExec->ObtainSemaphore(&cache_sem);
 
     /* 1. Check Cache */
     struct DeviceCacheNode *node = hardware_cache;
@@ -300,6 +317,7 @@ void GetHardwareInfo(const char *path, BenchResult *result)
             /* Logging reduced to avoid spam, or keep for debug validation?
                Let's log a small "hit" message for verification */
             LOG_DEBUG("GetHardwareInfo: Cache Hit for '%s'", path);
+            IExec->ReleaseSemaphore(&cache_sem);
             return;
         }
         node = node->next;
@@ -359,17 +377,23 @@ void GetHardwareInfo(const char *path, BenchResult *result)
                 uint32 startup = 0;
                 if (dnode->dol_Type == DLT_DEVICE) {
                     startup = (uint32)dnode->dol_misc.dol_device.dol_Startup;
-                } else if (dnode->dol_Type == DLT_VOLUME) {
-                    startup = (uint32)dnode->dol_misc.dol_handler.dol_Startup;
                 }
+                /* DLT_VOLUME nodes have NO dol_Startup — that union offset
+                 * holds dol_volume fields (e.g. the lock list). Treating it
+                 * as a startup BPTR dereferences a wild pointer. Volumes
+                 * are therefore not resolved via this fallback. */
 
                 if (startup > 0 && startup <= 64) {
                     /* Small integer is the unit number - but we don't know the device name! */
                     result->device_unit = startup;
                 } else if (startup > 64) {
-                    /* Message block contains the unit AND the device name */
+                    /* Message block contains the unit AND the device name.
+                     * Validate decoded BPTRs with TypeOfMem() before any
+                     * dereference (same hardening as ScanSystemDrives —
+                     * stale DosList startups can decode to unmapped
+                     * addresses and DSI). */
                     struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)BADDR(startup);
-                    if (fssm) {
+                    if (fssm && IExec->TypeOfMem(fssm)) {
                         result->device_unit = fssm->fssm_Unit;
 
                         /* Extract device name from BSTR */
@@ -379,7 +403,7 @@ void GetHardwareInfo(const char *path, BenchResult *result)
                                or if we just want a simple extract. Let's use the manual method which is
                                robust for standard BSTRs found in startup messages. */
                             UBYTE *bstr = (UBYTE *)BADDR(fssm->fssm_Device);
-                            if (bstr) {
+                            if (bstr && IExec->TypeOfMem(bstr)) {
                                 uint32 len = *bstr;
                                 if (len > sizeof(result->device_name) - 1)
                                     len = sizeof(result->device_name) - 1;
@@ -410,9 +434,12 @@ void GetHardwareInfo(const char *path, BenchResult *result)
     snprintf(result->serial_number, sizeof(result->serial_number), "%s", "N/A");
     snprintf(result->firmware_rev, sizeof(result->firmware_rev), "%s", "N/A");
 
-    /* If we have a real device name, attempt low-level inquiry */
+    /* If we have a real device name, attempt low-level inquiry.
+     * "Unknown" is the unresolved-default — OpenDevice("Unknown") can
+     * never succeed, so skip it like the other placeholders. */
     if (result->device_name[0] && strcmp(result->device_name, "Generic Disk") != 0 &&
-        strcmp(result->device_name, "ramdrive.device") != 0) {
+        strcmp(result->device_name, "ramdrive.device") != 0 &&
+        strcmp(result->device_name, "Unknown") != 0) {
         GetScsiHardwareInfo(result->device_name, result->device_unit, result);
     }
 
@@ -443,6 +470,8 @@ void GetHardwareInfo(const char *path, BenchResult *result)
         new_node->next = hardware_cache;
         hardware_cache = new_node;
     }
+
+    IExec->ReleaseSemaphore(&cache_sem);
 }
 
 BOOL GetDeviceFromVolume(const char *volume, char *out_device, uint32 device_size, uint32 *out_unit)
@@ -456,7 +485,9 @@ BOOL GetDeviceFromVolume(const char *volume, char *out_device, uint32 device_siz
 
     GetHardwareInfo(volume, &res);
 
-    if (res.device_name[0] != '\0') {
+    /* "Unknown" means resolution failed entirely — callers (e.g. the
+     * health tab) must not try to OpenDevice() it. */
+    if (res.device_name[0] != '\0' && strcmp(res.device_name, "Unknown") != 0) {
         snprintf(out_device, device_size, "%s", res.device_name);
         *out_unit = res.device_unit;
         return TRUE;

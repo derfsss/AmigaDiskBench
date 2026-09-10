@@ -9,6 +9,21 @@
 static struct ColumnInfo compare_cols[] = {
     {150, "Metric", 0}, {150, "Result 1", 0}, {150, "Result 2", 0}, {100, "Difference", 0}, {-1, (STRPTR)~0, -1}};
 
+/* The listbrowser does NOT take ownership of its label list — it must
+ * stay alive while the window is open and be freed by us afterwards. */
+static struct List *s_compare_list = NULL;
+
+static void FreeCompareList(void)
+{
+    if (!s_compare_list)
+        return;
+    struct Node *n;
+    while ((n = IExec->RemHead(s_compare_list)))
+        IListBrowser->FreeListBrowserNode(n);
+    IExec->FreeVec(s_compare_list);
+    s_compare_list = NULL;
+}
+
 void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
 {
     if (!result1 || !result2) {
@@ -133,11 +148,12 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
              (strcmp(result1->firmware_rev, result2->firmware_rev) == 0) ? "Same" : "Different");
     ADD_COMPARE_ROW("Firmware");
 
-    /* Duration */
-    snprintf(val1, sizeof(val1), "%.2f sec", result1->duration_secs);
-    snprintf(val2, sizeof(val2), "%.2f sec", result2->duration_secs);
-    if (result1->duration_secs > 0) {
-        float percent_diff = ((result2->duration_secs - result1->duration_secs) / result1->duration_secs) * 100.0f;
+    /* Duration — total_duration is the field the CSV loader populates
+     * (duration_secs stays 0 for loaded history rows). */
+    snprintf(val1, sizeof(val1), "%.2f sec", result1->total_duration);
+    snprintf(val2, sizeof(val2), "%.2f sec", result2->total_duration);
+    if (result1->total_duration > 0) {
+        float percent_diff = ((result2->total_duration - result1->total_duration) / result1->total_duration) * 100.0f;
         snprintf(diff, sizeof(diff), "%+.1f%%", percent_diff);
     } else {
         snprintf(diff, sizeof(diff), "N/A");
@@ -156,6 +172,8 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
     HLayoutObject, LAYOUT_AddChild, ButtonObject, GA_ID, GID_COMPARE_CLOSE, GA_Text, "Close", GA_RelVerify, TRUE, End,
     End, CHILD_WeightedHeight, 0, End, End;
 
+    s_compare_list = compare_list;
+
     if (ui.compare_win_obj) {
         ui.compare_window = (struct Window *)IIntuition->IDoMethod(ui.compare_win_obj, WM_OPEN, NULL);
         if (ui.compare_window) {
@@ -164,7 +182,10 @@ void OpenCompareWindow(BenchResult *result1, BenchResult *result2)
             LOG_DEBUG("OpenCompareWindow: Failed to open window");
             IIntuition->DisposeObject(ui.compare_win_obj);
             ui.compare_win_obj = NULL;
+            FreeCompareList();
         }
+    } else {
+        FreeCompareList();
     }
 }
 
@@ -174,6 +195,7 @@ void CloseCompareWindow(void)
         IIntuition->DisposeObject(ui.compare_win_obj);
         ui.compare_win_obj = NULL;
         ui.compare_window = NULL;
+        FreeCompareList();
         LOG_DEBUG("CloseCompareWindow: Window closed");
     }
 }

@@ -12,21 +12,25 @@ AmigaDiskBench is a modern, ReAction-based disk benchmarking utility for AmigaOS
 - **SDK Version**: 54.16.
 
 ### Build Commands (WSL2)
+The Makefile includes `../AmiUpdateIntegration/amiupdate.mk`, so the **parent** directory must contain an `AmiUpdateIntegration` checkout AND must be the Docker volume mount (mounting only the project dir hides the sibling from the container):
+
 ```bash
-# From WSL shell inside the project directory:
-cd /mnt/w/Code/amiga/antigravity/projects/AmigaDiskBench
+# From WSL shell inside the PARENT of the project directory:
+cd /mnt/w/Code/amiga/antigravity/projects   # or wherever the checkout lives
 
 # Clean
-docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make clean
+docker run --rm -v $(pwd):/src -w /src/AmigaDiskBench walkero/amigagccondocker:os4-gcc11 make clean
 
 # Build
-docker run --rm -v $(pwd):/src -w /src walkero/amigagccondocker:os4-gcc11 make all
+docker run --rm -v $(pwd):/src -w /src/AmigaDiskBench walkero/amigagccondocker:os4-gcc11 make all
 ```
 
 When invoking from Windows (e.g., VS Code terminal via `wsl -e sh -c "..."`), `$(pwd)` expands correctly inside the quoted string. Each `make` target should be run as a separate Docker invocation. **Always run `make clean` before `make all`** — the Makefile only recompiles changed `.c` files, so stale `.o` files can cause the binary to show an old version string or link against outdated object code.
 
 ## Current Version
-**v2.5.4** (version.h: VERSION=2, REVISION=5, MINOR=4, BUILD=1139, date 04.03.2026)
+**v2.10** (version.h: VERSION=2, MINOR=10, date 10.09.2026). Versioning is now plain Amiga-style `VERSION.MINOR` — the old REVISION/BUILD fields were dropped in v2.8.
+
+> NOTE: the per-version detail below this point has not been fully rewritten for every release; `git log` and the README Version History are the authoritative changelog.
 
 ## Architecture & Key Components
 
@@ -168,6 +172,8 @@ Each workload implements the `BenchWorkload` interface: `Setup()`, `Run()`, `Cle
 ## Known Quirks & Gotchas
 
 ### ReAction / GUI
+- **GA_Text on button.gadget labels is NOT copied**: the gadget stores the pointer and re-renders from it (resize, damage, tab flip). Buffers passed as `GA_Text` must be `static` or otherwise outlive the gadget (see `gui_info.c` `s_part_*`, `gui_health.c`, `gui_events.c` bulk label).
+- **Free gadget node lists only AFTER DisposeObject(window)**: choosers/listbrowsers/clicktabs walk their lists live on input. The shutdown drain can keep the window open for minutes — freeing lists before disposal is a use-after-free.
 - **CHOOSER_Labels requires struct List \***: Always pass `(uint32)&my_list` (an Exec `struct List *`), never a plain C string array. Build nodes via `IChooser->AllocChooserNode()`. See v2.3.1 crash fix.
 - **chooser.gadget list lifetime**: The chooser walks its node list **live** every time the popup opens. It does NOT copy the list at `NewObject` time. The list must remain allocated for the window's entire lifetime.
 - **INTEGER_MaxChars must come first**: Always place `INTEGER_MaxChars` before `INTEGER_Minimum`, `INTEGER_Maximum`, and `INTEGER_Number`. Tags are processed sequentially; MaxChars affects value clamping.
@@ -191,7 +197,12 @@ Each workload implements the `BenchWorkload` interface: `Setup()`, `Run()`, `Cle
 - **Filter string matching**: Hardware/vendor/product filters use substring matching (`strstr`). Test/filesystem/volume use exact match (`Stricmp`).
 
 ### Engine / Worker
-- **IUtility is NULL in CreateNewProc workers**: Worker processes bypass `crt0` startup so library globals are not initialised. Use C stdlib `vsnprintf`/`snprintf`/`strncpy` instead of `IUtility->VSNPrintf`/`SNPrintf`/`Strlcpy`.
+- **NP_Entry children SHARE all globals with the parent**: AmigaOS 4 is a single-address-space OS; a `CreateNewProcTags(NP_Entry, ...)` child runs the same loaded segments — there is NO private BSS copy. The worker sees the same `ui` struct as the GUI. Consequences: (a) never assume a global is "zero in the worker"; (b) task identity must be checked with `IExec->FindTask(NULL) == ui.log_main_task` (see `LogUser()`); (c) shared mutable state (e.g. the `hardware_cache` in engine_info.c) needs a `SignalSemaphore`.
+- **IUtility is NULL in CreateNewProc workers**: Worker processes bypass `crt0` startup so library *interface* globals are not initialised. Use C stdlib `vsnprintf`/`snprintf`/`strncpy` instead of `IUtility->VSNPrintf`/`SNPrintf`/`Strlcpy`.
+- **ChangeFilePosition() returns a DOS boolean**: non-zero = success, zero = failure (dos.library autodoc). It does NOT return the old position — that is `GetFilePosition()`. Many filesystems return DOSTRUE (-1) for success, so `!= -1` checks are doubly wrong.
+- **Synchronous System()/SystemTags() never closes SYS_Input/SYS_Output**: the caller must Close() them after it returns. Only `SYS_Asynch, TRUE` transfers handle ownership (and even then not SYS_Error).
+- **Never call blocking DOS functions while holding LockDosList()**: `Lock()`, `Info()`, `OpenDevice`+`DoIO`, etc. can deadlock against a handler needing a write lock. Snapshot what you need under the lock, `UnLockDosList()`, then do the I/O (see the two-phase `ScanSystemDrives()`).
+- **DLT_VOLUME DosList nodes have no dol_Startup**: that union offset holds `dol_volume` fields. Only read `dol_Startup` from `DLT_DEVICE` nodes; validate decoded BPTRs with `TypeOfMem()` before dereferencing.
 - **IOPS = total_ops / total_elapsed_time**: Not ops per pass. Each workload's `Run()` must return `bytes / block_size` as `op_count`, not `1`.
 - **Worker shutdown protocol**: Each submitted `BenchJob` produces TWO messages: a `BenchStatus` `PutMsg` and the original job `ReplyMsg` (with `mn_Node.ln_Type == NT_REPLYMSG`). On quit, drain the pending queue (`CleanupBenchmarkQueue()`), then loop `WaitPort`/`GetMsg` until `NT_REPLYMSG` arrives to confirm the worker is done.
 - **ReadArgs guard**: `ReadArgs("VALIDATE/S", ...)` must only be called when `IDOS->Output() != NULL` (Shell context). On Workbench launch, `Output()` is NULL and `ReadArgs` fails, leaving a stale result that can cause a blank window.

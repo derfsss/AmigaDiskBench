@@ -44,6 +44,11 @@ extern struct TimeRequest *BenchTimerReq;
 void GetHardwareInfo(const char *path, BenchResult *result);
 
 /**
+ * @brief Initialize the hardware info cache semaphore (before worker spawn).
+ */
+void InitHardwareInfoCache(void);
+
+/**
  * @brief Clear the internal hardware info cache.
  */
 void ClearHardwareInfoCache(void);

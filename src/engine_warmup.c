@@ -64,7 +64,9 @@ void RunWarmup(const char *target_path)
         uint32 bytes_written = 0;
         while (bytes_written < WARMUP_SIZE) {
             int32 res = IDOS->Write(file, buffer, BUFFER_SIZE);
-            if (res == -1)
+            /* res == 0 (e.g. volume full) would loop forever; treat any
+             * non-positive result as terminal, like the read phase below. */
+            if (res <= 0)
                 break;
             bytes_written += res;
         }

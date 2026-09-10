@@ -84,23 +84,30 @@ static BOOL Run_Random4K(void *data, uint32 *bytes_processed, uint32 *op_count)
     }
     uint32 max_offset = rd->file_size - rd->block_size;
 
+    /* Fixed seed: identical offset sequence on every run/pass so results
+     * are comparable run-to-run (same approach as Daily Grind). Without
+     * this the sequence depended on how many tests ran beforehand. */
+    srand(1985);
+
+    uint32 ops_done = 0;
     for (uint32 i = 0; i < rd->num_ios; i++) {
         uint32 offset = (uint32)rand() % max_offset;
         /* Align to 512-byte boundary for realistic disk performance */
         offset &= ~RAND_SECTOR_ALIGN;
 
-        /* ChangeFilePosition returns the old position, not a success flag.
-         * A return of -1 indicates error; any other value (including 0) is valid. */
-        if (IDOS->ChangeFilePosition(rd->file, offset, OFFSET_BEGINNING) != -1) {
+        /* ChangeFilePosition returns a DOS boolean: non-zero on success,
+         * zero on failure (it does NOT return the old position). */
+        if (IDOS->ChangeFilePosition(rd->file, offset, OFFSET_BEGINNING) != 0) {
             if (IDOS->Write(rd->file, rd->buffer, rd->block_size) == rd->block_size) {
                 total_bytes += rd->block_size;
+                ops_done++;
             }
         }
     }
 
     /* Cap to uint32 max to avoid overflow — total_bytes can exceed 4GB with large block sizes */
     *bytes_processed = (total_bytes > 0xFFFFFFFFULL) ? 0xFFFFFFFFU : (uint32)total_bytes;
-    *op_count = rd->num_ios;
+    *op_count = ops_done;
     return (total_bytes > 0);
 }
 

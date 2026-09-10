@@ -291,13 +291,17 @@ void CleanupSystemResources(void)
     if (ui.SpaceBase)
         IIntuition->CloseClass(ui.SpaceBase);
 
-    /* Free Bulk Labels */
-    struct Node *bulk_node = IExec->GetHead(&ui.bulk_labels);
-    while (bulk_node) {
-        struct Node *bulk_next = IExec->GetSucc(bulk_node);
-        IExec->Remove(bulk_node);
-        IListBrowser->FreeListBrowserNode(bulk_node);
-        bulk_node = bulk_next;
+    /* Free Bulk Labels. Guard: in VALIDATE mode and on early init
+     * failure this runs before NewList() — a zeroed list header would
+     * make GetHead() dereference NULL. */
+    if (ui.bulk_labels.lh_Head != NULL) {
+        struct Node *bulk_node = IExec->GetHead(&ui.bulk_labels);
+        while (bulk_node) {
+            struct Node *bulk_next = IExec->GetSucc(bulk_node);
+            IExec->Remove(bulk_node);
+            IListBrowser->FreeListBrowserNode(bulk_node);
+            bulk_node = bulk_next;
+        }
     }
 
     if (ui.CheckBoxBase)

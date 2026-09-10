@@ -67,9 +67,12 @@ void RefreshHealthTab(void)
     if (!ui.window)
         return;
 
-    /* Update Status Labels */
-    char temp_str[32], power_str[64];
-    char status_buf[128];
+    /* Update Status Labels.
+     * static: button.gadget stores the GA_Text pointer and re-renders
+     * from it on refresh/resize — a stack buffer would dangle (same
+     * pattern as the s_part_* statics in gui_info.c). */
+    static char temp_str[32], power_str[64];
+    static char status_buf[128];
     const char *status_text;
 
     /* Build method suffix for diagnostic display */

@@ -167,14 +167,15 @@ BOOL RunBenchmark(BenchTestType type, const char *target_path, uint32 passes, ui
     timeinfo = localtime(&rawtime);
     if (timeinfo) {
         strftime(out_result->timestamp, sizeof(out_result->timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
+        /* Generate unique ID */
+        snprintf(out_result->result_id, sizeof(out_result->result_id), "%04d%02d%02d%02d%02d%02d_%04hX",
+                 timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour,
+                 timeinfo->tm_min, timeinfo->tm_sec, (unsigned short)(rand() & 0xFFFF));
     } else {
         snprintf(out_result->timestamp, sizeof(out_result->timestamp), "Unknown");
+        snprintf(out_result->result_id, sizeof(out_result->result_id), "unknown_%08lX_%04hX",
+                 (unsigned long)rawtime, (unsigned short)(rand() & 0xFFFF));
     }
-
-    /* Generate unique ID */
-    snprintf(out_result->result_id, sizeof(out_result->result_id), "%04d%02d%02d%02d%02d%02d_%04hX",
-             timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min,
-             timeinfo->tm_sec, (unsigned short)(rand() & 0xFFFF));
 
     uint32 valid_passes = 0;
     uint32 sum_iops = 0;

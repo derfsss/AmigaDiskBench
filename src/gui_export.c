@@ -54,6 +54,12 @@ void ExportToAnsiText(const char *filename)
                 char *fields[19];
                 int i = 0;
 
+                /* Strip trailing newline — otherwise the last parsed
+                 * field embeds it and breaks the report table layout */
+                size_t llen = strlen(line);
+                while (llen > 0 && (line[llen - 1] == '\n' || line[llen - 1] == '\r'))
+                    line[--llen] = '\0';
+
                 /* strsep handles empty fields better than strtok.
                  * Current CSV has 19 fields. We read what we need.
                  */

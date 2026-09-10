@@ -9,21 +9,22 @@
  * Thread-safe user-facing log subsystem for the Log tab.
  *
  * CROSS-PROCESS SAFETY:
- *   On AmigaOS 4, each process has its own BSS/data segment.  The
- *   BenchmarkWorker subprocess sees its own zero-initialised copy of
- *   the GUIState (ui) — it cannot safely touch the main task's log_buf
- *   or any gadget objects.
+ *   The BenchmarkWorker subprocess is created with NP_Entry from the
+ *   same loaded seglist, so it shares the SAME globals (including the
+ *   GUIState 'ui') as the main task — AmigaOS 4 is a single-address-
+ *   space system and NP_Entry children get no private data segment.
+ *   The worker therefore must never touch log_buf or gadget objects
+ *   directly; LogUser() decides which task it is running on by
+ *   comparing FindTask(NULL) against ui.log_main_task.
  *
- *   The solution uses standard Exec message-passing (IPC):
- *
- *   Worker path (ui.log_main_task == NULL in worker BSS):
+ *   Worker path (FindTask(NULL) != ui.log_main_task):
  *     LogUser() formats the timestamped line, allocates a BenchLogMsg
  *     from MEMF_SHARED, and PutMsg()s it to the worker_reply_port (the
  *     same port used for BenchStatus messages).  The main task's
  *     HandleWorkerReply() receives MSG_TYPE_LOG messages and calls
  *     LogAppendLine() + RefreshLogDisplay() directly.
  *
- *   Main task path (ui.log_main_task != NULL):
+ *   Main task path (FindTask(NULL) == ui.log_main_task):
  *     LogUser() calls LogAppendLine() directly — no message needed.
  *     RefreshLogDisplay() is called immediately after.
  *
@@ -47,7 +48,8 @@
 #define LOG_GROW_SIZE   (16 * 1024) /* heap growth increment for log_buf  */
 
 /* Reply port set by the worker via LogSetWorkerReplyPort().
- * Lives in the worker's own BSS — points to a MEMF_SHARED MsgPort. */
+ * Globals are shared between main task and NP_Entry worker; only the
+ * worker writes this, only the worker's LogUser() path reads it. */
 static struct MsgPort *s_log_reply_port = NULL;
 
 /* ------------------------------------------------------------------ */
@@ -168,12 +170,14 @@ void LogUser(const char *fmt, ...)
         strncpy(ts, "Unknown", sizeof(ts));
     snprintf(line, sizeof(line), "[%s] %s\n", ts, msg);
 
-    if (ui.log_main_task != NULL) {
+    if (ui.log_main_task != NULL && IExec->FindTask(NULL) == ui.log_main_task) {
         /* Main task: append directly */
         LogAppendLine(line);
         RefreshLogDisplay();
     } else {
-        /* Worker subprocess: send via Exec message to main task */
+        /* Worker subprocess (globals are shared with NP_Entry children,
+         * so ui.log_main_task is non-NULL here too — identity must be
+         * checked with FindTask): send via Exec message to main task */
         BenchLogMsg *lm = IExec->AllocVecTags(sizeof(BenchLogMsg),
                                                AVT_Type, MEMF_SHARED,
                                                AVT_ClearWithValue, 0,

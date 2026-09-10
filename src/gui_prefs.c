@@ -247,8 +247,15 @@ void OpenPrefsWindow(void)
 
     if (ui.prefs_win_obj) {
         ui.prefs_window = (struct Window *)IIntuition->IDoMethod(ui.prefs_win_obj, WM_OPEN);
+        if (!ui.prefs_window) {
+            /* WM_OPEN failed: dispose the half-built object now, otherwise
+             * prefs_win_obj stays non-NULL and Preferences can never be
+             * opened again this session (and the object + node list leak). */
+            ClosePrefsWindow();
+            return;
+        }
         /* Set initial selection for Drive Chooser based on default_drive */
-        if (ui.prefs_window && ui.prefs_target_chooser && ui.default_drive[0] != '\0') {
+        if (ui.prefs_target_chooser && ui.default_drive[0] != '\0') {
             struct Node *vn;
             for (vn = IExec->GetHead(&ui.drive_list); vn; vn = IExec->GetSucc(vn)) {
                 DriveNodeData *dd = NULL;
@@ -261,6 +268,31 @@ void OpenPrefsWindow(void)
             }
         }
     }
+}
+
+/*
+ * Close and dispose the Preferences window (if open) and free the
+ * averaging-method chooser node list. Safe to call when not open.
+ * Used by the Save/Cancel/close-gadget paths and by application quit.
+ */
+void ClosePrefsWindow(void)
+{
+    if (!ui.prefs_win_obj)
+        return;
+
+    if (ui.prefs_window)
+        IIntuition->IDoMethod(ui.prefs_win_obj, WM_CLOSE);
+    IIntuition->DisposeObject(ui.prefs_win_obj);
+    ui.prefs_win_obj = NULL;
+    ui.prefs_window = NULL;
+
+    /* Free the averaging method chooser node list now that the window is gone */
+    struct Node *pn, *pnx;
+    for (pn = IExec->GetHead(&ui.prefs_avg_list); pn; pn = pnx) {
+        pnx = IExec->GetSucc(pn);
+        IChooser->FreeChooserNode(pn);
+    }
+    IExec->NewList(&ui.prefs_avg_list);
 }
 
 void UpdatePreferences(void)
@@ -378,15 +410,5 @@ void UpdatePreferences(void)
         RefreshVizVolumeFilter(); /* Ensure filter list matches new history */
     }
 
-    IIntuition->IDoMethod(ui.prefs_win_obj, WM_CLOSE);
-    IIntuition->DisposeObject(ui.prefs_win_obj);
-    ui.prefs_win_obj = NULL;
-    ui.prefs_window = NULL;
-
-    /* Free the averaging method chooser node list now that the window is gone */
-    struct Node *pn, *pnx;
-    for (pn = IExec->GetHead(&ui.prefs_avg_list); pn; pn = pnx) {
-        pnx = IExec->GetSucc(pn);
-        IChooser->FreeChooserNode(pn);
-    }
+    ClosePrefsWindow();
 }

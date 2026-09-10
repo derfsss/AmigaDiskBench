@@ -251,6 +251,10 @@ void RefreshDiskInfoTree(void)
             struct Node *rootNode = IListBrowser->AllocListBrowserNode(
                 1, LBNCA_Text, categories[cat_idx], LBNA_UserData, rootData, LBNA_Generation, 1, LBNA_Flags,
                 LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN, TAG_DONE);
+            if (!rootNode) {
+                IExec->FreeVec(rootData);
+                continue;
+            }
             if (rootNode) {
                 IExec->AddTail(&drive_tree_list, rootNode);
 
@@ -400,7 +404,7 @@ void RefreshDiskInfoTree(void)
             UpdateDetailsPage(NULL); // Root select -> Init Page
         }
 
-        IIntuition->RefreshGList((struct Gadget *)ui.diskinfo_tree, ui.window, NULL, 1);
+        SafeRefreshGList(ui.diskinfo_tree);
     }
     LOG_DEBUG("RefreshDiskInfoTree: Exit");
 }

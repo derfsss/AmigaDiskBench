@@ -232,13 +232,20 @@ static void ValidateVizFile(const char *path, struct List *findings,
             }
         }
         if (ci_cmp(current_section, "Colors") == 0 && ci_cmp(key, "Color") == 0) {
-            /* Validate hex color format */
-            if (vlen != 6) {
+            /* Validate hex color format. Accept the documented optional
+             * 0x/0X prefix — the parser's strtoul(.., 16) does too. */
+            const char *cv = val;
+            uint32 cvlen = vlen;
+            if (cvlen > 2 && cv[0] == '0' && (cv[1] == 'x' || cv[1] == 'X')) {
+                cv += 2;
+                cvlen -= 2;
+            }
+            if (cvlen != 6) {
                 AddFinding(findings, lineno, 'W', "%s:%lu: Color '%s' should be 6 hex digits", fname, lineno, val);
                 (*warnings)++;
             } else {
                 for (uint32 i = 0; i < 6; i++) {
-                    char c = val[i];
+                    char c = cv[i];
                     if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
                         AddFinding(findings, lineno, 'W', "%s:%lu: Color '%s' contains non-hex char", fname, lineno, val);
                         (*warnings)++;
@@ -288,7 +295,7 @@ static void ValidateVizFile(const char *path, struct List *findings,
         (*warnings)++;
     }
     if (!has_x_source) {
-        AddFinding(findings, 0, 'W', "%s: No XAxis Source specified (defaults to 'block_size')", fname);
+        AddFinding(findings, 0, 'W', "%s: No XAxis Source specified (defaults to 'test_index')", fname);
         (*warnings)++;
     }
     if (!has_y_source) {
@@ -307,7 +314,7 @@ static void ValidateVizDirectory(struct List *findings, uint32 *total_files,
     *total_errors = 0;
     *total_warnings = 0;
 
-    BPTR lock = IDOS->Lock("PROGDIR:Visualizations", ACCESS_READ);
+    BPTR lock = IDOS->Lock("PROGDIR:Visualizations", SHARED_LOCK);
     if (!lock) {
         AddFinding(findings, 0, 'E', "Cannot access PROGDIR:Visualizations/ folder");
         (*total_errors)++;
@@ -327,7 +334,9 @@ static void ValidateVizDirectory(struct List *findings, uint32 *total_files,
     while ((data = IDOS->ExamineDir(context)) != NULL) {
         if (EXD_IS_FILE(data)) {
             uint32 nlen = strlen(data->Name);
-            if (nlen > 4 && nlen < 230 && strcmp(&data->Name[nlen - 4], ".viz") == 0) {
+            /* Case-insensitive: the loader accepts FOO.VIZ, so VALIDATE
+             * must check it too (Amiga filesystems are case-insensitive) */
+            if (nlen > 4 && nlen < 230 && strcasecmp(&data->Name[nlen - 4], ".viz") == 0) {
                 char fullpath[256];
                 snprintf(fullpath, sizeof(fullpath), "PROGDIR:Visualizations/%.230s", data->Name);
                 (*total_files)++;

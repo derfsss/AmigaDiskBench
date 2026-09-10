@@ -19,6 +19,8 @@ const char *FormatPresetBlockSize(uint32 bytes)
         return "32K";
     if (bytes == 65536)
         return "64K";
+    if (bytes == 131072)
+        return "128K";
     if (bytes == 262144)
         return "256K";
     if (bytes == 1048576)
@@ -33,6 +35,18 @@ const char *FormatPresetBlockSize(uint32 bytes)
         snprintf(custom, sizeof(custom), "%uM", (unsigned int)(bytes / 1048576));
 
     return custom;
+}
+
+/*
+ * Refresh a single gadget, tolerating a NULL window. While the app is
+ * iconified (APPLIBMT_Hide sets ui.window = NULL) worker completions
+ * still arrive; RefreshGList() — unlike SetGadgetAttrs() — does not
+ * accept a NULL window and would crash.
+ */
+void SafeRefreshGList(Object *obj)
+{
+    if (obj && ui.window)
+        IIntuition->RefreshGList((struct Gadget *)obj, ui.window, NULL, 1);
 }
 
 const char *FormatByteSize(uint64 bytes)

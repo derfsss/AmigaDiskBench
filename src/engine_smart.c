@@ -472,17 +472,19 @@ static BOOL IsSmartCtlAvailable(void)
     BPTR nil_out = IDOS->Open("NIL:", MODE_NEWFILE);
 
     if (nil_in && nil_out) {
-        /* SystemTags takes ownership of the file handles */
         LONG rc = IDOS->SystemTags("version C:smartctl >NIL:",
                                    SYS_Input, nil_in,
                                    SYS_Output, nil_out,
                                    TAG_DONE);
         cached = (rc == 0) ? 1 : 0;
     } else {
-        if (nil_in)  IDOS->Close(nil_in);
-        if (nil_out) IDOS->Close(nil_out);
         cached = 0;
     }
+    /* Synchronous System() never closes SYS_Input/SYS_Output — the
+     * caller must (dos.library autodoc). Only SYS_Asynch transfers
+     * ownership. */
+    if (nil_in)  IDOS->Close(nil_in);
+    if (nil_out) IDOS->Close(nil_out);
 
     LOG_DEBUG("IsSmartCtlAvailable: %s", cached ? "Yes" : "No");
     return (BOOL)cached;
@@ -554,11 +556,15 @@ static BOOL TrySmartCtl(const char *device_name, uint32 unit, SmartData *out_dat
         return FALSE;
     }
 
-    /* SystemTags takes ownership of nil_in/nil_out */
     IDOS->SystemTags(cmd_str,
                      SYS_Input, nil_in,
                      SYS_Output, nil_out,
                      TAG_DONE);
+
+    /* Synchronous System() never closes SYS_Input/SYS_Output — the
+     * caller must (dos.library autodoc). */
+    IDOS->Close(nil_in);
+    IDOS->Close(nil_out);
 
     /* Parse the output file */
     BPTR fh = IDOS->Open("T:adb_smart.tmp", MODE_OLDFILE);
@@ -570,6 +576,12 @@ static BOOL TrySmartCtl(const char *device_name, uint32 unit, SmartData *out_dat
     char line[256];
     BOOL in_attributes = FALSE;
     int attr_index = 0;
+
+    /* Default to OK (matching ParseSmartBuffers): if smartctl output has
+     * no "test result:" line, a status left at UNKNOWN would be reported
+     * as "Drive issues detected!" for a perfectly healthy drive. The
+     * heuristics below downgrade to WARNING/CRITICAL as needed. */
+    out_data->overall_status = SMART_STATUS_OK;
 
     while (IDOS->FGets(fh, line, sizeof(line))) {
 

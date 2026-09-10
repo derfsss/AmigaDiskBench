@@ -94,7 +94,7 @@ void DispatchNextJob(void)
 
             /* Update Traffic Light Red */
             if (ui.traffic_light) {
-                IIntuition->RefreshGList((struct Gadget *)ui.traffic_light, ui.window, NULL, 1);
+                SafeRefreshGList(ui.traffic_light);
             }
 
             LOG_DEBUG("DispatchNextJob: Calling UpdateTrafficLabel(TRUE)");

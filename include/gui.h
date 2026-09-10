@@ -264,7 +264,7 @@ typedef struct
     uint32                 log_buf_len;       /* Current length of log_buf content */
     uint32                 log_buf_cap;       /* Allocated capacity of log_buf */
     uint32                 log_buf_displayed; /* Bytes already inserted into the gadget */
-    struct Task           *log_main_task;     /* Set in InitUserLogging; NULL in worker BSS copy */
+    struct Task           *log_main_task;     /* Main task; compare vs FindTask(NULL) — globals shared with worker */
     uint32                 log_session_start; /* Session start (unix seconds via time()) for duration calc */
 } GUIState;
 

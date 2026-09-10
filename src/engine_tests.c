@@ -8,7 +8,10 @@
 
 /*
  * Writes a dummy file of the specified size using the given chunk size.
- * Returns the number of bytes actually written, or 0 on failure.
+ * Returns the number of bytes actually written (== size on success),
+ * or 0 on failure. On any failure or short write (e.g. disk full) the
+ * partially written file is deleted so callers never see a stale or
+ * undersized test file.
  */
 uint32 WriteDummyFile(const char *path, uint32 size, uint32 chunk_size)
 {
@@ -19,6 +22,7 @@ uint32 WriteDummyFile(const char *path, uint32 size, uint32 chunk_size)
     uint8 *buffer = IExec->AllocVecTags(chunk_size, AVT_Type, MEMF_SHARED, TAG_DONE);
     if (!buffer) {
         IDOS->Close(file);
+        IDOS->Delete(path);
         return 0;
     }
 
@@ -38,6 +42,13 @@ uint32 WriteDummyFile(const char *path, uint32 size, uint32 chunk_size)
 
     IExec->FreeVec(buffer);
     IDOS->Close(file);
+
+    if (written != size) {
+        /* Short write (disk full / I/O error): a random workload would
+         * seek past EOF against this file. Remove it and report failure. */
+        IDOS->Delete(path);
+        return 0;
+    }
     return written;
 }
 

@@ -117,6 +117,7 @@ typedef struct {
     float         max_mbs;
     float         min_duration_secs;
     float         max_duration_secs;
+    uint32        min_version_key;   /* major*1000+minor app-version threshold (0 = off) */
     /* Annotations */
     float         ref_line_values[8];
     char          ref_line_labels[8][64];
