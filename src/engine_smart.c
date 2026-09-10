@@ -365,8 +365,8 @@ static BOOL IssueSATCommand(struct IOStdReq *ior, uint8 feature, uint8 *buffer)
     cdb[2]  = 0x2E;              /* CK_COND=1, T_DIR=1, BYTE_BLOCK=1, T_LENGTH=SectorCount */
     cdb[4]  = feature;           /* ATA Feature register */
     cdb[6]  = 1;                 /* Sector Count */
-    cdb[8]  = 0x4F;              /* LBA Low  (SMART magic) */
-    cdb[10] = 0xC2;              /* LBA Mid  (SMART magic) */
+    cdb[10] = 0x4F;              /* LBA Mid  (SMART magic) */
+    cdb[12] = 0xC2;              /* LBA High (SMART magic) */
     cdb[14] = ATA_SMART_CMD;     /* ATA Command (0xB0) */
 
     cmd.scsi_Data       = (APTR)buffer;
@@ -400,8 +400,8 @@ static BOOL IssueSATCommand(struct IOStdReq *ior, uint8 feature, uint8 *buffer)
     cdb[2] = 0x2E;              /* CK_COND=1, T_DIR=1, BYTE_BLOCK=1, T_LENGTH=SectorCount */
     cdb[3] = feature;           /* ATA Feature register */
     cdb[4] = 1;                 /* Sector Count */
-    cdb[5] = 0x4F;              /* LBA Low  (SMART magic) */
-    cdb[6] = 0xC2;              /* LBA Mid  (SMART magic) */
+    cdb[6] = 0x4F;              /* LBA Mid  (SMART magic) */
+    cdb[7] = 0xC2;              /* LBA High (SMART magic) */
     cdb[9] = ATA_SMART_CMD;     /* ATA Command (0xB0) */
 
     cmd.scsi_Data       = (APTR)buffer;
